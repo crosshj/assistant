@@ -5,6 +5,11 @@ var config = require('./config');
 
 /*
 example - https://github.com/mstade/passport-google-oauth2/tree/master/example
+
+https://developers.google.com/identity/protocols/OAuth2
+
+https://console.developers.google.com/apis/credentials
+
 */
 
 function auth(callback){
