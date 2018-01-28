@@ -1,18 +1,19 @@
 var passport = require('passport');
 var Gmail = require('node-gmail-api');
-var config = {
-    googleApp: {
-        clientId: '',
-        clientSecret: ''
-    }
-};
+var googleAuth = require("passport-google-oauth");
+var config = require('./config');
+
+/*
+example - https://github.com/mstade/passport-google-oauth2/tree/master/example
+*/
 
 function auth(callback){
-    passport.use(new GoogleStrategy({
+    console.log('------ auth');
+    passport.use(new googleAuth.OAuth2Strategy.Strategy({
         clientID: config.googleApp.clientId
         , clientSecret: config.googleApp.clientSecret
         , userProfileURL: 'https://www.googleapis.com/oauth2/v3/userinfo'
-        , callbackURL: config.baseurl + '/oauth2callback'
+        , callbackURL: config.baseurl + '/callback'
     }
     , callback));
 }
@@ -22,6 +23,7 @@ function main(){
 }
 
 function getMessages(accessToken, refreshToken, profile, done) {
+    console.log('------ getMessages');
     var gmail = new Gmail(accessToken);
     var s = gmail.messages('label:inbox', {format: 'raw'});
     s.on('data', function (d) {
