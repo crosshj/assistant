@@ -61,7 +61,7 @@ app.get( '/google/callback',
         }
 ));
 
-app.get('/return', (req, res) => res.send(`TODO: go back to where started, userid = ${req.user}`))
+app.get('/return', (req, res) => res.send(`TODO: go back to where started, userid = ${JSON.stringify(req.user)}`))
 
 app.get('/', (req, res) => res.send('TODO: root'));
 
