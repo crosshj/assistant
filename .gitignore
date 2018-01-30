@@ -57,4 +57,4 @@ typings/
 # dotenv environment variables file
 .env
 
-gmail/config.js
+auth/config.js
