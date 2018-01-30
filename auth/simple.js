@@ -18,6 +18,8 @@ passport.use(new googleAuth.OAuth2Strategy.Strategy({
     done(undefined, {user: profile.id});
 }));
 
+app.use( passport.initialize());
+
 // google auth initiate
 app.get('/google', passport.authenticate(
     'google',
