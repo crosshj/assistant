@@ -15,7 +15,7 @@ passport.use(new googleAuth.OAuth2Strategy.Strategy({
 }
 , function(request, accessToken, refreshToken, profile, done) {
     //TODO: would first do something special here
-    done(undefined, {user: profile.id});
+    done(undefined, profile);
 }));
 
 passport.serializeUser(function(user, done) {
