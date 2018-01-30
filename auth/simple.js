@@ -30,9 +30,9 @@ passport.deserializeUser(function(user, done) {
     done(null, user);
 });
 
-app.use(express.bodyParser());
-app.use(express.cookieParser());
-app.use(express.session({ secret: 'secret' }));
+app.use(bodyParser);
+app.use(cookieParser);
+app.use(session({ secret: 'secret' }));
 app.use(passport.initialize());
 app.use(passport.session());
 
