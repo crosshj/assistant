@@ -32,10 +32,9 @@ app.get('/google', passport.authenticate(
 app.get( '/google/callback', 
     passport.authenticate(
         'google', 
-        { failureRedirect: '/login' },
-        function(req, res) {
-            // TODO: success, do something special
-            res.redirect('/return');
+        {
+            failureRedirect: '/login',
+            successRedirect: '/return'
         }
 ));
 
