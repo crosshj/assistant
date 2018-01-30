@@ -15,7 +15,7 @@ passport.use(new googleAuth.OAuth2Strategy.Strategy({
 }
 , function(request, accessToken, refreshToken, profile, done) {
     //TODO: would first do something special here
-    done(undefined, profile);
+    done(null, profile);
 }));
 
 passport.serializeUser(function(user, done) {
@@ -26,7 +26,11 @@ passport.deserializeUser(function(user, done) {
     done(null, user);
 });
 
+app.use(express.bodyParser());
+app.use(express.cookieParser());
+app.use(express.session({ secret: 'secret' }));
 app.use(passport.initialize());
+app.use(passport.session());
 
 // google auth initiate
 app.get('/google', passport.authenticate(
