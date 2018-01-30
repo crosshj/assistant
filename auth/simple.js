@@ -32,7 +32,12 @@ passport.deserializeUser(function(user, done) {
 
 app.use(bodyParser);
 app.use(cookieParser);
-app.use(session({ secret: 'secret' }));
+app.use(session({
+    secret: config.sessionSecret,
+    resave: false,
+    saveUninitialized: true,
+    cookie: {}
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
