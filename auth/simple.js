@@ -10,7 +10,7 @@ const port = 3421;
 passport.use(new googleAuth.OAuth2Strategy.Strategy({
     clientID: config.googleApp.clientId,
     clientSecret: config.googleApp.clientSecret,
-    callbackURL: config.baseUrl + '/callback',
+    callbackURL: config.baseUrl + '/google/callback',
     passReqToCallback   : true
 }
 , function(request, accessToken, refreshToken, profile, done) {
