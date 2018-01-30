@@ -31,7 +31,7 @@ passport.deserializeUser(function(user, done) {
 });
 
 //app.use(bodyParser);
-app.use(cookieParser);
+//app.use(cookieParser);
 app.use(session({
     secret: config.sessionSecret,
     resave: false,
