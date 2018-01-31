@@ -13,12 +13,17 @@ https://console.developers.google.com/apis/credentials
 */
 
 function getMessages() {
-    console.log('------ getMessages');
     var accessToken = config.accessToken;
     var gmail = new Gmail(accessToken);
-    var s = gmail.messages('label:inbox', {format: 'raw'});
+
+    // in:T S O
+    const query = new Buffer('aW46VHJhc2ggU3BlY2lhbCBPZmZlcg==', 'base64').toString('binary');
+
+    var s = gmail.messages(query, {format: 'full', max: 100});
     s.on('data', function (d) {
-        console.log(d.snippet)
+        //console.log(Object.keys(d.payload))
+        //console.log(d.payload.body)
+        console.log(d.payload.parts);
     });
 }
 
