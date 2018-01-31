@@ -19,6 +19,7 @@ passport.use(new googleAuth.OAuth2Strategy.Strategy({
 }
 , function(request, accessToken, refreshToken, profile, done) {
     //TODO: would first do something special here
+    console.log({ accessToken, refreshToken });
     done(null, profile);
 }));
 
