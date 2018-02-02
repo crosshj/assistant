@@ -1,14 +1,17 @@
 var passport = require('passport');
 var Gmail = require('node-gmail-api');
-var googleAuth = require("passport-google-oauth");
 var config = require('../auth/config');
 
 /*
-example - https://github.com/mstade/passport-google-oauth2/tree/master/example
+
+example:
+
+https://github.com/mstade/passport-google-oauth2/tree/master/example
 
 https://developers.google.com/identity/protocols/OAuth2
 
 https://console.developers.google.com/apis/credentials
+
 
 */
 
