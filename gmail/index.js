@@ -24,7 +24,7 @@ function getMessages() {
 
     var s = gmail.messages(query, {format: 'full', max: 100});
     var allParts = [];
-    var partsWithoutAttachment = 0;
+    var partsWithoutAttachment = [];
     s.on('data', function (d) {
         //console.log(Object.keys(d.payload))
         //console.log(d.payload.body)
@@ -34,12 +34,27 @@ function getMessages() {
         console.log(`--- stream ended, allparts.length = ${allParts.length} `);
         allParts.forEach(part => {
             if(part.filename){
+                //https://developers.google.com/gmail/api/v1/reference/users/messages/attachments/get
                 console.log(`\t${part.filename}`);
             } else {
-                partsWithoutAttachment++;
+                partsWithoutAttachment.push(part);
             }
         });
-        console.log(`--- done with filenames, parts without attachments: ${partsWithoutAttachment}`);
+        console.log(`--- done with filenames, parts without attachments: ${partsWithoutAttachment.length}`);
+        var thisPart = partsWithoutAttachment[2];
+        var partParts = thisPart.parts;
+        if(partParts && partParts.length){
+            partParts.forEach(part => {
+                console.log(part.body.data)
+            })
+        } else {
+            //mimeType: text/html
+            const body = Buffer.from(thisPart.body.data, 'base64').toString('ascii');
+            var linkReg = /(<[Aa]\s(.*)<\/[Aa]>)/g;
+            var links = body.match(linkReg);
+            console.log(links);
+        }
+
     })
 }
 
