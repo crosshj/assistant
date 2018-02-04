@@ -23,11 +23,24 @@ function getMessages() {
     const query = new Buffer('aW46VHJhc2ggU3BlY2lhbCBPZmZlcg==', 'base64').toString('binary');
 
     var s = gmail.messages(query, {format: 'full', max: 100});
+    var allParts = [];
+    var partsWithoutAttachment = 0;
     s.on('data', function (d) {
         //console.log(Object.keys(d.payload))
         //console.log(d.payload.body)
-        console.log(d.payload.parts);
+        allParts = allParts.concat(d.payload.parts);
     });
+    s.on('end', function(){
+        console.log(`--- stream ended, allparts.length = ${allParts.length} `);
+        allParts.forEach(part => {
+            if(part.filename){
+                console.log(`\t${part.filename}`);
+            } else {
+                partsWithoutAttachment++;
+            }
+        });
+        console.log(`--- done with filenames, parts without attachments: ${partsWithoutAttachment}`);
+    })
 }
 
 
