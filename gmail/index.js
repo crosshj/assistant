@@ -1,6 +1,7 @@
 var passport = require('passport');
 var Gmail = require('node-gmail-api');
 var config = require('../auth/config');
+const cheerio = require('cheerio');
 
 /*
 
@@ -41,6 +42,8 @@ function getMessages() {
             }
         });
         console.log(`--- done with filenames, parts without attachments: ${partsWithoutAttachment.length}`);
+
+        //TODO: do this for all, not just one
         var thisPart = partsWithoutAttachment[2];
         var partParts = thisPart.parts;
         if(partParts && partParts.length){
@@ -50,8 +53,14 @@ function getMessages() {
         } else {
             //mimeType: text/html
             const body = Buffer.from(thisPart.body.data, 'base64').toString('ascii');
-            var linkReg = /(<[Aa]\s(.*)<\/[Aa]>)/g;
-            var links = body.match(linkReg);
+            const $ = cheerio.load(body);
+            var links = [];
+            $('a').each(function(i, elem) {
+                const linkText = $(this).text();
+                if(linkText.includes('http')){
+                    links.push(linkText);
+                }
+            });
             console.log(links);
         }
 
