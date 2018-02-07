@@ -36,6 +36,7 @@ function getMessages() {
         allParts.forEach(part => {
             if(part.filename){
                 //https://developers.google.com/gmail/api/v1/reference/users/messages/attachments/get
+            //TODO: fetch attachment here
                 console.log(`\t${part.filename}`);
             } else {
                 partsWithoutAttachment.push(part);
