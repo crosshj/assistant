@@ -20,7 +20,8 @@ passport.use(new googleAuth.OAuth2Strategy.Strategy({
 , function(request, accessToken, refreshToken, profile, done) {
     //TODO: would first do something special here
     console.log({ accessToken, refreshToken });
-    done(null, profile);
+    const user = Object.assign({}, profile, {accessToken, refreshToken})
+    done(null, user);
 }));
 
 passport.serializeUser(function(user, done) {
