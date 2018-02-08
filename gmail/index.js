@@ -2,6 +2,7 @@ var passport = require('passport');
 var Gmail = require('node-gmail-api');
 var config = require('../auth/config');
 const cheerio = require('cheerio');
+var _ = require('lodash');
 
 /*
 
@@ -45,25 +46,32 @@ function getMessages() {
         console.log(`--- done with filenames, parts without attachments: ${partsWithoutAttachment.length}`);
 
         //TODO: do this for all, not just one
-        var thisPart = partsWithoutAttachment[2];
-        var partParts = thisPart.parts;
-        if(partParts && partParts.length){
-            partParts.forEach(part => {
-                console.log(part.body.data)
-            })
-        } else {
-            //mimeType: text/html
-            const body = Buffer.from(thisPart.body.data, 'base64').toString('ascii');
-            const $ = cheerio.load(body);
-            var links = [];
-            $('a').each(function(i, elem) {
-                const linkText = $(this).text();
-                if(linkText.includes('http')){
-                    links.push(linkText);
-                }
-            });
-            console.log(links);
-        }
+        var links = [];
+        partsWithoutAttachment.forEach(thisPart =>{
+            var partParts = thisPart.parts;
+            if(partParts && partParts.length){
+                partParts.forEach(part => {
+                    console.log('--- wtf dunno');
+                    //console.log(part.body.data)
+                })
+            } else {
+                //mimeType: text/html
+                const body = Buffer.from(thisPart.body.data, 'base64').toString('ascii');
+                const $ = cheerio.load(body);
+                
+                $('a').each(function(i, elem) {
+                    const linkText = $(this).text();
+                    if(linkText.includes('http')){
+                        links.push(linkText);
+                    }
+                });
+            }
+        });
+        //console.log(links);
+        var fs = require('fs');
+        fs.writeFile('links.json', JSON.stringify(_.sortBy(_.uniq(links)), null, '\t'), 'utf8', ()=>{
+            console.log('file written');
+        });
 
     })
 }
