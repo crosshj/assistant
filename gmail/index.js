@@ -4,6 +4,7 @@ var config = require('../auth/config');
 const cheerio = require('cheerio');
 var _ = require('lodash');
 var request = require('request');
+var fs = require('fs');
 
 /*
 
@@ -24,44 +25,43 @@ function decode64(string){
     return new Buffer(string, 'base64').toString('binary');
 }
 
-function getAttachments(userId, message, callback) {
-    var parts = message.payload.parts;
-    for (var i = 0; i < parts.length; i++) {
-        var part = parts[i];
-        if (part.filename && part.filename.length > 0) {
-            var attachId = part.body.attachmentId;
-            //https://developers.google.com/gmail/api/v1/reference/users/messages/attachments/get
-            const url = `https://www.googleapis.com/gmail/v1/users/${userId}/messages/${message.id}/attachments/${attachId}`;
-            //console.log(Object.keys(part));
-
-            var options = {
-                url,
-                headers: {
-                    'Authorization': `Bearer ${config.accessToken}`
-                }
-            };
-
-            const cb = (err, res, body) => {
-                try{
-                    const bodyObj = JSON.parse(body);
-                    const attachment = bodyObj
-                        ? bodyObj.data
-                        : undefined;
-                    attachment && console.log({ attachmentLength: attachment.length});
-                    var fs = require('fs');
-                    fs.writeFile(`./px/${message.id}-${part.filename}`, new Buffer(attachment, 'base64'), 'utf8', ()=>{
-                        console.log(`${message.id}-${part.filename} written`);
-                    });
-                    callback(part.filename, part.mimeType, attachment);
-                } catch(e) {
-                    console.log(`error parsing attachment body => ${part.filename}`);
-                    callback(part.filename, part.mimeType, null);
-                }
-            };
-
-            request(options, cb);
+function getAttachments(userId, message) {
+    message.payload.parts.forEach(part => {
+        if(!part.filename || part.filename.length <= 0){
+            return;
         }
-    }
+        
+        var attachId = part.body.attachmentId;
+        //https://developers.google.com/gmail/api/v1/reference/users/messages/attachments/get
+        const url = `https://www.googleapis.com/gmail/v1/users/${userId}/messages/${message.id}/attachments/${attachId}`;
+        //console.log(Object.keys(part));
+        console.log(`---- ${part.filename}`);
+        var options = {
+            url,
+            headers: {
+                'Authorization': `Bearer ${config.accessToken}`
+            }
+        };
+
+        const cb = (err, res, body) => {
+            try{
+                const bodyObj = JSON.parse(body);
+                const attachment = bodyObj
+                    ? bodyObj.data
+                    : undefined;
+                attachment && console.log({ attachmentLength: attachment.length});
+                fs.writeFile(`./px/${part.filename}`, new Buffer(attachment, 'base64'), 'utf8', ()=>{
+                    console.log(`${message.id}-${part.filename} written`);
+                });
+                //callback(part.filename, part.mimeType, attachment);
+            } catch(e) {
+                console.log(`error parsing attachment body => ${part.filename}`);
+                //callback(part.filename, part.mimeType, null);
+            }
+        };
+        //TODO: NO DUPES
+        request(options, cb);
+    });
 }
 
 function getMessages() {
@@ -79,9 +79,7 @@ function getMessages() {
     s.on('end', function(){
         console.log(`--- stream ended, allMessages.length = ${allMessages.length} `);
         allMessages.forEach(message => {
-            getAttachments(config.userId, message, (filename, mimeType, attachment) => {
-                console.log(`got attachment: ${filename}`);
-            });
+            getAttachments(config.userId, message);
 
             message.payload.parts.forEach(part => {
                 if(!part.filename){
@@ -121,7 +119,6 @@ function getMessages() {
             }
         });
         //console.log(links);
-        var fs = require('fs');
         fs.writeFile('lnks.json', JSON.stringify(_.sortBy(_.uniq(links)), null, '\t'), 'utf8', ()=>{
             console.log('--- lnks file written');
         });
