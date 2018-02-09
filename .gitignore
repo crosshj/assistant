@@ -58,3 +58,4 @@ typings/
 .env
 
 auth/config.js
+lnks.json

@@ -1,9 +1,9 @@
 var passport = require('passport');
 var Gmail = require('node-gmail-api');
-var gapi= require('googleapis');
 var config = require('../auth/config');
 const cheerio = require('cheerio');
 var _ = require('lodash');
+var request = require('request');
 
 /*
 
@@ -29,40 +29,56 @@ function getAttachments(userId, message, callback) {
     for (var i = 0; i < parts.length; i++) {
         var part = parts[i];
         if (part.filename && part.filename.length > 0) {
-        var attachId = part.body.attachmentId;
-        const getConfig = {
-            'id': attachId,
-            'messageId': message.id,
-            'userId': userId
-        };
-        console.log(getConfig);
-        callback();
-        // var request = gapi.client.gmail.users.messages.attachments.get(getConfig);
-        // request.execute(function(attachment) {
-        //     callback(part.filename, part.mimeType, attachment);
-        // });
+            var attachId = part.body.attachmentId;
+            //https://developers.google.com/gmail/api/v1/reference/users/messages/attachments/get
+            const url = `https://www.googleapis.com/gmail/v1/users/${userId}/messages/${message.id}/attachments/${attachId}`;
+            //console.log(Object.keys(part));
+
+            var options = {
+                url,
+                headers: {
+                    'Authorization': `Bearer ${config.accessToken}`
+                }
+            };
+
+            const cb = (err, res, body) => {
+                try{
+                    const bodyObj = JSON.parse(body);
+                    const attachment = bodyObj
+                        ? bodyObj.data
+                        : undefined;
+                    attachment && console.log({ attachmentLength: attachment.length});
+                    var fs = require('fs');
+                    fs.writeFile(`./px/${message.id}-${part.filename}`, new Buffer(attachment, 'base64'), 'utf8', ()=>{
+                        console.log(`${message.id}-${part.filename} written`);
+                    });
+                    callback(part.filename, part.mimeType, attachment);
+                } catch(e) {
+                    console.log(`error parsing attachment body => ${part.filename}`);
+                    callback(part.filename, part.mimeType, null);
+                }
+            };
+
+            request(options, cb);
         }
     }
 }
 
 function getMessages() {
-
-
     // in:T S O
     const query = decode64('aW46VHJhc2ggU3BlY2lhbCBPZmZlcg==');
 
     var s = gmail.messages(query, {format: 'full', max: 100});
     var allMessages = [];
     var partsWithoutAttachment = [];
+
     s.on('data', function (message) {
-        //console.log(Object.keys(d.payload))
-        //console.log(d.payload.body)
         allMessages = allMessages.concat(message);
     });
+
     s.on('end', function(){
         console.log(`--- stream ended, allMessages.length = ${allMessages.length} `);
         allMessages.forEach(message => {
-            //https://developers.google.com/gmail/api/v1/reference/users/messages/attachments/get
             getAttachments(config.userId, message, (filename, mimeType, attachment) => {
                 console.log(`got attachment: ${filename}`);
             });
@@ -106,8 +122,8 @@ function getMessages() {
         });
         //console.log(links);
         var fs = require('fs');
-        fs.writeFile('links.json', JSON.stringify(_.sortBy(_.uniq(links)), null, '\t'), 'utf8', ()=>{
-            console.log('file written');
+        fs.writeFile('lnks.json', JSON.stringify(_.sortBy(_.uniq(links)), null, '\t'), 'utf8', ()=>{
+            console.log('--- lnks file written');
         });
 
     })
