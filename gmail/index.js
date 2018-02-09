@@ -35,7 +35,7 @@ function getAttachments(userId, message) {
         //https://developers.google.com/gmail/api/v1/reference/users/messages/attachments/get
         const url = `https://www.googleapis.com/gmail/v1/users/${userId}/messages/${message.id}/attachments/${attachId}`;
         //console.log(Object.keys(part));
-        console.log(`---- ${part.filename}`);
+        //console.log(`---- ${part.filename}`);
         var options = {
             url,
             headers: {
@@ -49,9 +49,9 @@ function getAttachments(userId, message) {
                 const attachment = bodyObj
                     ? bodyObj.data
                     : undefined;
-                attachment && console.log({ attachmentLength: attachment.length});
+                //attachment && console.log({ attachmentLength: attachment.length});
                 fs.writeFile(`./px/${part.filename}`, new Buffer(attachment, 'base64'), 'utf8', ()=>{
-                    console.log(`${message.id}-${part.filename} written`);
+                    console.log(`${part.filename} written`);
                 });
                 //callback(part.filename, part.mimeType, attachment);
             } catch(e) {
