@@ -11,6 +11,19 @@ const config = require('./config');
 const app = express()
 const port = 3421;
 
+/*
+
+example:
+
+https://github.com/mstade/passport-google-oauth2/tree/master/example
+
+https://developers.google.com/identity/protocols/OAuth2
+
+https://console.developers.google.com/apis/credentials
+
+
+*/
+
 passport.use(new googleAuth.OAuth2Strategy.Strategy({
     clientID: config.googleApp.clientId,
     clientSecret: config.googleApp.clientSecret,

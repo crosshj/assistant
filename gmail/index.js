@@ -5,19 +5,8 @@ const cheerio = require('cheerio');
 var _ = require('lodash');
 var request = require('request');
 var fs = require('fs');
+var sop = require('simple-object-path');
 
-/*
-
-example:
-
-https://github.com/mstade/passport-google-oauth2/tree/master/example
-
-https://developers.google.com/identity/protocols/OAuth2
-
-https://console.developers.google.com/apis/credentials
-
-
-*/
 var accessToken = config.accessToken;
 var gmail = new Gmail(accessToken);
 
@@ -26,6 +15,9 @@ function decode64(string){
 }
 
 function getAttachments(userId, message) {
+    if(!sop(message, 'payload/parts')){
+        return;
+    }
     message.payload.parts.forEach(part => {
         if(!part.filename || part.filename.length <= 0){
             return;
@@ -66,9 +58,10 @@ function getAttachments(userId, message) {
 
 function getMessages() {
     // in:T S O
-    const query = decode64('aW46VHJhc2ggU3BlY2lhbCBPZmZlcg==');
+    //const query = decode64('aW46VHJhc2ggU3BlY2lhbCBPZmZlcg==');
+    const query = 'label:notes';
 
-    var s = gmail.messages(query, {format: 'full', max: 100});
+    var s = gmail.messages(query, {format: 'full'});
     var allMessages = [];
     var partsWithoutAttachment = [];
 
@@ -80,7 +73,9 @@ function getMessages() {
         console.log(`--- stream ended, allMessages.length = ${allMessages.length} `);
         allMessages.forEach(message => {
             getAttachments(config.userId, message);
-
+            if(!sop(message, 'payload/parts')){
+                return;
+            }
             message.payload.parts.forEach(part => {
                 if(!part.filename){
                     partsWithoutAttachment.push(part);
@@ -95,6 +90,10 @@ function getMessages() {
             var partParts = thisPart.parts;
             if(partParts && partParts.length){
                 partParts.forEach(part => {
+                    if(!sop(part, `body/data`)){
+                        console.log(Object.keys(part));
+                        return;
+                    }
                     const body = decode64(part.body.data);
                     const $ = cheerio.load(body);
                 
