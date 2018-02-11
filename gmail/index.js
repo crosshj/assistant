@@ -14,11 +14,16 @@ var accessToken = config.accessToken;
 var gmail = new Gmail(accessToken);
 
 function decode64(string){
+    //return new Buffer(string, 'base64').toString('ascii');
     return new Buffer(string, 'base64').toString('binary');
 }
 
 function getAttachments(userId, message) {
     if(!sop(message, 'payload/parts')){
+        return;
+    }
+    if(!fs.existsSync('./px')){
+        //console.log('./px not found, no attachments will be saved');
         return;
     }
     message.payload.parts.forEach(part => {
@@ -97,10 +102,67 @@ function getLinks(partsWithoutAttachment){
 
 function getMessageText(message){
     //console.log(Object.keys(message.payload));
-    const body = decode64(message.payload.body.data);
+    const bodyData = sop(message, 'payload/body/data') || sop(message, 'body/data');
+    //console.log(message);
+    const body = decode64(bodyData);
     const $ = cheerio.load(body);
-    // TODO: save this
-    //console.log($('body').text().replace(/\n|\t/g,''));
+    //const bodyText = $('body').text().replace(/\n|\t/g,'');
+    const bodyText = 'TODO: message text placeholder';
+    return bodyText;
+}
+
+function resolveMessageOrPart(item){
+    const messageMime = item.mimeType || item.payload.mimeType;
+    const messageBodySize = sop(item, 'payload/body/size');
+    const messageParts = sop(item, 'payload/parts') || item.parts;
+
+    var resolved = [];
+    switch (true) {
+        case (messageMime.includes('text')): {
+            //NOTE: assuming text/html messages don't have attachments?
+            resolved.push(getMessageText(item));
+            break;
+        }
+        case (messageMime.includes('multipart/mixed')): {
+            //resolved.push('TODO: handle multipart/mixed');
+            if(!messageParts){
+                resolved.push('TODO: handle multipart/mixed with no parts');
+                //console.log(item);
+                break;
+            }
+            messageParts.forEach(part => {
+                resolved.push(resolveMessageOrPart(part));
+            });
+            break;
+        }
+        case (messageMime.includes('multipart/alternative')): {
+            //resolved.push('TODO: handle multipart/alternative');
+            if(!messageParts){
+                resolved.push('TODO: handle multipart/alternative with no parts');
+                //console.log(item);
+                break;
+            }
+            messageParts.forEach(part => {
+                resolved.push(resolveMessageOrPart(part));
+            });
+            break;
+        }
+        case (messageMime.includes('multipart/related')): {
+            if(!messageParts){
+                resolved.push('TODO: handle multipart/related with no parts');
+                //console.log(item);
+                break;
+            }
+            messageParts.forEach(part => {
+                resolved.push(resolveMessageOrPart(part));
+            });
+            break;
+        }
+        default: {
+            resolved.push(`-- mime type not handled : ${messageMime}`);
+        }
+    }
+    return resolved;
 }
 
 function processMessages(allMessages){
@@ -108,29 +170,9 @@ function processMessages(allMessages){
     console.log(`--- stream ended, allMessages.length = ${allMessages.length} `);
     allMessages.forEach(message => {
         //TODO: all messages will be parsed based on mime type?
-        const messageMime = message.payload.mimeType;
-        switch (true) {
-            case (messageMime.includes('text')): {
-                //NOTE: assuming text/html messages don't have attachments?
-                getMessageText(message);
-                break;
-            }
-            case (messageMime.includes('multipart/mixed')): {
-                //TODO: handle this case
-                break;
-            }
-            case (messageMime.includes('multipart/alternative')): {
-                //TODO: handle this case
-                break;
-            }
-            case (messageMime.includes('multipart/related')): {
-                //TODO: handle this case
-                break;
-            }
-            default: {
-                console.log(`-- mime type not handled : ${messageMime}`);
-            }
-        }
+        const resolved = resolveMessageOrPart(message);
+        console.log(resolved);
+
         // gets all attachments (does not consider if has text to save)
         getAttachments(config.userId, message);
 
@@ -151,6 +193,10 @@ function processMessages(allMessages){
 
     const links = getLinks(partsWithoutAttachment);
     //console.log(links);
+    if(!fs.existsSync('./px')){
+        //console.log('./px not found, links file will not be saved');
+        return;
+    }
     fs.writeFile('lnks.json', JSON.stringify(_.sortBy(_.uniq(links)), null, '\t'), 'utf8', ()=>{
         console.log('--- lnks file written');
     });
@@ -159,7 +205,7 @@ function processMessages(allMessages){
 function main() {
     // in:T S O
     //const query = decode64('aW46VHJhc2ggU3BlY2lhbCBPZmZlcg==');
-    const query = 'to:note@chimpjuice.com OR to:note@crosshj.com ';
+    const query = 'to:note@chimpjuice.com OR to:note@crosshj.com';
 
     //var s = gmail.messages(query, {format: 'full'});
     var s = gmail.messages(query, {format: 'full', max: 100});
@@ -171,7 +217,7 @@ function main() {
 
     s.on('end', function(){
         processMessages(allMessages)
-    })
+    });
 }
 
 
