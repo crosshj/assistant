@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/crosshj/assistant#readme",
   "dependencies": {
+    "async-tree": "0.0.9",
     "body-parser": "^1.18.2",
     "cheerio": "^1.0.0-rc.2",
     "cookie-parser": "^1.4.3",
