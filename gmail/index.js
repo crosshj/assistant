@@ -111,7 +111,7 @@ function getMessageText(message){
     return bodyText;
 }
 
-function resolveMessageOrPart(item){
+function resolveMessageOrPart(item, messageId){
     const messageMime = item.mimeType || item.payload.mimeType;
     const messageBodySize = sop(item, 'payload/body/size');
     const messageParts = sop(item, 'payload/parts') || item.parts;
@@ -119,7 +119,6 @@ function resolveMessageOrPart(item){
     var resolved = [];
     switch (true) {
         case (messageMime.includes('text')): {
-            //NOTE: assuming text/html messages don't have attachments?
             resolved.push(getMessageText(item));
             break;
         }
@@ -131,7 +130,7 @@ function resolveMessageOrPart(item){
                 break;
             }
             messageParts.forEach(part => {
-                resolved.push(resolveMessageOrPart(part));
+                resolved.push(resolveMessageOrPart(part, messageId));
             });
             break;
         }
@@ -143,7 +142,7 @@ function resolveMessageOrPart(item){
                 break;
             }
             messageParts.forEach(part => {
-                resolved.push(resolveMessageOrPart(part));
+                resolved.push(resolveMessageOrPart(part, messageId));
             });
             break;
         }
@@ -154,12 +153,12 @@ function resolveMessageOrPart(item){
                 break;
             }
             messageParts.forEach(part => {
-                resolved.push(resolveMessageOrPart(part));
+                resolved.push(resolveMessageOrPart(part, messageId));
             });
             break;
         }
         default: {
-            resolved.push(`-- mime type not handled : ${messageMime}`);
+            resolved.push(`-- mime type not handled : ${JSON.stringify({messageMime, messageId})}`);
         }
     }
     return resolved;
@@ -170,7 +169,7 @@ function processMessages(allMessages){
     console.log(`--- stream ended, allMessages.length = ${allMessages.length} `);
     allMessages.forEach(message => {
         //TODO: all messages will be parsed based on mime type?
-        const resolved = resolveMessageOrPart(message);
+        const resolved = resolveMessageOrPart(message, message.id);
         console.log(resolved);
 
         // gets all attachments (does not consider if has text to save)
