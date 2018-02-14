@@ -18,6 +18,14 @@ function decode64(string){
     return new Buffer(string, 'base64').toString('binary');
 }
 
+// wrap synchronous code to be handled by async lib
+function callbackify(fn){
+    return function(args, cb){
+        const output = fn(...args);
+        cb(null, output);
+    }
+}
+
 function getAttachments(userId, message) {
     if(!sop(message, 'payload/parts')){
         return;
