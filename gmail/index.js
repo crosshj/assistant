@@ -157,6 +157,12 @@ function resolveMessageOrPart(item, messageId){
             });
             break;
         }
+        case (messageMime.includes('application/')):
+        case (messageMime.includes('image/')): {
+            //TODO: save this
+            resolved.push(item.filename);
+            break;
+        }
         default: {
             resolved.push(`-- mime type not handled : ${JSON.stringify({messageMime, messageId})}`);
         }
