@@ -124,16 +124,26 @@ function resolveMessageOrPart(item, messageId){
     const messageBodySize = sop(item, 'payload/body/size');
     const messageParts = sop(item, 'payload/parts') || item.parts;
 
+    const asyncDunno = dunno => {
+        const x = {
+            messageId,
+            text: dunno
+        };
+        return function asyncDunno(callback){ return callback(null, x); };
+    };
+
     var resolved = [];
     switch (true) {
         case (messageMime.includes('text')): {
-            resolved.push(getMessageText(item));
+            const asyncGetText = callback => callback(null, getMessageText(item));
+            resolved.push(asyncGetText);
             break;
         }
         case (messageMime.includes('multipart/mixed')): {
             //resolved.push('TODO: handle multipart/mixed');
             if(!messageParts){
-                resolved.push('TODO: handle multipart/mixed with no parts');
+                const dunno = 'TODO: handle multipart/mixed with no parts';
+                resolved.push(asyncDunno(dunno));
                 //console.log(item);
                 break;
             }
@@ -145,7 +155,8 @@ function resolveMessageOrPart(item, messageId){
         case (messageMime.includes('multipart/alternative')): {
             //resolved.push('TODO: handle multipart/alternative');
             if(!messageParts){
-                resolved.push('TODO: handle multipart/alternative with no parts');
+                const dunno = 'TODO: handle multipart/alternative with no parts';
+                resolved.push(asyncDunno(dunno));
                 //console.log(item);
                 break;
             }
@@ -156,7 +167,8 @@ function resolveMessageOrPart(item, messageId){
         }
         case (messageMime.includes('multipart/related')): {
             if(!messageParts){
-                resolved.push('TODO: handle multipart/related with no parts');
+                const dunno = 'TODO: handle multipart/related with no parts';
+                resolved.push(asyncDunno(dunno));
                 //console.log(item);
                 break;
             }
@@ -168,7 +180,9 @@ function resolveMessageOrPart(item, messageId){
         case (messageMime.includes('application/')):
         case (messageMime.includes('image/')): {
             //TODO: save this
-            resolved.push(item.filename);
+            const dunno = item.filename;
+            resolved.push(asyncDunno(dunno));
+            //console.log(item);
             break;
         }
         default: {
@@ -181,10 +195,10 @@ function resolveMessageOrPart(item, messageId){
 function processMessages(allMessages){
     var partsWithoutAttachment = [];
     console.log(`--- stream ended, allMessages.length = ${allMessages.length} `);
+    const resolved = [];
     allMessages.forEach(message => {
         //TODO: all messages will be parsed based on mime type?
-        const resolved = resolveMessageOrPart(message, message.id);
-        console.log(resolved);
+        resolved.push(resolveMessageOrPart(message, message.id));
 
         // gets all attachments (does not consider if has text to save)
         getAttachments(config.userId, message);
@@ -200,6 +214,12 @@ function processMessages(allMessages){
             }
         });
     });
+
+    //console.log(resolved);
+    console.log(resolved[6]);
+    // console.log(resolved[0][0]((err, data)=>{
+    //     console.log({err, data});
+    // }))
 
     // get links from all messages
     console.log(`--- done with filenames, parts without attachments: ${partsWithoutAttachment.length}`);
