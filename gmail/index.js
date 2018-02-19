@@ -108,15 +108,15 @@ function getLinks(partsWithoutAttachment){
     return links;
 }
 
-function getMessageText(message){
+function getMessageText(message, messageId){
     //console.log(Object.keys(message.payload));
     const bodyData = sop(message, 'payload/body/data') || sop(message, 'body/data');
-    //console.log(message);
+    console.log(message);
     const body = decode64(bodyData);
     const $ = cheerio.load(body);
     //const bodyText = $('body').text().replace(/\n|\t/g,'');
     const bodyText = 'TODO: message text placeholder';
-    return bodyText;
+    return { text: bodyText, messageId };
 }
 
 function resolveMessageOrPart(item, messageId){
@@ -131,11 +131,29 @@ function resolveMessageOrPart(item, messageId){
         };
         return function asyncDunno(callback){ return callback(null, x); };
     };
+    const asyncImage = () => {
+        const x = {
+            messageId,
+            text: item.filename
+        };
+        return function asyncImage(callback){ return callback(null, x); };
+    };
+
+    // const dunno = item.filename;
+    //resolved.push(asyncDunno(dunno));
+    const asyncGetText = callback => callback(null, getMessageText(item, messageId));
 
     var resolved = [];
     switch (true) {
         case (messageMime.includes('text')): {
-            const asyncGetText = callback => callback(null, getMessageText(item));
+            //TODO: don't push quoted text
+            const isQuoted = item.headers && item.headers.reduce((all, one)=>{
+                return all || one.name === 'Content-Transfer-Encoding'
+                    || one.value === 'quoted-printable'
+            }, false);
+            if(isQuoted){
+                break;
+            }
             resolved.push(asyncGetText);
             break;
         }
@@ -179,9 +197,7 @@ function resolveMessageOrPart(item, messageId){
         }
         case (messageMime.includes('application/')):
         case (messageMime.includes('image/')): {
-            //TODO: save this
-            const dunno = item.filename;
-            resolved.push(asyncDunno(dunno));
+            resolved.push(asyncImage());
             //console.log(item);
             break;
         }
@@ -216,10 +232,14 @@ function processMessages(allMessages){
     });
 
     //console.log(resolved);
-    console.log(resolved[6]);
-    // console.log(resolved[0][0]((err, data)=>{
-    //     console.log({err, data});
-    // }))
+    const flatResolved = _.flattenDeep(resolved);
+    console.log(flatResolved);
+    // flatResolved[3]((err, data)=>{
+    //     if(err){
+    //         return console.log({err});
+    //     }
+    //     console.log(data);
+    // });
 
     // get links from all messages
     console.log(`--- done with filenames, parts without attachments: ${partsWithoutAttachment.length}`);
