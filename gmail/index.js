@@ -26,6 +26,43 @@ function callbackify(fn){
     }
 }
 
+function getImage(part, userId, message, callback){
+    if(!part.filename || part.filename.length <= 0){
+        return;
+    }
+    
+    var attachId = part.body.attachmentId;
+    //https://developers.google.com/gmail/api/v1/reference/users/messages/attachments/get
+    const url = `https://www.googleapis.com/gmail/v1/users/${userId}/messages/${message.id}/attachments/${attachId}`;
+    //console.log(Object.keys(part));
+    //console.log(`---- ${part.filename}`);
+    var options = {
+        url,
+        headers: {
+            'Authorization': `Bearer ${config.accessToken}`
+        }
+    };
+
+    const cb = (err, res, body) => {
+        try{
+            const bodyObj = JSON.parse(body);
+            const attachment = bodyObj
+                ? bodyObj.data
+                : undefined;
+            //attachment && console.log({ attachmentLength: attachment.length});
+            fs.writeFile(`./px/${part.filename}`, new Buffer(attachment, 'base64'), 'utf8', (err)=>{
+                callback(err, `${part.filename} written`);
+            });
+            //callback(part.filename, part.mimeType, attachment);
+        } catch(e) {
+            console.log(`error parsing attachment body => ${part.filename}`);
+            //callback(part.filename, part.mimeType, null);
+        }
+    };
+    //TODO: NO DUPES
+    request(options, cb);
+}
+
 function getAttachments(userId, message) {
     if(!sop(message, 'payload/parts')){
         return;
@@ -35,40 +72,7 @@ function getAttachments(userId, message) {
         return;
     }
     message.payload.parts.forEach(part => {
-        if(!part.filename || part.filename.length <= 0){
-            return;
-        }
-        
-        var attachId = part.body.attachmentId;
-        //https://developers.google.com/gmail/api/v1/reference/users/messages/attachments/get
-        const url = `https://www.googleapis.com/gmail/v1/users/${userId}/messages/${message.id}/attachments/${attachId}`;
-        //console.log(Object.keys(part));
-        //console.log(`---- ${part.filename}`);
-        var options = {
-            url,
-            headers: {
-                'Authorization': `Bearer ${config.accessToken}`
-            }
-        };
-
-        const cb = (err, res, body) => {
-            try{
-                const bodyObj = JSON.parse(body);
-                const attachment = bodyObj
-                    ? bodyObj.data
-                    : undefined;
-                //attachment && console.log({ attachmentLength: attachment.length});
-                fs.writeFile(`./px/${part.filename}`, new Buffer(attachment, 'base64'), 'utf8', ()=>{
-                    console.log(`${part.filename} written`);
-                });
-                //callback(part.filename, part.mimeType, attachment);
-            } catch(e) {
-                console.log(`error parsing attachment body => ${part.filename}`);
-                //callback(part.filename, part.mimeType, null);
-            }
-        };
-        //TODO: NO DUPES
-        request(options, cb);
+        getImage(part, userId, message, cb)
     });
 }
 
