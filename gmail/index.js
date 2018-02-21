@@ -137,10 +137,14 @@ function resolveMessageOrPart(item, messageId){
     };
     const asyncImage = () => {
         const x = {
-            messageId,
+            part: item,
+            userId,
+            message: { id: messageId },
             text: item.filename
         };
-        return function asyncImage(callback){ return callback(null, x); };
+        return function asyncImage(callback){
+            getImage(x.part, x.userId, x.message, callback);
+        };
     };
 
     // const dunno = item.filename;
