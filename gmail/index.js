@@ -26,7 +26,7 @@ function callbackify(fn){
     }
 }
 
-function getImage(part, userId, message, callback){
+function getAttachment(part, userId, message, callback){
     if(!part.filename || part.filename.length <= 0){
         return;
     }
@@ -50,8 +50,14 @@ function getImage(part, userId, message, callback){
                 ? bodyObj.data
                 : undefined;
             //attachment && console.log({ attachmentLength: attachment.length});
+            if(!fs.existsSync('./px')){
+                callback('./px not found, no attachments will be saved');
+                return;
+            }
+
             fs.writeFile(`./px/${part.filename}`, new Buffer(attachment, 'base64'), 'utf8', (err)=>{
                 callback(err, `${part.filename} written`);
+                return;
             });
             //callback(part.filename, part.mimeType, attachment);
         } catch(e) {
@@ -72,7 +78,7 @@ function getAttachments(userId, message) {
         return;
     }
     message.payload.parts.forEach(part => {
-        getImage(part, userId, message, cb)
+        getAttachment(part, userId, message, (err, data) => console.log({err, data}));
     });
 }
 
@@ -138,12 +144,12 @@ function resolveMessageOrPart(item, messageId){
     const asyncImage = () => {
         const x = {
             part: item,
-            userId,
+            userId: config.userId,
             message: { id: messageId },
             text: item.filename
         };
         return function asyncImage(callback){
-            getImage(x.part, x.userId, x.message, callback);
+            getAttachment(x.part, x.userId, x.message, callback);
         };
     };
 
@@ -225,7 +231,7 @@ function processMessages(allMessages){
         resolved.push(resolveMessageOrPart(message, message.id));
 
         // gets all attachments (does not consider if has text to save)
-        getAttachments(config.userId, message);
+        //getAttachments(config.userId, message);
 
         if(!sop(message, 'payload/parts')){
             return;
@@ -242,12 +248,13 @@ function processMessages(allMessages){
     //console.log(resolved);
     const flatResolved = _.flattenDeep(resolved);
     console.log(flatResolved);
-    // flatResolved[3]((err, data)=>{
-    //     if(err){
-    //         return console.log({err});
-    //     }
-    //     console.log(data);
-    // });
+    flatResolved[5]((err, data)=>{
+        if(err){
+            return console.log({err});
+        }
+        console.log(data);
+    });
+
 
     // get links from all messages
     console.log(`--- done with filenames, parts without attachments: ${partsWithoutAttachment.length}`);
