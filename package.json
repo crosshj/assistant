@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "watch.gmail": "nodemon ./gmail",
+    "watch.gmail": "nodemon ./gmail --watch ./gmail",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

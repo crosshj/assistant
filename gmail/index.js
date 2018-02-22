@@ -248,7 +248,8 @@ function processMessages(allMessages){
     //console.log(resolved);
     const flatResolved = _.flattenDeep(resolved);
     console.log(flatResolved);
-    flatResolved[5]((err, data)=>{
+    flatResolved[8]((err, data)=>{
+        console.log(flatResolved[7].name);
         if(err){
             return console.log({err});
         }
