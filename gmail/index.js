@@ -121,7 +121,7 @@ function getLinks(partsWithoutAttachment){
 function getMessageText(message, messageId){
     //console.log(Object.keys(message.payload));
     const bodyData = sop(message, 'payload/body/data') || sop(message, 'body/data');
-    console.log(message);
+    //console.log(message);
     const body = decode64(bodyData);
     const $ = cheerio.load(body);
     //const bodyText = $('body').text().replace(/\n|\t/g,'');
@@ -134,28 +134,38 @@ function resolveMessageOrPart(item, messageId){
     const messageBodySize = sop(item, 'payload/body/size');
     const messageParts = sop(item, 'payload/parts') || item.parts;
 
-    const asyncDunno = dunno => {
+    const asyncGetDunno = dunno => {
         const x = {
             messageId,
             text: dunno
         };
         return function asyncDunno(callback){ return callback(null, x); };
     };
-    const asyncImage = () => {
+    const asyncGetImage = () => {
         const x = {
             part: item,
             userId: config.userId,
             message: { id: messageId },
             text: item.filename
         };
-        return function asyncImage(callback){
+        function asyncImage(callback){
             getAttachment(x.part, x.userId, x.message, callback);
         };
+        asyncImage.args = x;
+        return asyncImage;
     };
 
     // const dunno = item.filename;
     //resolved.push(asyncDunno(dunno));
-    const asyncGetText = callback => callback(null, getMessageText(item, messageId));
+    const asyncGetText = () => {
+        const x = { item, messageId };
+        function asyncText(callback) {
+            return callback(null, getMessageText(item, messageId));
+        }
+        asyncText.args = x;
+        return asyncText;
+    };
+
 
     var resolved = [];
     switch (true) {
@@ -168,14 +178,14 @@ function resolveMessageOrPart(item, messageId){
             if(isQuoted){
                 break;
             }
-            resolved.push(asyncGetText);
+            resolved.push(asyncGetText());
             break;
         }
         case (messageMime.includes('multipart/mixed')): {
             //resolved.push('TODO: handle multipart/mixed');
             if(!messageParts){
                 const dunno = 'TODO: handle multipart/mixed with no parts';
-                resolved.push(asyncDunno(dunno));
+                resolved.push(asyncGetDunno(dunno));
                 //console.log(item);
                 break;
             }
@@ -188,7 +198,7 @@ function resolveMessageOrPart(item, messageId){
             //resolved.push('TODO: handle multipart/alternative');
             if(!messageParts){
                 const dunno = 'TODO: handle multipart/alternative with no parts';
-                resolved.push(asyncDunno(dunno));
+                resolved.push(asyncGetDunno(dunno));
                 //console.log(item);
                 break;
             }
@@ -200,7 +210,7 @@ function resolveMessageOrPart(item, messageId){
         case (messageMime.includes('multipart/related')): {
             if(!messageParts){
                 const dunno = 'TODO: handle multipart/related with no parts';
-                resolved.push(asyncDunno(dunno));
+                resolved.push(asyncGetDunno(dunno));
                 //console.log(item);
                 break;
             }
@@ -211,7 +221,7 @@ function resolveMessageOrPart(item, messageId){
         }
         case (messageMime.includes('application/')):
         case (messageMime.includes('image/')): {
-            resolved.push(asyncImage());
+            resolved.push(asyncGetImage());
             //console.log(item);
             break;
         }
@@ -247,9 +257,11 @@ function processMessages(allMessages){
 
     //console.log(resolved);
     const flatResolved = _.flattenDeep(resolved);
-    console.log(flatResolved);
-    flatResolved[8]((err, data)=>{
-        console.log(flatResolved[7].name);
+    //console.log(flatResolved.map((x, i) => `${i}: ${x.name}`));
+    const testWhich = 4;
+    flatResolved[testWhich]((err, data)=>{
+        console.log(flatResolved[testWhich].name);
+        console.log(flatResolved[testWhich].args);
         if(err){
             return console.log({err});
         }
