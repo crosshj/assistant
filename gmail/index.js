@@ -120,13 +120,15 @@ function getLinks(partsWithoutAttachment){
 
 function getMessageText(message, messageId){
     //console.log(Object.keys(message.payload));
+    const filename = `${messageId}-${message.partId}.html`;
+    //console.log(filename);
     const bodyData = sop(message, 'payload/body/data') || sop(message, 'body/data');
     //console.log(message);
     const body = decode64(bodyData);
     const $ = cheerio.load(body);
     //const bodyText = $('body').text().replace(/\n|\t/g,'');
     const bodyText = 'TODO: message text placeholder';
-    return { text: bodyText, messageId };
+    return { text: bodyText, raw: body, filename, messageId };
 }
 
 function resolveMessageOrPart(item, messageId){
