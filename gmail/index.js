@@ -128,6 +128,13 @@ function getMessageText(message, messageId){
     const $ = cheerio.load(body);
     //const bodyText = $('body').text().replace(/\n|\t/g,'');
     const bodyText = 'TODO: message text placeholder';
+
+    if(fs.existsSync('./px')){
+        fs.writeFile(`./px/${filename}`, body, 'utf8', ()=>{
+            console.log(`--- ${filename} written`);
+        });
+    }
+
     return { text: bodyText, raw: body, filename, messageId };
 }
 
@@ -300,6 +307,14 @@ function main() {
 
     s.on('end', function(){
         processMessages(allMessages)
+    });
+
+    s.on('error', function(err){
+        console.log(
+            err.toString().includes('Invalid Credentials')
+                ? 'Error: Invalid Credentials'
+                : err
+        );
     });
 }
 
