@@ -319,4 +319,5 @@ function main() {
 }
 
 
+console.log('--- app starting up');
 main();
