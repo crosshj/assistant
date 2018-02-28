@@ -13,6 +13,12 @@ var asyncTree = require('async-tree');
 var accessToken = config.accessToken;
 var gmail = new Gmail(accessToken);
 
+
+if(config.proxy){
+    process.env.HTTPS_PROXY = config.proxy;
+    process.env.HTTP_PROXY = config.proxy;
+}
+
 function decode64(string){
     //return new Buffer(string, 'base64').toString('ascii');
     return new Buffer(string, 'base64').toString('binary');
@@ -287,7 +293,7 @@ function processMessages(allMessages){
         //console.log('./px not found, links file will not be saved');
         return;
     }
-    fs.writeFile('lnks.json', JSON.stringify(_.sortBy(_.uniq(links)), null, '\t'), 'utf8', ()=>{
+    fs.writeFile('./px/lnks.json', JSON.stringify(_.sortBy(_.uniq(links)), null, '\t'), 'utf8', ()=>{
         console.log('--- lnks file written');
     });
 }
