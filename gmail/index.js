@@ -1,6 +1,5 @@
 var passport = require('passport');
-var Gmail = require('node-gmail-api');
-var config = require('../auth/config');
+
 const cheerio = require('cheerio');
 var _ = require('lodash');
 var request = require('request');
@@ -10,8 +9,12 @@ var sop = require('simple-object-path');
 var async = require('async');
 var asyncTree = require('async-tree');
 
+var Gmail = require('node-gmail-api');
+var config = require('../auth/config');
 var accessToken = config.accessToken;
 var gmail = new Gmail(accessToken);
+
+var getMessages = require('./getMessages');
 
 
 if(config.proxy){
@@ -247,7 +250,7 @@ function resolveMessageOrPart(item, messageId){
     return resolved;
 }
 
-function processMessages(allMessages){
+function processMessages(allMessages, callback){
     var partsWithoutAttachment = [];
     console.log(`--- stream ended, allMessages.length = ${allMessages.length} `);
     const resolved = [];
@@ -273,29 +276,30 @@ function processMessages(allMessages){
     //console.log(resolved);
     const flatResolved = _.flattenDeep(resolved);
     //console.log(flatResolved.map((x, i) => `${i}: ${x.name}`));
-    const testWhich = 4;
-    flatResolved[testWhich]((err, data)=>{
-        console.log(flatResolved[testWhich].name);
-        console.log(flatResolved[testWhich].args);
-        if(err){
-            return console.log({err});
-        }
-        console.log(data);
-    });
+    // const testWhich = 4;
+    // flatResolved[testWhich]((err, data)=>{
+    //     console.log(flatResolved[testWhich].name);
+    //     console.log(flatResolved[testWhich].args);
+    //     if(err){
+    //         return console.log({err});
+    //     }
+    //     console.log(data);
+    // });
 
 
-    // get links from all messages
-    console.log(`--- done with filenames, parts without attachments: ${partsWithoutAttachment.length}`);
+    // // get links from all messages
+    // console.log(`--- done with filenames, parts without attachments: ${partsWithoutAttachment.length}`);
 
-    const links = getLinks(partsWithoutAttachment);
-    //console.log(links);
-    if(!fs.existsSync('./px')){
-        //console.log('./px not found, links file will not be saved');
-        return;
-    }
-    fs.writeFile('./px/lnks.json', JSON.stringify(_.sortBy(_.uniq(links)), null, '\t'), 'utf8', ()=>{
-        console.log('--- lnks file written');
-    });
+    // const links = getLinks(partsWithoutAttachment);
+    // //console.log(links);
+    // if(!fs.existsSync('./px')){
+    //     //console.log('./px not found, links file will not be saved');
+    //     return;
+    // }
+    // fs.writeFile('./px/lnks.json', JSON.stringify(_.sortBy(_.uniq(links)), null, '\t'), 'utf8', ()=>{
+    //     console.log('--- lnks file written');
+    // });
+    callback(flatResolved);
 }
 
 function main() {
@@ -303,25 +307,19 @@ function main() {
     //const query = decode64('aW46VHJhc2ggU3BlY2lhbCBPZmZlcg==');
     const query = 'to:note@chimpjuice.com OR to:note@crosshj.com';
 
-    //var s = gmail.messages(query, {format: 'full'});
-    var s = gmail.messages(query, {format: 'full', max: 100});
-    var allMessages = [];
-
-    s.on('data', function (message) {
-        allMessages = allMessages.concat(message);
+    
+    async.waterfall([
+        callback => getMessages({query}, callback),
+        processMessages
+    ], (err, results) => {
+        console.log({err, results});
     });
-
-    s.on('end', function(){
-        processMessages(allMessages)
-    });
-
-    s.on('error', function(err){
-        console.log(
-            err.toString().includes('Invalid Credentials')
-                ? 'Error: Invalid Credentials'
-                : err
-        );
-    });
+    // getMessages({query}, (err, messages) => {
+    //     if(err){
+    //         return console.log({err});
+    //     }
+    //     processMessages(messages);
+    // });
 }
 
 
