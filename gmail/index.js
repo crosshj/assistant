@@ -15,7 +15,7 @@ var accessToken = config.accessToken;
 var gmail = new Gmail(accessToken);
 
 var getMessages = require('./getMessages');
-
+var getParts = require('./getParts');
 
 if(config.proxy){
     process.env.HTTPS_PROXY = config.proxy;
@@ -310,9 +310,11 @@ function main() {
     
     async.waterfall([
         callback => getMessages({query}, callback),
-        processMessages
+        getParts,
     ], (err, results) => {
-        console.log({err, results});
+        //console.log({err, results});
+        const which = 9;
+        console.log(JSON.stringify(results[which], null, '\t'))
     });
     // getMessages({query}, (err, messages) => {
     //     if(err){
