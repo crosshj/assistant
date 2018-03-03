@@ -1,4 +1,5 @@
-function getResults(){
+function getResults(wrapped, callback){
+    //console.log(wrapped[9])
     //console.log(flatResolved.map((x, i) => `${i}: ${x.name}`));
     // const testWhich = 4;
     // flatResolved[testWhich]((err, data)=>{
@@ -9,6 +10,7 @@ function getResults(){
     //     }
     //     console.log(data);
     // });
+    callback(null, wrapped);
 }
 
 module.exports = getResults;
