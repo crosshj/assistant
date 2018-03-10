@@ -27,6 +27,10 @@ async.waterfall([
     if(err){
         return console.log({err});
     }
-    const which = 10;
-    console.log(results[which]((e,r)=>{ console.log({e,r})}))
+    const which = 28;
+    results[which](
+        (e,r) => {
+            console.log({e,r});
+        }
+    );
 });

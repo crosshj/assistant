@@ -33,8 +33,8 @@ function getMessageText(message, messageId){
             console.log(`--- ${filename} written`);
         });
     }
-
-    return { text: bodyText, raw: body, filename, messageId };
+    const raw = body; //.replace(/\\n/g, '\n');
+    return { text: bodyText, raw, filename, messageId };
 }
 
 function getLinks(partsWithoutAttachment){
