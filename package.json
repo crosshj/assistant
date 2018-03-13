@@ -36,6 +36,8 @@
     "nodemon": "^1.14.12"
   },
   "nodemonConfig": {
-    "ignore": ["px/"]
+    "ignore": [
+      "px/"
+    ]
   }
 }

@@ -9,7 +9,7 @@ const googleAuth = require("passport-google-oauth");
 const config = require('./config');
 
 const app = express()
-const port = 3421;
+const port = process.env.PORT || 3421;
 
 /*
 
@@ -79,6 +79,6 @@ app.get( '/google/callback',
 
 app.get('/return', (req, res) => res.json(req.user));
 
-app.get('/', (req, res) => res.send('TODO: root'));
+app.get('/', (req, res) => res.send('TODO: root omg'));
 
 app.listen(port, () => console.log(`auth server running on ${port}`));
