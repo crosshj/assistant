@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-
+const RedisStore = require( 'connect-redis' )( session )
 const passport = require('passport');
 const googleAuth = require("passport-google-oauth");
 
@@ -24,18 +24,6 @@ https://console.developers.google.com/apis/credentials
 
 */
 
-passport.use(new googleAuth.OAuth2Strategy.Strategy({
-    clientID: config.googleApp.clientId,
-    clientSecret: config.googleApp.clientSecret,
-    callbackURL: config.baseUrl + '/google/callback',
-    passReqToCallback   : true
-}
-, function(request, accessToken, refreshToken, profile, done) {
-    //TODO: would first do something special here
-    console.log({ accessToken, refreshToken });
-    const user = Object.assign({}, profile, {accessToken, refreshToken})
-    done(null, user);
-}));
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -45,14 +33,38 @@ passport.deserializeUser(function(user, done) {
     done(null, user);
 });
 
+const passAuthConfig = {
+    clientID: config.googleApp.clientId,
+    clientSecret: config.googleApp.clientSecret,
+    callbackURL: config.baseUrl + '/google/callback',
+    passReqToCallback   : true
+};
+const passAuthCallback = (request, accessToken, refreshToken, profile, done) => {
+    //TODO: would first do something special here
+    console.log({ accessToken, refreshToken });
+    const user = Object.assign({}, profile, {accessToken, refreshToken})
+    done(null, user);
+};
+passport.use(new googleAuth.OAuth2Strategy.Strategy(passAuthConfig, passAuthCallback));
+
+
 //app.use(bodyParser);
 //app.use(cookieParser);
 app.use(session({
     secret: config.sessionSecret,
+    name: 'gAuthSess',
+    store:  new RedisStore({
+		host: 'redis',
+		port: 6379
+	}),
     resave: false,
     saveUninitialized: true,
-    cookie: {}
+    cookie: {
+        path: '/',
+        domain: '.crosshj.com'
+    }
 }));
+
 app.use(passport.initialize());
 app.use(passport.session());
 

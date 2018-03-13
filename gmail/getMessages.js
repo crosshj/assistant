@@ -1,9 +1,10 @@
 var Gmail = require('node-gmail-api');
 var config = require('../auth/config');
 var accessToken = config.accessToken;
-var gmail = new Gmail(accessToken);
+
 
 function getMessages({query}, callback){
+    var gmail = new Gmail(accessToken);
     //var s = gmail.messages(query, {format: 'full'});
     var s = gmail.messages(query, {format: 'full', max: 100});
     var allMessages = [];
