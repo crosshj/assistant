@@ -1,6 +1,6 @@
 var async = require('async');
 var asyncTree = require('async-tree');
-
+var sop = require('simple-object-path');
 var config = require('../auth/config');
 
 var getMessages = require('./getMessages');
@@ -17,22 +17,18 @@ if(config.proxy){
 //const query = decode64('aW46VHJhc2ggU3BlY2lhbCBPZmZlcg==');
 const query = 'to:note@chimpjuice.com OR to:note@crosshj.com';
 
-function getEmail(){
+function getEmail(token, callback){
     async.waterfall([
-        callback => getMessages({query}, callback),
+        callback => getMessages({query, token}, callback),
         getParts,
         getPartsWrapped,
         getResults
     ], (err, results) => {
         if(err){
-            return console.log({err});
+            return callback({ getEmailError: err });
         }
         const which = 28;
-        results[which](
-            (e,r) => {
-                console.log({e,r});
-            }
-        );
+        results[which](callback);
     });
 }
 
@@ -63,9 +59,19 @@ app.use(session({
 }));
 
 app.get('/', (req, res) => {
-    console.log('-- requesting assistant');
-    console.log({ user: req.user });
-    return res.json(req.user || { user: 'not found'});
+    //console.log('-- requesting assistant');
+    //console.log({ user: req.session });
+    //return res.json(req.session || { session: 'not found'});
+    const token = sop(req.session, 'passport/user/accessToken');
+    if(!token){
+        const redirectUrl = 'https://auth.crosshj.com/google';
+        req.session.redirectTo = 'https://assistant.crosshj.com/';
+        return res.redirect(redirectUrl);
+    }
+
+    getEmail(token, (error, response ) => {
+        res.json({ error, response });
+    });
 });
 
 app.listen(port, () => console.log(`assistant server running on ${port}`));

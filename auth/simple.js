@@ -89,7 +89,12 @@ app.get( '/google/callback',
         }
 ));
 
-app.get('/return', (req, res) => res.json(req.user));
+app.get('/return', (req, res) => {
+    if(req.session.redirectTo){
+        return res.redirect(req.session.redirectTo);
+    }
+    res.json({ user: req.user, session: req.session });
+});
 
 app.get('/', (req, res) => res.send('TODO: root omg'));
 
