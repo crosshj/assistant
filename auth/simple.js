@@ -72,11 +72,15 @@ app.use(passport.session());
 app.get('/google', passport.authenticate(
     'google',
     //TODO: dynamic scopes?
-    { scope: [
-        'https://www.googleapis.com/auth/plus.login',
-        'https://www.googleapis.com/auth/plus.profile.emails.read',
-        'https://www.googleapis.com/auth/gmail.readonly'
-    ]}
+    {
+        scope: [
+            'https://www.googleapis.com/auth/plus.login',
+            'https://www.googleapis.com/auth/plus.profile.emails.read',
+            'https://www.googleapis.com/auth/gmail.readonly'
+        ],
+        accessType: 'offline',
+        prompt : 'consent'
+    }
 ));
 
 // google auth callback
@@ -91,7 +95,9 @@ app.get( '/google/callback',
 
 app.get('/return', (req, res) => {
     if(req.session.redirectTo){
-        return res.redirect(req.session.redirectTo);
+        const returnUrl = req.session.redirectTo;
+        delete req.session.redirectTo;
+        return res.redirect(returnUrl);
     }
     res.json({ user: req.user, session: req.session });
 });
