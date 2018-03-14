@@ -54,7 +54,18 @@ app.use(session({
     }
 }));
 
-app.get('/', (req, res) => {
+function ensureToken(req, res, next) {
+    const token = sop(req.session, 'passport/user/accessToken');
+    if(!token){
+        const redirectUrl = 'https://auth.crosshj.com/google';
+        req.session.redirectTo = 'https://assistant.crosshj.com/';
+        return res.redirect(redirectUrl);
+    }
+    res.locals.token = token;
+    next();
+}
+
+app.get('/', ensureToken, (req, res) => {
     // TODO: other reasons why google session fails, should redirect
     // TODO: use many auth methods; redirect to auth chooser (first time?)
     // TODO: dynamic query (and results transform)
@@ -62,13 +73,7 @@ app.get('/', (req, res) => {
     // in:T S O
     //const query = decode64('aW46VHJhc2ggU3BlY2lhbCBPZmZlcg==');
     const query = 'to:note@chimpjuice.com OR to:note@crosshj.com';
-
-    const token = sop(req.session, 'passport/user/accessToken');
-    if(!token){
-        const redirectUrl = 'https://auth.crosshj.com/google';
-        req.session.redirectTo = 'https://assistant.crosshj.com/';
-        return res.redirect(redirectUrl);
-    }
+    const token = res.locals.token;
 
     getEmail(query, token, (error, response ) => {
         if(error){
@@ -76,7 +81,7 @@ app.get('/', (req, res) => {
             req.session.redirectTo = 'https://assistant.crosshj.com/';
             return res.redirect(redirectUrl);
         }
-        res.json(response);
+        res.json({status: 'it worked!'} || response);
     });
 });
 
