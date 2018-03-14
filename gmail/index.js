@@ -13,11 +13,7 @@ if(config.proxy){
     process.env.HTTP_PROXY = config.proxy;
 }
 
-// in:T S O
-//const query = decode64('aW46VHJhc2ggU3BlY2lhbCBPZmZlcg==');
-const query = 'to:note@chimpjuice.com OR to:note@crosshj.com';
-
-function getEmail(token, callback){
+function getEmail(query, token, callback){
     async.waterfall([
         callback => getMessages({query, token}, callback),
         getParts,
@@ -59,9 +55,14 @@ app.use(session({
 }));
 
 app.get('/', (req, res) => {
-    //console.log('-- requesting assistant');
-    //console.log({ user: req.session });
-    //return res.json(req.session || { session: 'not found'});
+    // TODO: other reasons why google session fails, should redirect
+    // TODO: use many auth methods; redirect to auth chooser (first time?)
+    // TODO: dynamic query (and results transform)
+
+    // in:T S O
+    //const query = decode64('aW46VHJhc2ggU3BlY2lhbCBPZmZlcg==');
+    const query = 'to:note@chimpjuice.com OR to:note@crosshj.com';
+
     const token = sop(req.session, 'passport/user/accessToken');
     if(!token){
         const redirectUrl = 'https://auth.crosshj.com/google';
@@ -69,8 +70,13 @@ app.get('/', (req, res) => {
         return res.redirect(redirectUrl);
     }
 
-    getEmail(token, (error, response ) => {
-        res.json({ error, response });
+    getEmail(query, token, (error, response ) => {
+        if(error){
+            const redirectUrl = 'https://auth.crosshj.com/google';
+            req.session.redirectTo = 'https://assistant.crosshj.com/';
+            return res.redirect(redirectUrl);
+        }
+        res.json(response);
     });
 });
 
