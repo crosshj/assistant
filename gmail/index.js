@@ -1,8 +1,9 @@
 var async = require('async');
 var asyncTree = require('async-tree');
 var sop = require('simple-object-path');
-var config = require('../auth/config');
+const formidable = require('express-formidable');
 
+var config = require('../auth/config');
 var getMessages = require('./getMessages');
 var getParts = require('./getParts');
 var getPartsWrapped = require('./getPartsWrapped');
@@ -38,6 +39,8 @@ const RedisStore = require( 'connect-redis' )( session )
 
 const app = express()
 const port = process.env.PORT || 3423;
+
+app.use(formidable());
 
 app.use(session({
     secret: config.sessionSecret,
@@ -84,6 +87,11 @@ app.get('/', ensureToken, (req, res) => {
         res.json({status: 'it worked!'} || response);
     });
 });
+
+app.use('/kee', ensureToken, express.static('kee'));
+app.post('/kee', (req, res) => {
+    res.json(req.fields);
+})
 
 app.listen(port, () => console.log(`assistant server running on ${port}`));
 
