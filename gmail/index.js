@@ -61,12 +61,15 @@ function ensureToken(req, res, next) {
     const token = sop(req.session, 'passport/user/accessToken');
     if(!token){
         const redirectUrl = 'https://auth.crosshj.com/google';
-        req.session.redirectTo = 'https://assistant.crosshj.com/';
+        const redirectTo = 'https://assistant.crosshj.com' + req.originalUrl;
+        req.session.redirectTo = redirectTo;
         return res.redirect(redirectUrl);
     }
     res.locals.token = token;
     next();
 }
+
+app.use('/kee', ensureToken);
 
 app.get('/', ensureToken, (req, res) => {
     // TODO: other reasons why google session fails, should redirect
@@ -81,14 +84,15 @@ app.get('/', ensureToken, (req, res) => {
     getEmail(query, token, (error, response ) => {
         if(error){
             const redirectUrl = 'https://auth.crosshj.com/google';
-            req.session.redirectTo = 'https://assistant.crosshj.com/';
+            var redirectTo = 'https://assistant.crosshj.com' + req.originalUrl;
+            req.session.redirectTo = redirectTo;
             return res.redirect(redirectUrl);
         }
         res.json({status: 'it worked!'} || response);
     });
 });
 
-app.use('/kee', ensureToken, express.static('kee'));
+app.use('/kee', express.static('kee'));
 app.post('/kee', (req, res) => {
     res.json(req.fields);
 })

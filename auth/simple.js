@@ -97,6 +97,7 @@ app.get('/return', (req, res) => {
     if(req.session.redirectTo){
         const returnUrl = req.session.redirectTo;
         delete req.session.redirectTo;
+        console.log(`Return to: ${returnUrl}`);
         return res.redirect(returnUrl);
     }
     res.json({ user: req.user, session: req.session });
