@@ -1,0 +1,42 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kee</title>
+    <link rel="stylesheet" href="css/foundation.css">
+    <link rel="stylesheet" href="css/app.css">
+  </head>
+  <body>
+    <div class="grid-container">
+      <div class="grid-x grid-padding-x">
+          <div class="small-10 medium-8 large-6 cell small-offset-1 medium-offset-2 large-offset-3">
+            <form method="POST" id="form1">
+              <div class="input-group">
+                <input name="something" type="text" placeholder="Enter Something" class="input-group-field" autofocus>
+                <span class="input-group-label button" onclick="javascript:document.getElementById('form1').submit();">SUBMIT</span>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+  </body>
+  <script>
+    // https://stackoverflow.com/questions/2909367/can-you-determine-if-chrome-is-in-incognito-mode-via-a-script
+    function ifIncognito(incog,func){
+      var fs = window.RequestFileSystem || window.webkitRequestFileSystem;
+      if (!fs)  console.log("checking incognito failed");
+      else {
+          if(incog) fs(window.TEMPORARY, 100, ()=>{}, func);
+          else      fs(window.TEMPORARY, 100, func, ()=>{});
+      }
+    }
+    ifIncognito(true,  ()=>{
+      document.querySelector('body').className = "grey-bg";
+    });
+    ifIncognito(false,  ()=>{
+      document.querySelector('body').className = "white-bg";
+    });
+  </script>
+</html>

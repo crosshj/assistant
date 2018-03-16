@@ -1,0 +1,15 @@
+body {
+    margin-top: 50px;
+}
+
+.input-group .button {
+    margin-bottom: 0px;
+}
+
+.grey-bg {
+    background-color: #d4d4d4;
+}
+
+.white-bg {
+    background-color: white;
+}

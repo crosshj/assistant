@@ -1,0 +1,21 @@
+version: "2"
+services:
+  assistant:
+    restart: always
+    image: "node:8-alpine"
+    user: "node"
+    working_dir: /home/harrison/repos/assistant/gmail
+    container_name: assistant
+    environment:
+      - NODE_ENV=production
+      - PORT=3423
+    volumes:
+      - ./:/home/harrison/repos/assistant/gmail
+      - ../auth/config.js:/home/harrison/repos/assistant/auth/config.js
+    ports:
+      - "3423:3423"
+    command: "node index"
+networks:
+  default:
+    external:
+      name: infrastructure_default
