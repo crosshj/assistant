@@ -64,3 +64,4 @@ document.addEventListener('blur', pageVisibleHandler);
 window.addEventListener('blur', pageVisibleHandler);
 window.addEventListener('pagehide', pageVisibleHandler);
 window.addEventListener('unload', pageVisibleHandler);
+window.addEventListener('beforeunload', pageVisibleHandler);
