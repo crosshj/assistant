@@ -13,3 +13,25 @@ body {
 .white-bg {
     background-color: white;
 }
+
+#subbed {
+    min-width: 100%;
+    min-height: 100px;
+    cursor: default;
+}
+
+#subbed:focus {
+    border: 1px solid #8a8a8a;
+}
+
+#cover {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
