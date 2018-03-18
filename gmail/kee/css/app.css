@@ -35,3 +35,8 @@ body {
     align-items: center;
     justify-content: center;
 }
+
+#dropIcon {
+    margin-top: -30%;
+    /* fill: grey !important; */
+}
