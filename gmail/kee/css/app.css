@@ -38,5 +38,9 @@ body {
 
 #dropIcon {
     margin-top: -30%;
-    /* fill: grey !important; */
+    width: 224px;
+}
+
+#dropIcon polygon {
+    fill: #b5b5b5 !important;
 }
