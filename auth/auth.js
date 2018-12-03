@@ -4,7 +4,7 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const RedisStore = require( 'connect-redis' )( session )
 const passport = require('passport');
-
+const path = require('path');
 
 const config = require('./config');
 
@@ -148,6 +148,10 @@ app.get('/return', (req, res) => {
     res.json({ user: req.user, session: req.session });
 });
 
-app.get('/', (req, res) => res.sendFile('static/index.htm'));
+app.get('/', (req, res) =>
+    res.sendFile(
+        path.join(__dirname, 'static/index.htm')
+    )
+);
 
 app.listen(port, () => console.log(`auth server running on ${port}`));
