@@ -148,6 +148,6 @@ app.get('/return', (req, res) => {
     res.json({ user: req.user, session: req.session });
 });
 
-app.get('/', (req, res) => res.send('TODO: root omg'));
+app.get('/', (req, res) => res.sendFile('static/index.htm'));
 
 app.listen(port, () => console.log(`auth server running on ${port}`));
