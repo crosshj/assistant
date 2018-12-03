@@ -11,6 +11,8 @@ const config = require('./config');
 const app = express()
 const port = process.env.PORT || 3421;
 
+app.use(express.static('static'));
+
 /*
 
 example:
@@ -72,6 +74,7 @@ const auth0Callback = function (accessToken, refreshToken, extraParams, profile,
 const auth0Strategy = new auth0Auth(auth0Config, auth0Callback);
 passport.use(auth0Strategy);
 
+// -----------------------------------------------------------------------------
 
 //app.use(bodyParser);
 //app.use(cookieParser);
