@@ -4,7 +4,7 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const RedisStore = require( 'connect-redis' )( session )
 const passport = require('passport');
-const googleAuth = require("passport-google-oauth");
+
 
 const config = require('./config');
 
@@ -28,24 +28,49 @@ https://console.developers.google.com/apis/credentials
 passport.serializeUser(function(user, done) {
     done(null, user);
 });
-  
+
 passport.deserializeUser(function(user, done) {
     done(null, user);
 });
 
-const passAuthConfig = {
+
+// GOOGLE ----------------------------------------------------------------------
+const googleAuth = require("passport-google-oauth");
+
+const googleAuthConfig = {
     clientID: config.googleApp.clientId,
     clientSecret: config.googleApp.clientSecret,
     callbackURL: config.baseUrl + '/google/callback',
     passReqToCallback   : true
 };
-const passAuthCallback = (request, accessToken, refreshToken, profile, done) => {
+const googleAuthCallback = (request, accessToken, refreshToken, profile, done) => {
     //TODO: would first do something special here
     console.log({ accessToken, refreshToken });
     const user = Object.assign({}, profile, {accessToken, refreshToken})
     done(null, user);
 };
-passport.use(new googleAuth.OAuth2Strategy.Strategy(passAuthConfig, passAuthCallback));
+const googleStrategy = new googleAuth.OAuth2Strategy.Strategy(googleAuthConfig, googleAuthCallback);
+passport.use(googleStrategy);
+
+
+// AUTH0 -----------------------------------------------------------------------
+
+var auth0Auth = require('passport-auth0');
+
+const auth0Config = {
+    domain: config.auth0.domain,
+    clientID: config.auth0.clientId,
+    clientSecret: config.auth0.clientSecret,
+    callbackURL: config.baseUrl + '/auth0/callback'
+};
+const auth0Callback = function (accessToken, refreshToken, extraParams, profile, done) {
+    // accessToken is the token to call Auth0 API (not needed in the most cases)
+    // extraParams.id_token has the JSON Web Token
+    // profile has all the information from the user
+    return done(null, profile);
+};
+const auth0Strategy = new auth0Auth(auth0Config, auth0Callback);
+passport.use(auth0Strategy);
 
 
 //app.use(bodyParser);
@@ -84,12 +109,29 @@ app.get('/google', passport.authenticate(
 ));
 
 // google auth callback
-app.get( '/google/callback', 
+app.get( '/google/callback',
     passport.authenticate(
-        'google', 
+        'google',
         {
             failureRedirect: '/login',
             successRedirect: '/return'
+        }
+));
+
+app.get('/auth0',
+  passport.authenticate('auth0', {}),
+//   function (req, res) {
+//     res.redirect("/");
+//   }
+);
+
+app.get( '/auth0/callback',
+    passport.authenticate(
+        'auth0',
+        {
+            failureRedirect: '/login',
+            successRedirect: '/return'
+            //TODO: need to set redirectTo in server session where auth0 is being used
         }
 ));
 
