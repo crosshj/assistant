@@ -4,6 +4,8 @@
   "description": "",
   "main": "simple.js",
   "scripts": {
+    "start": "docker-compose up -d --force-recreate auth",
+    "watch": "docker-compose up --force-recreate auth",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
