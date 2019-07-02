@@ -55,6 +55,8 @@ function tasksListList({} = {}, callback){
 	});
 }
 
+//TODO: add lists CRUD
+
 function tasksList({ list = '@default' } = {}, callback){
 	const opts = {
 		url: base + `/lists/${list}/tasks`,
