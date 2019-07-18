@@ -1,9 +1,15 @@
-const processor = () => (_queue, update) => {
+const processor = ({
+    fetchers
+}) => (_queue, update) => {
     const genericHandler = (protocol, location, _update) => {
         const strippedLoc = location.replace(protocol + ':', '');
         if(!location.startsWith(protocol)){
             //console.log(`NOT FOUND: ${protocol} - ${strippedLoc}`);
             return false;
+        }
+        if(fetchers[protocol]){
+            // TODO: should be passed a callback which converts then calls _update
+            return () => fetchers[protocol](protocol, strippedLoc, _update);
         }
         return () => _update(undefined, { protocol, location: strippedLoc });
     };

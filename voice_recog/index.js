@@ -1,5 +1,5 @@
 const recognize = require('./processor')({
-    fetchers: [],
+    fetchers: require('./fetchers'),
     converters: []
 });
 
@@ -18,5 +18,13 @@ recognize(queue, (err, data) => {
         console.log({ err, data });
         return;
     }
-    console.log(`\n${data.protocol} handler:\n   ${data.location}`)
+    //console.log(`\n${data.protocol} handler:\n   ${data.location}`);
+    const { protocol, location, buffer } = data;
+    if(buffer){
+        console.log(JSON.stringify({
+            handler: protocol,
+            location: location,
+            buffer: buffer.slice(0, 20).toString() + '...'
+        }, null, '   '));
+    }
 });
