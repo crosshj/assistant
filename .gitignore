@@ -60,3 +60,6 @@ typings/
 auth/config.js
 
 px/*
+
+voice_recog/pocketsphinx/
+voice_recog/sphinxbase/
