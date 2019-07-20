@@ -63,3 +63,8 @@ px/*
 
 voice_recog/pocketsphinx/
 voice_recog/sphinxbase/
+voice_recog/converters/sphinx/training/en-70k-0.2.lm
+voice_recog/converters/sphinx/training/bw
+voice_recog/converters/sphinx/training/map_adapt
+voice_recog/converters/sphinx/training/mk_s2sendump
+voice_recog/converters/sphinx/training/mllr_solve
