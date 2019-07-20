@@ -68,3 +68,6 @@ voice_recog/converters/sphinx/training/bw
 voice_recog/converters/sphinx/training/map_adapt
 voice_recog/converters/sphinx/training/mk_s2sendump
 voice_recog/converters/sphinx/training/mllr_solve
+voice_recog/converters/sphinx/sphinxtrain/
+voice_recog/converters/sphinx/pocketsphinx/
+voice_recog/converters/sphinx/sphinxbase/
