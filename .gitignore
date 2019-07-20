@@ -71,3 +71,5 @@ voice_recog/converters/sphinx/training/mllr_solve
 voice_recog/converters/sphinx/sphinxtrain/
 voice_recog/converters/sphinx/pocketsphinx/
 voice_recog/converters/sphinx/sphinxbase/
+voice_recog/converters/sphinx/training/tmat_counts
+voice_recog/converters/sphinx/training/gauden_counts

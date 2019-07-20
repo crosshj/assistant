@@ -4,7 +4,7 @@ const recognize = require('./processor')({
 });
 
 const queue = [
-		//'local-file:./converters/sphinx/training/arctic_0001.wav',
+		// 'local-file:./converters/sphinx/training/arctic_0001.wav',
 		// 'local-file:./converters/sphinx/training/arctic_0002.wav',
 		// 'local-file:./converters/sphinx/training/arctic_0003.wav',
 		// 'local-file:./converters/sphinx/training/arctic_0004.wav',
@@ -28,22 +28,22 @@ const queue = [
 
 		// Shaw, those twelve beige hooks are joined if I patch a young,
 		// gooey mouth.
-		'local-file:./recordings/shaw-mouth.wav',
+		//'local-file:./converters/sphinx/training/arctic_shaw-mouth.wav',
 
 		// Are those shy Eurasian footwear, cowboy chaps,
 		// or jolly earthmoving headgear?
-		'local-file:./recordings/shy-footwear.wav',
+		//'local-file:./converters/sphinx/training/arctic_shy-footwear.wav',
 
 		// With tenure, Suzie’d have all the more leisure for yachting,
 		// but her publications are no good.
-		'local-file:./recordings/suzie-yacht.wav',
+		//'local-file:./converters/sphinx/training/arctic_suzie-yacht.wav',
 
 		// The beige hue on the waters of the loch impressed all,
 		// including the French queen, before she heard that symphony
 		// again, just as young Arthur wanted.
-		'local-file:./recordings/symphony-again.wav',
+		//'local-file:./converters/sphinx/training/arctic_symphony-again.wav',
 
-		//'local-file:./recordings/sample.wav',
+		'local-file:./recordings/sample.wav',
 
     'local-folder:./',
     'network-file:\\\\DISKSTATION210J\\msi-wind\\[]_AUDIO_RECORDINGS\\141215_0126\\2014-06-04_20-09-05.wav',
