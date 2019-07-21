@@ -61,15 +61,11 @@ auth/config.js
 
 px/*
 
-voice_recog/pocketsphinx/
-voice_recog/sphinxbase/
+voice_recog/converters/sphinx/training/en-us.lm.bin
 voice_recog/converters/sphinx/training/en-70k-0.2.lm
-voice_recog/converters/sphinx/training/bw
-voice_recog/converters/sphinx/training/map_adapt
-voice_recog/converters/sphinx/training/mk_s2sendump
-voice_recog/converters/sphinx/training/mllr_solve
+*.mfc
+voice_recog/converters/sphinx/training/bin/*
 voice_recog/converters/sphinx/sphinxtrain/
 voice_recog/converters/sphinx/pocketsphinx/
 voice_recog/converters/sphinx/sphinxbase/
-voice_recog/converters/sphinx/training/tmat_counts
-voice_recog/converters/sphinx/training/gauden_counts
+voice_recog/converters/sphinx/training/accum/*

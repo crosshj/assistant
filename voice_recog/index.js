@@ -4,44 +4,44 @@ const recognize = require('./processor')({
 });
 
 const queue = [
-		// 'local-file:./converters/sphinx/training/arctic_0001.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0002.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0003.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0004.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0005.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0006.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0007.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0008.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0009.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0010.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0011.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0012.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0013.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0014.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0015.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0016.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0017.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0018.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0019.wav',
-		// 'local-file:./converters/sphinx/training/arctic_0020.wav',
+		'local-file:./converters/sphinx/training/arctic_0001.wav',
+		'local-file:./converters/sphinx/training/arctic_0002.wav',
+		'local-file:./converters/sphinx/training/arctic_0003.wav',
+		'local-file:./converters/sphinx/training/arctic_0004.wav',
+		'local-file:./converters/sphinx/training/arctic_0005.wav',
+		'local-file:./converters/sphinx/training/arctic_0006.wav',
+		'local-file:./converters/sphinx/training/arctic_0007.wav',
+		'local-file:./converters/sphinx/training/arctic_0008.wav',
+		'local-file:./converters/sphinx/training/arctic_0009.wav',
+		'local-file:./converters/sphinx/training/arctic_0010.wav',
+		'local-file:./converters/sphinx/training/arctic_0011.wav',
+		'local-file:./converters/sphinx/training/arctic_0012.wav',
+		'local-file:./converters/sphinx/training/arctic_0013.wav',
+		'local-file:./converters/sphinx/training/arctic_0014.wav',
+		'local-file:./converters/sphinx/training/arctic_0015.wav',
+		'local-file:./converters/sphinx/training/arctic_0016.wav',
+		'local-file:./converters/sphinx/training/arctic_0017.wav',
+		'local-file:./converters/sphinx/training/arctic_0018.wav',
+		'local-file:./converters/sphinx/training/arctic_0019.wav',
+		'local-file:./converters/sphinx/training/arctic_0020.wav',
 
 
 		// Shaw, those twelve beige hooks are joined if I patch a young,
 		// gooey mouth.
-		//'local-file:./converters/sphinx/training/arctic_shaw-mouth.wav',
+		'local-file:./converters/sphinx/training/arctic_shaw-mouth.wav',
 
 		// Are those shy Eurasian footwear, cowboy chaps,
 		// or jolly earthmoving headgear?
-		//'local-file:./converters/sphinx/training/arctic_shy-footwear.wav',
+		'local-file:./converters/sphinx/training/arctic_shy-footwear.wav',
 
 		// With tenure, Suzie’d have all the more leisure for yachting,
 		// but her publications are no good.
-		//'local-file:./converters/sphinx/training/arctic_suzie-yacht.wav',
+		'local-file:./converters/sphinx/training/arctic_suzie-yacht.wav',
 
 		// The beige hue on the waters of the loch impressed all,
 		// including the French queen, before she heard that symphony
 		// again, just as young Arthur wanted.
-		//'local-file:./converters/sphinx/training/arctic_symphony-again.wav',
+		'local-file:./converters/sphinx/training/arctic_symphony-again.wav',
 
 		'local-file:./recordings/sample.wav',
 

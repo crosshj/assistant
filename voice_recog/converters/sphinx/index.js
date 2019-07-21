@@ -17,14 +17,14 @@ const models = {
 		config.setString("-hmm", modeldir + "en-us-adapt");
 		config.setString("-dict", modeldir + "cmudict-en-us.dict");
 		config.setString("-lm", modeldir + "en-us.lm.bin");
-		config.setString("-mllr", modeldir + "mllr_matrix");
+		config.setString("-mllr", modeldir + "mllr/mllr_matrix");
 	},
 	slowCustom: () => {
 		modeldir = __dirname + "/training/";
 		config.setString("-hmm", modeldir + "en-us-adapt");
 		config.setString("-dict", modeldir + "cmudict-en-us.dict");
 		config.setString("-lm", modeldir + "en-70k-0.2.lm");
-		config.setString("-mllr", modeldir + "mllr_matrix");
+		config.setString("-mllr", modeldir + "mllr/mllr_matrix");
 	}
 };
 
