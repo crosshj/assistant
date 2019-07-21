@@ -4,6 +4,9 @@ const recognize = require('./processor')({
 });
 
 const queue = [
+		'local-file:./recordings/2005-08-08-1432.wav',
+		'local-file:./recordings/sample.wav',
+
 		'local-file:./converters/sphinx/training/arctic_0001.wav',
 		'local-file:./converters/sphinx/training/arctic_0002.wav',
 		'local-file:./converters/sphinx/training/arctic_0003.wav',
@@ -25,7 +28,6 @@ const queue = [
 		'local-file:./converters/sphinx/training/arctic_0019.wav',
 		'local-file:./converters/sphinx/training/arctic_0020.wav',
 
-
 		// Shaw, those twelve beige hooks are joined if I patch a young,
 		// gooey mouth.
 		'local-file:./converters/sphinx/training/arctic_shaw-mouth.wav',
@@ -42,8 +44,6 @@ const queue = [
 		// including the French queen, before she heard that symphony
 		// again, just as young Arthur wanted.
 		'local-file:./converters/sphinx/training/arctic_symphony-again.wav',
-
-		'local-file:./recordings/sample.wav',
 
     'local-folder:./',
     'network-file:\\\\DISKSTATION210J\\msi-wind\\[]_AUDIO_RECORDINGS\\141215_0126\\2014-06-04_20-09-05.wav',
