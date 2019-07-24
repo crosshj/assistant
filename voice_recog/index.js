@@ -4,6 +4,8 @@ const recognize = require('./processor')({
 });
 
 const queue = [
+		'local-file:./converters/sphinx/training/arctic_0001.wav',
+/*
 		'local-file:./recordings/2005-08-08-1432.wav',
 		'local-file:./recordings/sample.wav',
 
@@ -44,7 +46,7 @@ const queue = [
 		// including the French queen, before she heard that symphony
 		// again, just as young Arthur wanted.
 		'local-file:./converters/sphinx/training/arctic_symphony-again.wav',
-
+*/
     'local-folder:./',
     'network-file:\\\\DISKSTATION210J\\msi-wind\\[]_AUDIO_RECORDINGS\\141215_0126\\2014-06-04_20-09-05.wav',
     'network-folder:\\\\DISKSTATION210J\\msi-wind\\[]_AUDIO_RECORDINGS\\141215_0126',

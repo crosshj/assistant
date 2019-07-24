@@ -28,3 +28,10 @@ https://linguistics.stackexchange.com/questions/9315/does-sample-text-exist-that
 (see shell scripts in ./converters/sphinx/training)
 
 
+### subtitles / results mapped to original audio with timing
+
+get timing in node-pocketsphinx - https://github.com/cmusphinx/node-pocketsphinx/blob/master/demo/test.js#L21
+
+not self-contained solution (would prefer video file gets rendered) - https://superuser.com/questions/1199846/play-audio-only-file-with-subtitles-possibly-use-some-still-image-as-stub
+
+https://matroska.org/technical/specs/subtitles/srt.html

@@ -17,7 +17,6 @@ const models = {
 		config.setString("-hmm", modeldir + "en-us-adapt");
 		config.setString("-dict", modeldir + "cmudict-en-us.dict");
 		config.setString("-lm", modeldir + "en-us.lm.bin");
-		config.setString("-mllr", modeldir + "mllr/mllr_matrix");
 	},
 	slowCustom: () => {
 		modeldir = __dirname + "/training/";
@@ -43,5 +42,18 @@ module.exports = (buffer, callback) => {
 	decoder.processRaw(buffer, false, false);
 	decoder.endUtt();
 	const { prob, bestScore, hypstr } = decoder.hyp();
+
+	var it = decoder.seg().iter()
+	while ((seg = it.next()) != null) {
+			console.log(`${(seg.startFrame/100).toFixed(2)}s` /*, `${seg.endFrame/100}s`*/, seg.word);
+	}
+	console.log('\n');
+
+	// possible other solutions
+	// it = decoder.nbest().iter()
+	// for (i = 0; i < 10 && ((hyp = it.next()) != null); i++) {
+	// 	console.log(hyp.hypstr)
+	// }
+
 	callback(undefined, { prob, bestScore, hypstr });
 };
