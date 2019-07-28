@@ -1,0 +1,40 @@
+
+sudo apt install cmake swig pkg-config autoconf libtool automake bison
+
+sudo apt-get install python-dev
+
+cd voice_recog/converters/sphinx
+git clone https://github.com/cmusphinx/sphinxbase.git
+ cd sphinxbase/
+ ./autogen.sh
+ ./configure
+ make
+ make check
+ sudo make install
+ make clean
+ cd ..
+
+
+git clone https://github.com/cmusphinx/pocketsphinx.git
+cd pocketsphinx/
+./autogen.sh
+./configure
+make clean all
+# https://github.com/jasperproject/jasper-client/issues/62
+# why this next step? (it makes step after next work)
+sudo ldconfig
+make check
+sudo make install
+make clean
+cd ..
+
+pocketsphinx_continuous -infile ./pocketsphinx/test/data/goforward.raw
+
+# in case using gcc older than v6
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt update
+sudo apt install gcc-6
+sudo apt install g++-6
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 60 --slave /usr/bin/g++ g++ /usr/bin/g++-6
+
+npm install #(pocketsphinx)

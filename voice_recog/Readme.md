@@ -1,7 +1,7 @@
 ### Install node-pocketsphinx
 
-refer to node-pocketsphinx readme and history.txt
-installation from history.txt was done on Mac
+refer to node-pocketsphinx readme and history.install.txt (converters/sphinx)
+installation from history.install.txt was done on Mac
 
 
 ### Cleanup / adjust audio files for transcription
