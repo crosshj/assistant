@@ -15,6 +15,7 @@
     "nodemon": "^1.19.1"
   },
   "dependencies": {
+    "cmake-js": "5.3.1",
     "pocketsphinx": "5.0.7"
   }
 }
