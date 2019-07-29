@@ -18,9 +18,14 @@ ffmpeg -i infile.ext -codec:v copy -af pan="mono: c0=FL" outfile.ext
 ### tuning results from pocketsphinx
 
 https://cmusphinx.github.io/wiki/tutorialtuning/
+
+# accoutsic model
 https://cmusphinx.github.io/wiki/tutorialadapt/
 http://clagnut.com/blog/2380/#English_phonetic_pangrams
 https://linguistics.stackexchange.com/questions/9315/does-sample-text-exist-that-includes-most-english-sounds-represented-by-the-inte
+
+# language model
+https://cmusphinx.github.io/wiki/tutoriallm/
 
 
 ### https://cmusphinx.github.io/wiki/tutorialadapt/
