@@ -40,3 +40,6 @@ get timing in node-pocketsphinx - https://github.com/cmusphinx/node-pocketsphinx
 not self-contained solution (would prefer video file gets rendered) - https://superuser.com/questions/1199846/play-audio-only-file-with-subtitles-possibly-use-some-still-image-as-stub
 
 https://matroska.org/technical/specs/subtitles/srt.html
+
+### phoneme recognition    
+https://cmusphinx.github.io/wiki/phonemerecognition/
