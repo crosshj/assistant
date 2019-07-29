@@ -6,12 +6,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch": "nodemon index.js",
+    "test.server": "nodemon server.example.js",
     "test.sphinx": "nodemon ./converters/sphinx/example.js",
     "test.google": "nodemon ./converters/google/example.js"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "express": "4.17.1",
+    "express-fileupload": "1.1.5",
     "nodemon": "^1.19.1"
   },
   "dependencies": {

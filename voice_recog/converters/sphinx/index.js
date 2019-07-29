@@ -32,7 +32,7 @@ const modelToUse = 'slowCustom';
 (models[modelToUse] || models['standard'])();
 
 console.log(`--- converting using ${modelToUse} model`);
-config.setString("-logfn", "/dev/null");
+//config.setString("-logfn", "/dev/null");
 
 var decoder = new ps.Decoder(config);
 
