@@ -20,5 +20,8 @@
   "dependencies": {
     "cmake-js": "5.3.1",
     "pocketsphinx": "5.0.7"
+  },
+  "nodemonConfig": {
+    "ignore": ["tmp/*"]
   }
 }
