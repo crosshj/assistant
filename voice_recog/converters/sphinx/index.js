@@ -43,17 +43,21 @@ module.exports = (buffer, callback) => {
 	decoder.endUtt();
 	const { prob, bestScore, hypstr } = decoder.hyp();
 
-	var it = decoder.seg().iter()
+	var it = decoder.seg().iter();
+	var segments = [];
 	while ((seg = it.next()) != null) {
-			console.log(`${(seg.startFrame/100).toFixed(2)}s` /*, `${seg.endFrame/100}s`*/, seg.word);
+		segments.push(seg);
+		console.log(`${(seg.startFrame/100).toFixed(2)}s` /*, `${seg.endFrame/100}s`*/, seg.word);
 	}
 	console.log('\n');
 
 	// possible other solutions
-	// it = decoder.nbest().iter()
-	// for (i = 0; i < 10 && ((hyp = it.next()) != null); i++) {
-	// 	console.log(hyp.hypstr)
-	// }
+	it = decoder.nbest().iter()
+	var nbest = [];
+	for (i = 0; i < 10 && ((hyp = it.next()) != null); i++) {
+		nbest.push(hyp);
+		//console.log(hyp.hypstr)
+	}
 
-	callback(undefined, { prob, bestScore, hypstr });
+	callback(undefined, { prob, bestScore, hypstr, segments, nbest });
 };

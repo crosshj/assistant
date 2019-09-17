@@ -11,6 +11,10 @@ const config = require('./config');
 const app = express()
 const port = process.env.PORT || 3421;
 
+//TODO: should this be enabled only for specific domains?
+const cors = require('cors');
+app.use(cors());
+
 app.use(express.static('static'));
 
 /*

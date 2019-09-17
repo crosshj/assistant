@@ -3,12 +3,13 @@ const recognize = require('./processor')({
 	converters: require('./converters')
 });
 
+const fs = require('fs');
 const express = require('express');
 const fileUpload = require('express-fileupload');
 // const bodyParser = require('body-parser');
 // const cookieParser = require('cookie-parser');
 
-const app = express()
+const app = express();
 const port = process.env.PORT || 3423;
 
 function timer(start) {
@@ -92,21 +93,29 @@ app.post('/translate', (req, res, next) => {
 					return slashSplit[slashSplit.length -1].replace('.wav', '');
 				})();
 				console.log(`${/*Converter output:*/''}${filename}:\n${hypstr}\n`);
-				console.log(`Took ${timer(translateTimer)}ms`)
+				console.log(`Took ${timer(translateTimer)}ms\n`)
 			}
+			const translateFileName = `./tmp/${sampleFile.name}.translate.json`;
+			const translateFileContents = JSON.stringify(Object.assign({},
+				data,
+				{ time: timer(translateTimer) }
+			), null, 2);
+			fs.writeFile(translateFileName, translateFileContents, (err) => {
+				if (err) throw err;
+				console.log(`${translateFileName} written to file`);
+			});
 		});
   });
 });
 
 app.get('/translate/:token', (req, res) => {
-	const result = {
-		status: 'not implemented',
-		translation: 'not implemented'
-	};
-	res.json(result);
+	const translateFileName = `./tmp/${req.params.token}.translate.json`;
+	fs.readFile(translateFileName, 'utf8', (err, result) => {
+		res.json(err || JSON.parse(result));
+	});
 });
 
 app.listen(port, () => {
-	console.log(`\ntest voice recognition server running on ${port}\n`);
+	console.log(`\ntest voice recognition server running at http://localhost:${port}\n`);
 });
 
