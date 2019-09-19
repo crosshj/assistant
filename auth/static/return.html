@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <title>Popup Auth Done Son</title>
+</head>
+<style>
+    html {
+        font-family: sans-serif;
+    }
+
+    label {
+        font-weight: bold;
+    }
+</style>
+
+<body>
+    <div>Auth Complete, Close this window.  Do we need to say this?</div>
+    <script type="text/javascript">
+        const authData = {
+            username: 'TODO: get this from auth flow... ?',
+            other: 'or just make hosting page refresh'
+        };
+        window.opener.postMessage(authData, "*");
+        window.close();
+    </script>
+
+</body>
+
+</html>

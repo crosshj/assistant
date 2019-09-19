@@ -1,6 +1,6 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
+// const bodyParser = require('body-parser');
+// const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session)
 const passport = require('passport');
@@ -8,13 +8,24 @@ const path = require('path');
 
 const config = require('./config');
 
+const safe = fn => {
+  try {
+    return fn();
+  } catch (error) {
+    return;
+  }
+};
+const clone = obj => JSON.parse(JSON.stringify(obj));
+
 const app = express()
 const port = process.env.PORT || 3421;
 
 //TODO: should this be enabled only for specific domains?
+//TODO: don't need if not redirecting?
 const cors = require('cors');
 app.use(cors());
 
+// TODO: use express serve static instead
 app.use(express.static('static'));
 
 /*
@@ -143,14 +154,34 @@ app.get('/auth0/callback',
     }
   ));
 
+// app.get('/return', (req, res) => {
+//   if (req.session.redirectTo) {
+//     const returnUrl = req.session.redirectTo;
+//     delete req.session.redirectTo;
+//     console.log(`Return to: ${returnUrl}`);
+//     return res.redirect(returnUrl);
+//   }
+//   res.json({ user: req.user, session: req.session });
+// });
+
 app.get('/return', (req, res) => {
-  if (req.session.redirectTo) {
-    const returnUrl = req.session.redirectTo;
+  //TODO: returnUrl may not be needed any more
+  const returnUrl = safe(() => {
+    const returnUrl = clone(req.session.redirectTo);
     delete req.session.redirectTo;
+    return returnUrl;
+  });
+  if(returnUrl){
     console.log(`Return to: ${returnUrl}`);
-    return res.redirect(returnUrl);
   }
-  res.json({ user: req.user, session: req.session });
+
+  safe(() => {
+    res.cookie('username', req.user.username, { maxAge: 900000, httpOnly:false });
+  });
+
+  res.sendFile(
+    path.join(__dirname, 'static/return.html')
+  );
 });
 
 app.get('/', (req, res) =>
