@@ -21,12 +21,11 @@
 <body>
     <div>Auth Complete, Close this window. Do we need to say this?</div>
     <script type="text/javascript">
-        const authData = {
-            username: 'TODO: get this from auth flow... ?',
-            other: 'or just make hosting page refresh'
+        const authMessage = {
+            message: 'authorization complete'
         };
         if (window.opener) {
-            window.opener.postMessage(authData, "*");
+            window.opener.postMessage(authMessage, "*");
             window.close();
         }
     </script>
