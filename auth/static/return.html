@@ -19,14 +19,16 @@
 </style>
 
 <body>
-    <div>Auth Complete, Close this window.  Do we need to say this?</div>
+    <div>Auth Complete, Close this window. Do we need to say this?</div>
     <script type="text/javascript">
         const authData = {
             username: 'TODO: get this from auth flow... ?',
             other: 'or just make hosting page refresh'
         };
-        window.opener.postMessage(authData, "*");
-        window.close();
+        if (window.opener) {
+            window.opener.postMessage(authData, "*");
+            window.close();
+        }
     </script>
 
 </body>
