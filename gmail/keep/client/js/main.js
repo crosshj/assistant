@@ -71,7 +71,7 @@ function formSubmitHandler(event){
         .then(r => r.json())
         .then((j) => {
             subbedElement.classList.remove('error');
-            subbedElement.value = JSON.stringify(j);
+            subbedElement.value = JSON.stringify(j, null, '  ');
         })
         .catch((err)=>{
             subbedElement.value = err;
