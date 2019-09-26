@@ -15,15 +15,15 @@ function keepRoutes(app){
             res.end(res.writeHead(401, 'not acuthorized'));
             return;
         }
-        //res.json(req.fields);
-        res.redirect(
-        '/kee?' + Object.keys(req.fields)
-            .reduce((all, x)=> {
-                all.push(`${x}=${req.fields[x]}`);
-                return all;
-            }, [])
-            .join('&')
-        )
+        res.json(req.fields);
+        // res.redirect(
+        // '/kee?' + Object.keys(req.fields)
+        //     .reduce((all, x)=> {
+        //         all.push(`${x}=${req.fields[x]}`);
+        //         return all;
+        //     }, [])
+        //     .join('&')
+        // )
     });
 }
 

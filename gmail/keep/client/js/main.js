@@ -76,6 +76,8 @@ function formSubmitHandler(event){
         .catch((err)=>{
             subbedElement.value = err;
             subbedElement.classList.add('error');
+            //TODO: a button for popup login window
+            //TODO: once logged in, retry submit
         });
     //formElement.submit();
     event.preventDefault();
