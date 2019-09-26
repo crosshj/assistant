@@ -63,7 +63,11 @@ function ensureToken(req, res, next) {
     if(!token){
         const redirectUrl = 'https://auth.crosshj.com/google';
         const redirectTo = 'https://assistant.crosshj.com' + req.originalUrl;
-        req.session.redirectTo = redirectTo;
+        req.session && (req.session.redirectTo = redirectTo);
+        if(res.noRedirect){
+            next();
+            return;
+        }
         return res.redirect(redirectUrl);
     }
     res.locals.token = token;
@@ -71,6 +75,7 @@ function ensureToken(req, res, next) {
 }
 
 
+app.protect = ensureToken;
 
 app.get('/', ensureToken, (req, res) => {
     // TODO: other reasons why google session fails, should redirect
@@ -93,22 +98,8 @@ app.get('/', ensureToken, (req, res) => {
     });
 });
 
-app.use('/kee/css', express.static('kee/css'));
-app.use('/kee', ensureToken);
-app.use('/kee', express.static('kee', { maxAge: 0 }));
+const keepRoutes = require('./keep/routes');
+keepRoutes(app);
 
 
-app.post('/kee', (req, res) => {
-    //res.json(req.fields);
-    res.redirect(
-    '/kee?' + Object.keys(req.fields)
-        .reduce((all, x)=> {
-            all.push(`${x}=${req.fields[x]}`);
-            return all;
-        }, [])
-        .join('&')
-    )
-});
-
-app.listen(port, () => console.log(`assistant server running on ${port}`));
-
+app.listen(port, () => console.log(`assistant server running at http://localhost:${port}`));
