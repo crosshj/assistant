@@ -2,7 +2,7 @@ var async = require('async');
 var asyncTree = require('async-tree');
 var sop = require('simple-object-path');
 const formidable = require('express-formidable');
-
+const request = require('request');
 var config = require('../auth/config');
 var getMessages = require('./getMessages');
 var getParts = require('./getParts');
@@ -73,6 +73,23 @@ function ensureToken(req, res, next) {
     res.locals.token = token;
     next();
 }
+
+//TODO: make web UI fit with backend somehow
+app.get('/*', (req, res, next) => {
+	//console.log('\n', req.path, '\n')
+	const pathToRequest = req.path.includes('/shared/')
+		? '/..' + req.path
+		: req.path;
+	var newurl = 'https://crosshj.com/experiments/assist' + pathToRequest;
+	request(newurl)
+	.on('response', (res)	=> {
+		//console.log(res.headers);
+	})
+	.on('error', (err) => {
+		//console.log('err')
+	})
+	.pipe(res);
+});
 
 
 app.protect = ensureToken;
