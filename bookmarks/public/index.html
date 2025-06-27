@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookmarks - Read Later</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-bookmark"></i> Bookmarks</h1>
+                <div class="header-actions">
+                    <button id="addBookmarkBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Bookmark
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Search and Filters -->
+        <div class="filters">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search bookmarks...">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="filter-options">
+                <select id="tagFilter">
+                    <option value="">All Tags</option>
+                </select>
+                <select id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="0">Unread</option>
+                    <option value="1">Read</option>
+                </select>
+                <select id="favoriteFilter">
+                    <option value="">All</option>
+                    <option value="1">Favorites Only</option>
+                </select>
+                <select id="sortBy">
+                    <option value="created_at">Date Added</option>
+                    <option value="title">Title</option>
+                    <option value="updated_at">Last Modified</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Add Bookmark Modal -->
+        <div id="addBookmarkModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Add New Bookmark</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="addBookmarkForm">
+                        <div class="form-group">
+                            <label for="urlInput">URL:</label>
+                            <input type="url" id="urlInput" required placeholder="https://example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="tagsInput">Tags (comma-separated):</label>
+                            <input type="text" id="tagsInput" placeholder="tech, programming, tutorial">
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Add Bookmark</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Bookmark Modal -->
+        <div id="editBookmarkModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Edit Bookmark</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="editBookmarkForm">
+                        <input type="hidden" id="editId">
+                        <div class="form-group">
+                            <label for="editTitle">Title:</label>
+                            <input type="text" id="editTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDescription">Description:</label>
+                            <textarea id="editDescription" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editTags">Tags:</label>
+                            <input type="text" id="editTags" placeholder="tech, programming, tutorial">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="editReadStatus"> Mark as read
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="editFavorite"> Mark as favorite
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="editCancelBtn">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookmarks Grid -->
+        <main class="main-content">
+            <div id="bookmarksGrid" class="bookmarks-grid">
+                <!-- Bookmarks will be loaded here -->
+            </div>
+            <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+            </div>
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <i class="fas fa-bookmark"></i>
+                <h3>No bookmarks yet</h3>
+                <p>Start by adding your first bookmark!</p>
+                <button class="btn btn-primary" onclick="showAddModal()">Add Bookmark</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html> 

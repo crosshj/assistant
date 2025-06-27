@@ -1,0 +1,25 @@
+{
+  "name": "bookmarks",
+  "version": "1.0.0",
+  "description": "Pocket-like bookmarking system for saving web pages to read later",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "watch": "cross-env VERCEL_TELEMETRY_CONSENT=0 vercel dev --listen 4422",
+    "deploy": "cross-env VERCEL_TELEMETRY_CONSENT=0 vercel --prod",
+    "build": "echo 'No build step needed'"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "moment": "^2.29.4",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "vercel": "^44.2.7"
+  }
+}
