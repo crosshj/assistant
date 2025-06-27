@@ -12,15 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Vercel CLI
-        run: npm install -g vercel
-
       - name: Install Dependencies
         run: npm install
         working-directory: ./bookmarks
 
       - name: Pull Vercel Project Settings
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_DEPLOY_TOKEN }}
+        run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_DEPLOY_TOKEN }}
         working-directory: ./bookmarks
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
