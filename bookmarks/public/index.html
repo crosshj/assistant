@@ -8,11 +8,18 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
+    <div class="main-wrapper">
         <header class="header">
             <div class="header-content">
                 <h1><i class="fas fa-bookmark"></i> Bookmarks</h1>
+                <nav class="header-nav">
+                    <ul>
+                        <li class="nav-item active"><i class="fas fa-home"></i> Home</li>
+                        <li class="nav-item"><i class="fas fa-bookmark"></i> Saves</li>
+                        <li class="nav-item"><i class="fas fa-compass"></i> Discover</li>
+                        <li class="nav-item"><i class="fas fa-layer-group"></i> Collections</li>
+                    </ul>
+                </nav>
                 <div class="header-actions">
                     <button id="addBookmarkBtn" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Add Bookmark
@@ -20,35 +27,51 @@
                 </div>
             </div>
         </header>
-
-        <!-- Search and Filters -->
-        <div class="filters">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search bookmarks...">
-                <i class="fas fa-search"></i>
-            </div>
-            <div class="filter-options">
-                <select id="tagFilter">
-                    <option value="">All Tags</option>
-                </select>
-                <select id="statusFilter">
-                    <option value="">All Status</option>
-                    <option value="0">Unread</option>
-                    <option value="1">Read</option>
-                </select>
-                <select id="favoriteFilter">
-                    <option value="">All</option>
-                    <option value="1">Favorites Only</option>
-                </select>
-                <select id="sortBy">
-                    <option value="created_at">Date Added</option>
-                    <option value="title">Title</option>
-                    <option value="updated_at">Last Modified</option>
-                </select>
-            </div>
+        <div class="main-content-row">
+            <aside class="sidebar">
+                <div class="sidebar-section-label">Filters</div>
+                <div class="filters sidebar-filters">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search bookmarks...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="filter-options">
+                        <select id="tagFilter">
+                            <option value="">All Tags</option>
+                        </select>
+                        <select id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="0">Unread</option>
+                            <option value="1">Read</option>
+                        </select>
+                        <select id="favoriteFilter">
+                            <option value="">All</option>
+                            <option value="1">Favorites Only</option>
+                        </select>
+                        <select id="sortBy">
+                            <option value="created_at">Date Added</option>
+                            <option value="title">Title</option>
+                            <option value="updated_at">Last Modified</option>
+                        </select>
+                    </div>
+                </div>
+            </aside>
+            <main class="main-content">
+                <div id="bookmarksGrid" class="bookmarks-grid">
+                    <!-- Bookmarks will be loaded here -->
+                </div>
+                <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <i class="fas fa-bookmark"></i>
+                    <h3>No bookmarks yet</h3>
+                    <p>Start by adding your first bookmark!</p>
+                    <button class="btn btn-primary" onclick="showAddModal()">Add Bookmark</button>
+                </div>
+            </main>
         </div>
-
-        <!-- Add Bookmark Modal -->
+        <!-- Modals (unchanged) -->
         <div id="addBookmarkModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -73,8 +96,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Edit Bookmark Modal -->
         <div id="editBookmarkModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -114,24 +135,7 @@
                 </div>
             </div>
         </div>
-
-        <!-- Bookmarks Grid -->
-        <main class="main-content">
-            <div id="bookmarksGrid" class="bookmarks-grid">
-                <!-- Bookmarks will be loaded here -->
-            </div>
-            <div id="loadingSpinner" class="loading-spinner" style="display: none;">
-                <i class="fas fa-spinner fa-spin"></i> Loading...
-            </div>
-            <div id="emptyState" class="empty-state" style="display: none;">
-                <i class="fas fa-bookmark"></i>
-                <h3>No bookmarks yet</h3>
-                <p>Start by adding your first bookmark!</p>
-                <button class="btn btn-primary" onclick="showAddModal()">Add Bookmark</button>
-            </div>
-        </main>
     </div>
-
     <script src="app.js"></script>
 </body>
 </html> 
