@@ -114,6 +114,7 @@ section {
 	min-height: 80px;
 	font-size: 1rem;
 	cursor: default;
+	position: relative;
 }
 .card .card-actions-row,
 .card .card-action-btn {
@@ -322,6 +323,7 @@ section {
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 	animation: modalSlideIn 0.3s ease;
 	backdrop-filter: none;
+	position: relative;
 }
 @keyframes modalSlideIn {
 	from {
@@ -636,4 +638,82 @@ section {
 	100% {
 		transform: rotate(360deg);
 	}
+}
+
+/* Toast Notification Styles */
+.toast {
+	position: fixed;
+	left: 50%;
+	top: 40px;
+	transform: translateX(-50%);
+	min-width: 220px;
+	max-width: 90vw;
+	background: var(--card-bg, #222);
+	color: var(--fg, #fff);
+	padding: 1em 2em;
+	border-radius: 8px;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+	font-size: 1.08em;
+	z-index: 99999;
+	opacity: 0;
+	text-align: center;
+	display: block;
+	pointer-events: none;
+	transition: opacity 0.4s, top 0.3s;
+}
+.toast.toast-show {
+	opacity: 0.98;
+	pointer-events: auto;
+}
+.toast-success {
+	border-left: 6px solid #4caf50;
+}
+.toast-error {
+	border-left: 6px solid #e53935;
+}
+
+.modal-loading-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: var(--card-bg, #222);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 10;
+	border-radius: 12px;
+}
+.modal-loading-overlay .spinner {
+	width: 48px;
+	height: 48px;
+	border: 5px solid var(--card-border, #eee);
+	border-top: 5px solid var(--accent, #4285f4);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	margin: 0 auto;
+}
+
+.card-loading-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: var(--card-bg, #222);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 5;
+	border-radius: var(--card-radius, 16px);
+}
+.card-loading-overlay .spinner {
+	width: 36px;
+	height: 36px;
+	border: 4px solid var(--card-border, #eee);
+	border-top: 4px solid var(--accent, #4285f4);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	margin: 0 auto;
 }

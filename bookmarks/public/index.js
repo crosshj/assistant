@@ -33,6 +33,15 @@ async function loadBookmarks() {
 	}
 }
 
+function isValidUrl(str) {
+	try {
+		new URL(str);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 	// Check for share target POST
 	if (window.location.search.includes('share-target')) {
@@ -53,16 +62,45 @@ document.addEventListener('DOMContentLoaded', function () {
 					});
 				}
 			});
-			navigator.serviceWorker.addEventListener('message', (event) => {
-				if (event.data && event.data.type === 'shareData') {
-					const { title, text, url } = event.data;
-					showAddModal();
-					if (url) document.getElementById('urlInput').value = url;
-					if (title && !url)
-						document.getElementById('urlInput').value = title;
-					if (text) document.getElementById('tagsInput').value = text;
+			navigator.serviceWorker.addEventListener(
+				'message',
+				async (event) => {
+					if (event.data && event.data.type === 'shareData') {
+						const { title, text, url } = event.data;
+						let urlValue = '';
+						if (url && isValidUrl(url)) urlValue = url;
+						else if (text && isValidUrl(text)) urlValue = text;
+						else if (title && isValidUrl(title)) urlValue = title;
+						if (urlValue) {
+							try {
+								const response = await fetch('/api/bookmarks', {
+									method: 'POST',
+									headers: {
+										'Content-Type': 'application/json',
+									},
+									body: JSON.stringify({
+										url: urlValue,
+										tags: '',
+									}),
+								});
+								if (!response.ok) {
+									const error = await response.json();
+									throw new Error(
+										error.error || 'Failed to add bookmark'
+									);
+								}
+								const newBookmark = await response.json();
+								bookmarks.unshift(newBookmark);
+								renderBookmarks(bookmarks);
+								showSuccess('Bookmark added successfully!');
+							} catch (error) {
+								console.error('Error adding bookmark:', error);
+								showError(error.message);
+							}
+						}
+					}
 				}
-			});
+			);
 		}
 	}
 	loadBookmarks();
@@ -103,6 +141,24 @@ function setupEventListeners() {
 	}
 }
 
+// Show/hide loading overlay on add bookmark modal
+function showAddModalLoading(show) {
+	const modalContent = addBookmarkModal.querySelector('.modal-content');
+	let overlay = document.getElementById('addModalLoading');
+	if (show) {
+		if (!overlay) {
+			overlay = document.createElement('div');
+			overlay.id = 'addModalLoading';
+			overlay.className = 'modal-loading-overlay';
+			overlay.innerHTML = '<div class="spinner"></div>';
+			modalContent.appendChild(overlay);
+		}
+		overlay.style.display = 'flex';
+	} else if (overlay) {
+		overlay.style.display = 'none';
+	}
+}
+
 // Handle add bookmark form submission
 async function handleAddBookmark(event) {
 	event.preventDefault();
@@ -111,6 +167,7 @@ async function handleAddBookmark(event) {
 	const tags = document.getElementById('tagsInput').value;
 
 	try {
+		showAddModalLoading(true);
 		const response = await fetch('/api/bookmarks', {
 			method: 'POST',
 			headers: {
@@ -132,6 +189,8 @@ async function handleAddBookmark(event) {
 	} catch (error) {
 		console.error('Error adding bookmark:', error);
 		showError(error.message);
+	} finally {
+		showAddModalLoading(false);
 	}
 }
 
@@ -247,9 +306,9 @@ const formatBookmarkCard = (bookmark) => {
 		  '\')"><i class="far fa-star"></i></button>';
 
 	return `
-    <div class=\"card\" data-url=\"${escapeHtml(
-		url
-	)}\" tabindex=\"0\">\n      <div class=\"card-inner\">\n        ${imageHTML}\n        <div class=\"card-main\">\n          <div class=\"card-main-top\">\n            <div class=\"card-title-row\">\n              <h3 class=\"card-title\">${
+    <div class=\"card\" data-url=\"${escapeHtml(url)}\" data-id=\"${
+		bookmark.id
+	}\" tabindex=\"0\">\n      <div class=\"card-inner\">\n        ${imageHTML}\n        <div class=\"card-main\">\n          <div class=\"card-main-top\">\n            <div class=\"card-title-row\">\n              <h3 class=\"card-title\">${
 		bookmark.title || 'Untitled'
 	}</h3>\n            </div>\n            <div class=\"card-desc\">${
 		bookmark.description || ''
@@ -367,6 +426,25 @@ window.editBookmark = function (id) {
 	if (bookmark) showEditModal(bookmark);
 };
 
+function showCardLoadingOverlay(cardId, show) {
+	const card =
+		document.querySelector(`.card[data-url][data-id='${cardId}']`) ||
+		document.querySelector(`.card[data-id='${cardId}']`);
+	if (!card) return;
+	let overlay = card.querySelector('.card-loading-overlay');
+	if (show) {
+		if (!overlay) {
+			overlay = document.createElement('div');
+			overlay.className = 'card-loading-overlay';
+			overlay.innerHTML = '<div class="spinner"></div>';
+			card.appendChild(overlay);
+		}
+		overlay.style.display = 'flex';
+	} else if (overlay) {
+		overlay.style.display = 'none';
+	}
+}
+
 // Delete bookmark
 async function deleteBookmark(id) {
 	if (!confirm('Are you sure you want to delete this bookmark?')) {
@@ -381,6 +459,7 @@ async function deleteBookmark(id) {
 		btn.textContent = '...';
 	}
 	try {
+		showCardLoadingOverlay(id, true);
 		const response = await fetch(`/api/bookmarks/${id}`, {
 			method: 'DELETE',
 		});
@@ -395,6 +474,7 @@ async function deleteBookmark(id) {
 		console.error('Error deleting bookmark:', error);
 		showError(error.message);
 	} finally {
+		showCardLoadingOverlay(id, false);
 		if (btn) {
 			btn.disabled = false;
 			btn.textContent = '';
@@ -405,11 +485,29 @@ async function deleteBookmark(id) {
 	}
 }
 
-function showError(message) {
-	alert('Error: ' + message);
+// Toast notification system
+function showToast(message, type = 'success') {
+	let toast = document.getElementById('toast');
+	if (!toast) {
+		toast = document.createElement('div');
+		toast.id = 'toast';
+		document.body.appendChild(toast);
+	}
+	toast.className = `toast toast-${type}`;
+	toast.textContent = message;
+	// Force reflow to restart animation
+	void toast.offsetWidth;
+	toast.classList.add('toast-show');
+	setTimeout(() => {
+		toast.classList.remove('toast-show');
+	}, 2000);
 }
+
 function showSuccess(message) {
-	alert('Success: ' + message);
+	showToast(message, 'success');
+}
+function showError(message) {
+	showToast(message, 'error');
 }
 
 function escapeHtml(text) {
