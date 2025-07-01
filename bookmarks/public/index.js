@@ -277,61 +277,73 @@ function getColorForLetter(letter) {
 }
 
 const formatBookmarkCard = (bookmark) => {
-	const firstLetter = (bookmark.title || '?').trim()[0] || '?';
-	const color = getColorForLetter(firstLetter);
-	const imageHTML = bookmark.image
-		? `<div class=\"card-image\"><img src=\"${bookmark.image}\" alt=\"${
-				bookmark.title || ''
-		  }\" onerror=\"this.style.display='none'\" /></div>`
-		: `<div class=\"card-image placeholder\" style=\"background:${color}\"><span>${firstLetter.toUpperCase()}</span></div>`;
-
-	// Extract domain from URL
-	let domain = '';
-	let url = bookmark.url;
-	try {
-		const urlObj = new URL(bookmark.url);
-		domain = urlObj.hostname.replace(/^www\./, '');
-		url = urlObj.href;
-	} catch (e) {
-		domain = bookmark.url;
+	let imageSrc = null;
+	let imageAlt = bookmark.title || '';
+	if (bookmark.image_storage_url) {
+		imageSrc = bookmark.image_storage_url;
+	} else if (bookmark.image_storage_url_present) {
+		imageSrc = `/api/bookmarks/image/${bookmark.id}`;
+	} else if (bookmark.image) {
+		imageSrc = bookmark.image;
 	}
-
-	const isFavorite = bookmark.favorite === 1 || bookmark.favorite === true;
-	const starIcon = isFavorite
-		? '<button class="btn btn-sm card-action-btn favorite-btn" title="Unfavorite" onclick="toggleFavorite(\'' +
-		  bookmark.id +
-		  '\')"><i class="fas fa-star"></i></button>'
-		: '<button class="btn btn-sm card-action-btn favorite-btn" title="Favorite" onclick="toggleFavorite(\'' +
-		  bookmark.id +
-		  '\')"><i class="far fa-star"></i></button>';
-
+	let imageHTML;
+	if (imageSrc) {
+		imageHTML = `<div class="card-image"><img src="${imageSrc}" alt="${imageAlt}" onerror="this.style.display='none'" /></div>`;
+	} else {
+		const firstLetter = (bookmark.title || '?').trim()[0] || '?';
+		const color = getColorForLetter(firstLetter);
+		imageHTML = `<div class="card-image placeholder" style="background:${color}"><span>${firstLetter.toUpperCase()}</span></div>`;
+	}
 	return `
-    <div class=\"card\" data-url=\"${escapeHtml(url)}\" data-id=\"${
+    <div class="card" data-url="${escapeHtml(bookmark.url)}" data-id="${
 		bookmark.id
-	}\" tabindex=\"0\">\n      <div class=\"card-inner\">\n        ${imageHTML}\n        <div class=\"card-main\">\n          <div class=\"card-main-top\">\n            <div class=\"card-title-row\">\n              <h3 class=\"card-title\">${
-		bookmark.title || 'Untitled'
-	}</h3>\n            </div>\n            <div class=\"card-desc\">${
-		bookmark.description || ''
-	}</div>\n          </div>\n          <div class=\"card-footer\">\n            <div>\n              <span class=\"card-domain\">${domain}</span>\n              <div class=\"card-meta-row\">\n                ${
-		bookmark.tags
-			? bookmark.tags
-					.split(',')
-					.filter((t) => t.trim())
-					.map(
-						(tag) =>
-							`<span class=\"tag\">${escapeHtml(
-								tag.trim()
-							)}</span>`
-					)
-					.join('')
-			: ''
-	}\n                <span class=\"read-status-pill\">${
-		bookmark.read_status === 1 ? 'Read' : 'Unread'
-	}</span>\n              </div>\n            </div>\n            <div class=\"card-actions-row\">\n              <button class=\"btn btn-sm btn-secondary card-action-btn\" onclick=\"editBookmark('${
-		bookmark.id
-	}')\" title=\"Edit\"><i class=\"fas fa-edit\"></i></button>\n              <button class=\"btn btn-sm btn-danger card-action-btn\" onclick=\"deleteBookmark('${
-		bookmark.id
-	}')\" title=\"Delete\"><i class=\"fas fa-trash\"></i></button>\n              ${starIcon}\n            </div>\n          </div>\n        </div>\n      </div>\n    </div>\n  `;
+	}" tabindex="0">
+      <div class="card-inner">
+        ${imageHTML}
+        <div class="card-main">
+          <div class="card-main-top">
+            <div class="card-title-row">
+              <h3 class="card-title">${bookmark.title || 'Untitled'}</h3>
+            </div>
+            <div class="card-desc">${bookmark.description || ''}</div>
+          </div>
+          <div class="card-footer">
+            <div>
+              <span class="card-domain">${getDomain(bookmark.url)}</span>
+              <div class="card-meta-row">
+                ${
+					bookmark.tags
+						? bookmark.tags
+								.split(',')
+								.filter((t) => t.trim())
+								.map(
+									(tag) =>
+										`<span class="tag">${escapeHtml(
+											tag.trim()
+										)}</span>`
+								)
+								.join('')
+						: ''
+				}
+                <span class="read-status-pill">${
+					bookmark.read_status === 1 ? 'Read' : 'Unread'
+				}</span>
+              </div>
+            </div>
+            <div class="card-actions-row">
+              <button class="btn btn-sm btn-secondary card-action-btn" onclick="editBookmark('${
+					bookmark.id
+				}')" title="Edit"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-sm btn-danger card-action-btn" onclick="deleteBookmark('${
+					bookmark.id
+				}')" title="Delete"><i class="fas fa-trash"></i></button>
+              ${getStarIcon(bookmark)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 };
 
 function renderBookmarks(bookmarks) {
@@ -368,7 +380,11 @@ function renderBookmarks(bookmarks) {
 		} else {
 			// Mobile: whole card except actions is clickable
 			card.addEventListener('click', function (e) {
-				if (e.target.closest('.card-action-btn')) return;
+				if (e.target.closest('.card-action-btn')) {
+					e.stopPropagation();
+					e.preventDefault();
+					return;
+				}
 				if (url) window.open(url, '_blank', 'noopener');
 			});
 			card.addEventListener('keydown', function (e) {
@@ -551,3 +567,21 @@ window.toggleFavorite = async function (id) {
 		showError('Could not update favorite');
 	}
 };
+
+// Utility: extract domain from URL
+function getDomain(url) {
+	try {
+		const urlObj = new URL(url);
+		return urlObj.hostname.replace(/^www\./, '');
+	} catch (e) {
+		return url;
+	}
+}
+
+// Utility: get star icon HTML for favorite button
+function getStarIcon(bookmark) {
+	const isFavorite = bookmark.favorite === 1 || bookmark.favorite === true;
+	return isFavorite
+		? `<button class="btn btn-sm card-action-btn favorite-btn" title="Unfavorite" onclick="toggleFavorite('${bookmark.id}')"><i class="fas fa-star"></i></button>`
+		: `<button class="btn btn-sm card-action-btn favorite-btn" title="Favorite" onclick="toggleFavorite('${bookmark.id}')"><i class="far fa-star"></i></button>`;
+}

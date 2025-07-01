@@ -3,6 +3,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { supabase } from '../lib/supabase.js';
 import probe from 'probe-image-size';
+import { processImageFromUrl } from '../lib/imageProcessor.js';
 
 // Helper function to resolve relative URLs
 function resolveUrl(src, baseUrl) {
@@ -129,6 +130,11 @@ async function extractMetadata(url) {
 			'';
 		let finalImage = image ? image.trim() : '';
 
+		// Ensure meta image is absolute
+		if (finalImage) {
+			finalImage = resolveUrl(finalImage, url);
+		}
+
 		// If no meta image, find the best <img> on the page
 		if (!finalImage) {
 			finalImage = await findBestImage($, url);
@@ -206,7 +212,14 @@ export default async function handler(req, res) {
 				return res.status(500).json({ error: 'Database error' });
 			}
 
-			res.status(200).json(bookmarks || []);
+			// Add image_storage_url_present boolean but keep image_storage_url in response
+			const bookmarksWithImageFlag = (bookmarks || []).map((b) => ({
+				...b,
+				image_storage_url_present: !!(
+					b.image_storage_url && b.image_storage_url.length > 0
+				),
+			}));
+			res.status(200).json(bookmarksWithImageFlag);
 		} else if (req.method === 'POST') {
 			// Create new bookmark
 			const { url, tags = '' } = req.body;
@@ -216,6 +229,48 @@ export default async function handler(req, res) {
 			}
 
 			const metadata = await extractMetadata(url);
+			let imageUrl = null;
+			if (metadata.image) {
+				try {
+					const imageBuffer = await processImageFromUrl(
+						metadata.image,
+						{
+							width: 360,
+							height: 240,
+							quality: 40,
+							effort: 6,
+							reductionEffort: 6,
+							nearLossless: false,
+							smartSubsample: false,
+						}
+					);
+					const filePath = `bookmark-thumbnails/${uuidv4()}.webp`;
+					const { data: uploadData, error: uploadError } =
+						await supabase.storage
+							.from('thumbnails')
+							.upload(filePath, imageBuffer, {
+								contentType: 'image/webp',
+								upsert: true,
+							});
+					if (uploadError) {
+						console.error(
+							'Supabase Storage upload error:',
+							uploadError
+						);
+					} else {
+						const urlRes = supabase.storage
+							.from('thumbnails')
+							.getPublicUrl(filePath);
+						const { publicUrl } = urlRes?.data || {};
+						console.log({ urlRes });
+						console.log('Public URL:', publicUrl);
+						imageUrl = publicUrl;
+					}
+				} catch (e) {
+					console.error('Image processing or upload failed:', e);
+					imageUrl = null;
+				}
+			}
 			const id = uuidv4();
 			const now = new Date().toISOString();
 
@@ -225,6 +280,7 @@ export default async function handler(req, res) {
 				title: metadata.title,
 				description: metadata.description,
 				image: metadata.image,
+				image_storage_url: imageUrl,
 				tags,
 				created_at: now,
 				updated_at: now,

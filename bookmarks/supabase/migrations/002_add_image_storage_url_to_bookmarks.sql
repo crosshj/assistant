@@ -1,0 +1,1 @@
+ALTER TABLE bookmarks ADD COLUMN image_storage_url text;

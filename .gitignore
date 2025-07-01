@@ -72,3 +72,4 @@ voice_recog/converters/sphinx/sphinxbase/
 voice_recog/converters/sphinx/training/accum/*
 voice_recog/converters/sphinx/training/6test.hyp
 voice_recog/converters/sphinx/training/en-70k-0.2.lm.bin
+.DS_Store
