@@ -21,7 +21,7 @@
         "get-image-colors": "^4.0.1",
         "moment": "^2.29.4",
         "probe-image-size": "^7.2.3",
-        "sharp": "^0.34.2",
+        "sharp": "^0.32.6",
         "uuid": "^9.0.1"
     },
     "devDependencies": {
