@@ -8,6 +8,7 @@
         "watch": "concurrently \"npm run vercel\" \"npm run vite\"",
         "vite": "vite",
         "vercel": "cross-env VERCEL_TELEMETRY_CONSENT=0 vercel dev --listen 4433",
+        "build": "vite build",
         "deploy": "cross-env VERCEL_TELEMETRY_CONSENT=0 vercel --prod",
         "test": "node --experimental-vm-modules node_modules/.bin/jest"
     },
