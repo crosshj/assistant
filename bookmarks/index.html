@@ -12,21 +12,13 @@
 			content="light dark"
 		/>
 		<link
-			rel="stylesheet"
-			href="index.css"
-		/>
-		<link
-			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-			rel="stylesheet"
-		/>
-		<link
 			rel="icon"
 			type="image/svg+xml"
-			href="favicon.svg"
+			href="/favicon.svg"
 		/>
 		<link
 			rel="manifest"
-			href="manifest.json"
+			href="/manifest.json"
 		/>
 	</head>
 	<body>
@@ -34,7 +26,7 @@
 			<h1>
 				<span class="header-icon">
 					<img
-						src="favicon.svg"
+						src="/favicon.svg"
 						alt="Bookmarks icon"
 						class="header-icon"
 						width="32"
@@ -81,7 +73,6 @@
 			</div>
 		</div>
 		<section id="bookmarks-section">
-			<!-- <h2>All Bookmarks</h2> -->
 			<div
 				class="card-grid"
 				id="bookmarksGrid"
@@ -177,22 +168,22 @@
 							/>
 						</div>
 						<div class="form-group">
-							<label>
-								<input
+							<label
+								><input
 									type="checkbox"
 									id="editReadStatus"
 								/>
-								Mark as read
-							</label>
+								Mark as read</label
+							>
 						</div>
 						<div class="form-group">
-							<label>
-								<input
+							<label
+								><input
 									type="checkbox"
 									id="editFavorite"
 								/>
-								Mark as favorite
-							</label>
+								Mark as favorite</label
+							>
 						</div>
 						<div class="form-actions">
 							<button
@@ -213,16 +204,41 @@
 				</div>
 			</div>
 		</div>
+		<!-- Inconspicuous build meta footer -->
+		<footer
+			id="build-meta-footer"
+			style="
+				text-align: center;
+				font-size: 0.8em;
+				color: #888;
+				margin: 2em 0 0 0;
+			"
+		></footer>
+		<!-- Main JS entry -->
 		<script
-			src="index.js"
 			type="module"
+			src="/src/main.js"
 		></script>
 		<script>
 			if ('serviceWorker' in navigator) {
 				window.addEventListener('load', function () {
-					navigator.serviceWorker.register('sw.js');
+					navigator.serviceWorker.register('/sw.js');
 				});
 			}
+			// Add build meta to footer
+			window.addEventListener('DOMContentLoaded', function () {
+				const footer = document.getElementById('build-meta-footer');
+				if (footer && window.BUILD_DATE && window.PACKAGE_VERSION) {
+					const d = new Date(window.BUILD_DATE);
+					const pad = (n) => n.toString().padStart(2, '0');
+					const formatted = `${d.getFullYear()}-${pad(
+						d.getMonth() + 1
+					)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(
+						d.getMinutes()
+					)}`;
+					footer.textContent = `v${window.PACKAGE_VERSION} | built ${formatted}`;
+				}
+			});
 		</script>
 	</body>
 </html>

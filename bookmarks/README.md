@@ -4,49 +4,52 @@ A Pocket-like bookmarking system for saving web pages to read later, built with 
 
 ## Features
 
-- **Save Web Pages**: Add URLs and automatically extract title, description, and images
-- **Smart Metadata**: Uses web scraping to get page titles, descriptions, and preview images
-- **Tagging System**: Organize bookmarks with custom tags
-- **Search & Filter**: Find bookmarks by text, tags, read status, or favorites
-- **Read Status**: Mark bookmarks as read/unread
-- **Favorites**: Mark important bookmarks as favorites
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
-- **Modern UI**: Clean, intuitive interface with smooth animations
-- **Serverless**: Zero server maintenance, automatic scaling
-- **PostgreSQL Database**: Robust, scalable data storage with Supabase
+-   **Save Web Pages**: Add URLs and automatically extract title, description, and images
+-   **Smart Metadata**: Uses web scraping to get page titles, descriptions, and preview images
+-   **Tagging System**: Organize bookmarks with custom tags
+-   **Search & Filter**: Find bookmarks by text, tags, read status, or favorites
+-   **Read Status**: Mark bookmarks as read/unread
+-   **Favorites**: Mark important bookmarks as favorites
+-   **Responsive Design**: Works on desktop, tablet, and mobile devices
+-   **Modern UI**: Clean, intuitive interface with smooth animations
+-   **Serverless**: Zero server maintenance, automatic scaling
+-   **PostgreSQL Database**: Robust, scalable data storage with Supabase
 
 ## Tech Stack
 
-- **Frontend**: Vanilla JavaScript with modern CSS
-- **Backend**: Vercel Serverless Functions
-- **Database**: Supabase PostgreSQL (free tier)
-- **Web Scraping**: Cheerio for metadata extraction
-- **Deployment**: Vercel (free tier)
+-   **Frontend**: Vanilla JavaScript with modern CSS, built with [Vite](https://vitejs.dev/)
+-   **Backend**: Vercel Serverless Functions
+-   **Database**: Supabase PostgreSQL (free tier)
+-   **Web Scraping**: Cheerio for metadata extraction
+-   **Deployment**: Vercel (free tier)
 
 ## Quick Start
 
 ### Prerequisites
 
 1. Install Vercel CLI:
-   ```bash
-   npm i -g vercel
-   ```
+
+    ```bash
+    npm i -g vercel
+    ```
 
 2. Navigate to the bookmarks directory:
-   ```bash
-   cd bookmarks
-   ```
+
+    ```bash
+    cd bookmarks
+    ```
 
 3. Install dependencies:
-   ```bash
-   npm install
-   ```
+    ```bash
+    npm install
+    ```
 
 ### Supabase Setup
 
 **Follow the complete setup guide**: [SETUP_SUPABASE.md](./SETUP_SUPABASE.md)
 
 Quick steps:
+
 1. Create a free Supabase account at [supabase.com](https://supabase.com)
 2. Create a new project
 3. Run the database migration from `supabase/migrations/001_create_bookmarks_table.sql`
@@ -56,91 +59,86 @@ Quick steps:
 ### Development
 
 1. Create `.env.local` file with your Supabase credentials:
-   ```bash
-   SUPABASE_URL=https://your-project-id.supabase.co
-   SUPABASE_ANON_KEY=your-anon-key-here
-   ```
 
-2. Start the development server:
-   ```bash
-   npm run dev
-   ```
+    ```bash
+    SUPABASE_URL=https://your-project-id.supabase.co
+    SUPABASE_ANON_KEY=your-anon-key-here
+    ```
 
-3. Open your browser and go to `http://localhost:3000`
+2. Start the development servers (frontend + API):
+
+    ```bash
+    npm run watch
+    ```
+
+    - This runs both the Vite frontend (on port 4422) and the Vercel API dev server (on port 4433).
+    - Vite proxies `/api` requests to the Vercel dev server.
+
+3. Open your browser and go to `http://localhost:4422`
 
 ### Deployment
 
 1. Deploy to Vercel:
-   ```bash
-   npm run deploy
-   ```
+
+    ```bash
+    npm run deploy
+    ```
 
 2. Add environment variables in Vercel dashboard:
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
+
+    - `SUPABASE_URL`
+    - `SUPABASE_ANON_KEY`
 
 3. Your app will be live at `https://your-app-name.vercel.app`
 
-## Cost Analysis
+## File Structure
 
-### Vercel Free Tier
-- **Bandwidth**: 100GB/month
-- **Function Executions**: 100/day
-- **Build Minutes**: 6,000/month
-- **Cost**: $0/month
+```
+bookmarks/
+├── api/                   # Serverless functions (Vercel API routes)
+│   ├── bookmarks.js
+│   ├── bookmarks/
+│   │   └── [id].js
+│   │   └── image/
+│   │       └── [id].js
+│   └── tags.js
+├── lib/                   # Shared utilities (backend only)
+│   ├── imageProcessor.js
+│   ├── supabase.js
+│   └── imageProcessor.test.js
+├── index.html              # Main HTML page (Vite entry, at project root)
+├── public/                # Static assets (favicon, manifest, sw.js, index.js, index.css)
+├── src/                   # Vite entry point and frontend glue
+│   └── main.js            # Vite entry (imports public/index.js and index.css)
+├── supabase/              # Database migrations
+│   └── migrations/
+│       ├── 001_create_bookmarks_table.sql
+│       └── 002_add_image_storage_url_to_bookmarks.sql
+├── package.json           # Dependencies and scripts
+├── vite.config.js         # Vite configuration
+├── vercel.json            # Vercel configuration
+├── SETUP_SUPABASE.md      # Supabase setup guide
+└── README.md              # This file
+```
 
-### Supabase Free Tier
-- **Database**: 500MB storage
-- **Database rows**: 50,000 rows
-- **API requests**: 50,000 requests/month
-- **Realtime connections**: 2 concurrent
-- **Cost**: $0/month
+## Available Scripts
 
-**Total cost: $0/month** for most personal use cases!
-
-## Usage
-
-### Adding Bookmarks
-
-1. Click the "Add Bookmark" button
-2. Enter the URL of the page you want to save
-3. Optionally add tags (comma-separated)
-4. Click "Add Bookmark"
-
-The system will automatically:
-- Extract the page title and description
-- Get the page's preview image (if available)
-- Save the bookmark to your Supabase database
-
-### Managing Bookmarks
-
-- **Search**: Use the search bar to find bookmarks by title, description, or URL
-- **Filter by Tags**: Select a tag to see only bookmarks with that tag
-- **Filter by Status**: Show only read or unread bookmarks
-- **Filter by Favorites**: Show only your favorite bookmarks
-- **Sort**: Sort by date added, title, or last modified
-
-### Editing Bookmarks
-
-1. Click the edit button (pencil icon) on any bookmark
-2. Modify the title, description, tags, read status, or favorite status
-3. Click "Save Changes"
-
-### Deleting Bookmarks
-
-1. Click the delete button (trash icon) on any bookmark
-2. Confirm the deletion
+-   `npm run watch` - Start both Vite frontend and Vercel API dev server concurrently
+-   `npm run vite` - Start only the Vite frontend (for debugging)
+-   `npm run vercel` - Start only the Vercel API dev server (for debugging)
+-   `npm run deploy` - Deploy to Vercel production
+-   `npm test` - Run backend tests with Jest
 
 ## API Endpoints
 
 The application provides serverless API functions:
 
-- `GET /api/bookmarks` - Get all bookmarks (with optional filters)
-- `POST /api/bookmarks` - Create a new bookmark
-- `GET /api/bookmarks/[id]` - Get a specific bookmark
-- `PUT /api/bookmarks/[id]` - Update a bookmark
-- `DELETE /api/bookmarks/[id]` - Delete a bookmark
-- `GET /api/tags` - Get all available tags
+-   `GET /api/bookmarks` - Get all bookmarks (with optional filters)
+-   `POST /api/bookmarks` - Create a new bookmark
+-   `GET /api/bookmarks/[id]` - Get a specific bookmark
+-   `PUT /api/bookmarks/[id]` - Update a bookmark
+-   `DELETE /api/bookmarks/[id]` - Delete a bookmark
+-   `GET /api/tags` - Get all available tags
 
 ## Database Schema
 
@@ -161,68 +159,20 @@ CREATE TABLE bookmarks (
 );
 ```
 
-## File Structure
-
-```
-bookmarks/
-├── api/                   # Serverless functions
-│   ├── bookmarks.js      # Main bookmarks API
-│   ├── bookmarks/
-│   │   └── [id].js       # Individual bookmark operations
-│   └── tags.js           # Tags API
-├── lib/                   # Shared utilities
-│   └── supabase.js       # Supabase client configuration
-├── supabase/              # Database migrations
-│   └── migrations/
-│       └── 001_create_bookmarks_table.sql
-├── public/               # Frontend files
-│   ├── index.html        # Main HTML page
-│   ├── styles.css        # CSS styles
-│   └── app.js           # JavaScript application
-├── package.json          # Dependencies and scripts
-├── vercel.json          # Vercel configuration
-├── SETUP_SUPABASE.md    # Supabase setup guide
-└── README.md            # This file
-```
-
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run deploy` - Deploy to Vercel production
-- `npm start` - Start development server (alias for dev)
-
-## Browser Extension Integration
-
-To make this even more like Pocket, you could create a browser extension that adds a "Save to Bookmarks" button to your browser toolbar. The extension would:
-
-1. Capture the current page URL
-2. Send it to your bookmarks API
-3. Show a success notification
-
-## Future Enhancements
-
-- **User Authentication**: Add user accounts with Supabase Auth
-- **Categories**: Organize bookmarks into folders/categories
-- **Import/Export**: Import bookmarks from Pocket, browser bookmarks, etc.
-- **Reading View**: Built-in article reader with text extraction
-- **Mobile App**: PWA features for mobile access
-- **Sharing**: Share bookmarks with others
-- **Analytics**: Track reading habits and statistics
-- **Offline Support**: Service worker for offline access
-- **Realtime Updates**: Use Supabase realtime for live updates
-
 ## Troubleshooting
 
 ### Common Issues
 
 1. **"Missing Supabase environment variables"**
-   - Check your `.env.local` file for local development
-   - Verify Vercel environment variables for production
+
+    - Check your `.env.local` file for local development
+    - Verify Vercel environment variables for production
 
 2. **"Database error"**
-   - Ensure the migration ran successfully in Supabase
-   - Check your API keys are correct
-   - Verify the table exists in Supabase dashboard
+
+    - Ensure the migration ran successfully in Supabase
+    - Check your API keys are correct
+    - Verify the table exists in Supabase dashboard
 
 3. **"Function timeout"**: Increase `maxDuration` in vercel.json
 4. **"CORS errors"**: Check that CORS headers are set in API functions
@@ -230,6 +180,7 @@ To make this even more like Pocket, you could create a browser extension that ad
 ### Vercel Logs
 
 Check function logs in the Vercel dashboard or via CLI:
+
 ```bash
 vercel logs
 ```
@@ -237,20 +188,15 @@ vercel logs
 ### Supabase Logs
 
 Check database logs in the Supabase dashboard:
+
 1. Go to your project dashboard
 2. Navigate to **Logs** → **Database**
 3. Check for any errors
 
 ## Why This Stack?
 
-- **Cost**: Completely free for personal use
-- **Maintenance**: Zero server management
-- **Scalability**: Automatic scaling based on demand
-- **Reliability**: 99.9% uptime SLA from both Vercel and Supabase
-- **Global**: CDN distribution worldwide
-- **Security**: Built-in DDoS protection and RLS
-- **Database**: Full PostgreSQL with real-time capabilities
-
-## License
-
-This project is part of the Assistant experiments repository. 
+-   **Cost**: Completely free for personal use
+-   **Maintenance**: Zero server management
+-   **Scalability**: Automatic scaling based on demand
+-   **Reliability**: 99.9% uptime SLA from both Vercel and Supabase
+-   **Global**: CDN distribution worldwide

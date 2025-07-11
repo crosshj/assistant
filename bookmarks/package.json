@@ -1,36 +1,38 @@
 {
     "name": "bookmarks",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Pocket-like bookmarking system for saving web pages to read later",
     "type": "module",
     "main": "index.js",
     "scripts": {
-        "watch": "cross-env VERCEL_TELEMETRY_CONSENT=0 vercel dev --listen 4422",
+        "watch": "concurrently \"npm run vercel\" \"npm run vite\"",
+        "vite": "vite",
+        "vercel": "cross-env VERCEL_TELEMETRY_CONSENT=0 vercel dev --listen 4433",
         "deploy": "cross-env VERCEL_TELEMETRY_CONSENT=0 vercel --prod",
-        "build": "echo 'No build step needed'",
-        "test": "node --experimental-vm-modules node_modules/.bin/jest",
-        "postinstall": "npm rebuild sharp"
+        "test": "node --experimental-vm-modules node_modules/.bin/jest"
     },
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@fortawesome/fontawesome-svg-core": "^6.7.2",
+        "@fortawesome/free-regular-svg-icons": "^6.7.2",
+        "@fortawesome/free-solid-svg-icons": "^6.7.2",
         "@supabase/supabase-js": "^2.38.0",
-        "axios": "^1.6.0",
         "cheerio": "^1.0.0-rc.12",
-        "file-type": "^21.0.0",
         "get-image-colors": "^4.0.1",
-        "moment": "^2.29.4",
         "probe-image-size": "^7.2.3",
         "sharp": "^0.32.6",
         "uuid": "^9.0.1"
     },
     "devDependencies": {
+        "concurrently": "^8.2.2",
         "cross-env": "^7.0.3",
         "dotenv": "^17.0.0",
         "jest": "^30.0.3",
-        "vercel": "^44.2.7"
+        "vercel": "^44.2.7",
+        "vite": "^7.0.4"
     },
     "engines": {
-        "node": "18.x"
+        "node": "20.x"
     }
 }

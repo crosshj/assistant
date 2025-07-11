@@ -1,3 +1,23 @@
+import './index.css';
+import { library, dom } from '@fortawesome/fontawesome-svg-core';
+import {
+	faEdit,
+	faTrash,
+	faStar as faStarSolid,
+} from '@fortawesome/free-solid-svg-icons';
+import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons';
+
+library.add(faEdit, faTrash, faStarSolid, faStarRegular);
+dom.watch();
+
+// Expose build meta to window (redundant if already in HTML, but safe)
+window.BUILD_DATE =
+	typeof __BUILD_DATE__ !== 'undefined' ? __BUILD_DATE__ : window.BUILD_DATE;
+window.PACKAGE_VERSION =
+	typeof __PACKAGE_VERSION__ !== 'undefined'
+		? __PACKAGE_VERSION__
+		: window.PACKAGE_VERSION;
+
 let bookmarks = [];
 
 // DOM elements

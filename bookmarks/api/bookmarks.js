@@ -1,5 +1,4 @@
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { supabase } from '../lib/supabase.js';
 import probe from 'probe-image-size';
@@ -106,15 +105,16 @@ async function findBestImage($, baseUrl) {
 // Helper function to extract metadata from URL
 async function extractMetadata(url) {
 	try {
-		const response = await axios.get(url, {
+		const response = await fetch(url, {
 			timeout: 10000,
 			headers: {
 				'User-Agent':
-					'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+					'"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"',
 			},
 		});
-
-		const $ = cheerio.load(response.data);
+		if (!response.ok) throw new Error('Failed to fetch URL');
+		const html = await response.text();
+		const $ = cheerio.load(html);
 
 		const title =
 			$('title').text() ||
@@ -269,6 +269,7 @@ export default async function handler(req, res) {
 				} catch (e) {
 					console.error('Image processing or upload failed:', e);
 					imageUrl = null;
+					metadata.image = undefined;
 				}
 			}
 			const id = uuidv4();
