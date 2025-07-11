@@ -19,6 +19,10 @@ window.PACKAGE_VERSION =
 		: window.PACKAGE_VERSION;
 
 let bookmarks = [];
+let loadingMore = false;
+let allLoaded = false;
+const PAGE_SIZE = 30;
+let currentOffset = 0;
 
 // DOM elements
 const bookmarksGrid = document.getElementById('bookmarksGrid');
@@ -26,6 +30,12 @@ const addBookmarkModal = document.getElementById('addBookmarkModal');
 const editBookmarkModal = document.getElementById('editBookmarkModal');
 const addBookmarkForm = document.getElementById('addBookmarkForm');
 const editBookmarkForm = document.getElementById('editBookmarkForm');
+
+// Sentinel for IntersectionObserver
+let sentinel = document.createElement('div');
+sentinel.id = 'scrollSentinel';
+sentinel.style.height = '1px';
+sentinel.style.width = '100%';
 
 // Render a loading card with a centered spinner
 function renderLoadingCard() {
@@ -39,17 +49,66 @@ function renderLoadingCard() {
 	`;
 }
 
+// Render a loading spinner at the bottom of the grid
+function appendBottomSpinner() {
+	if (!bookmarksGrid) return;
+	if (document.getElementById('bottomSpinner')) return;
+	const spinner = document.createElement('div');
+	spinner.className = 'card loading-card';
+	spinner.id = 'bottomSpinner';
+	spinner.innerHTML = `
+    <div class="card-inner" style="justify-content:center;align-items:center;min-height:80px;">
+      <div class="spinner"></div>
+    </div>
+  `;
+	bookmarksGrid.appendChild(spinner);
+}
+
+function removeBottomSpinner() {
+	const spinner = document.getElementById('bottomSpinner');
+	if (spinner && spinner.parentNode) spinner.parentNode.removeChild(spinner);
+}
+
 // Load bookmarks from API
-async function loadBookmarks() {
-	renderLoadingCard();
+async function loadBookmarks(initial = false) {
+	if (loadingMore || allLoaded) return;
+	loadingMore = true;
+	if (initial) {
+		bookmarks = [];
+		currentOffset = 0;
+		allLoaded = false;
+		renderLoadingCard();
+	} else {
+		appendBottomSpinner();
+	}
 	try {
-		const response = await fetch('/api/bookmarks');
+		const response = await fetch(
+			`/api/bookmarks?limit=${PAGE_SIZE}&offset=${currentOffset}`
+		);
 		if (!response.ok) throw new Error('Failed to load bookmarks');
-		bookmarks = await response.json();
+		const newBookmarks = await response.json();
+		if (initial) {
+			bookmarks = newBookmarks;
+		} else {
+			bookmarks = bookmarks.concat(newBookmarks);
+		}
 		renderBookmarks(bookmarks);
+		// Ensure sentinel is at the end
+		if (bookmarksGrid && !bookmarksGrid.contains(sentinel)) {
+			bookmarksGrid.appendChild(sentinel);
+		}
+		if (newBookmarks.length < PAGE_SIZE) {
+			allLoaded = true;
+			observer && observer.disconnect();
+		} else {
+			currentOffset += PAGE_SIZE;
+		}
 	} catch (error) {
 		console.error('Error loading bookmarks:', error);
 		showError('Failed to load bookmarks');
+	} finally {
+		loadingMore = false;
+		removeBottomSpinner();
 	}
 }
 
@@ -62,6 +121,7 @@ function isValidUrl(str) {
 	}
 }
 
+let observer;
 document.addEventListener('DOMContentLoaded', function () {
 	// Check for share target POST
 	if (window.location.search.includes('share-target')) {
@@ -123,8 +183,26 @@ document.addEventListener('DOMContentLoaded', function () {
 			);
 		}
 	}
-	loadBookmarks();
+	loadBookmarks(true);
 	setupEventListeners();
+	// Setup IntersectionObserver for infinite scroll
+	observer = new window.IntersectionObserver(
+		(entries) => {
+			if (entries[0].isIntersecting && !loadingMore && !allLoaded) {
+				loadBookmarks(false);
+			}
+		},
+		{
+			root: null,
+			rootMargin: '0px',
+			threshold: 1.0,
+		}
+	);
+	// Attach observer to sentinel
+	if (bookmarksGrid && !bookmarksGrid.contains(sentinel)) {
+		bookmarksGrid.appendChild(sentinel);
+	}
+	observer.observe(sentinel);
 });
 
 function setupEventListeners() {

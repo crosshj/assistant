@@ -179,6 +179,8 @@ export default async function handler(req, res) {
 				favorite,
 				sort = 'created_at',
 				order = 'DESC',
+				limit = 30,
+				offset = 0,
 			} = req.query;
 
 			let query = supabase.from('bookmarks').select('*');
@@ -204,6 +206,11 @@ export default async function handler(req, res) {
 
 			// Apply sorting
 			query = query.order(sort, { ascending: order === 'ASC' });
+
+			// Pagination
+			const from = parseInt(offset);
+			const to = from + parseInt(limit) - 1;
+			query = query.range(from, to);
 
 			const { data: bookmarks, error } = await query;
 
