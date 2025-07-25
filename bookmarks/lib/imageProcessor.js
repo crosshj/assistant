@@ -167,10 +167,14 @@ export async function processImageFromUrl(url, options = {}) {
 
 	const outputBuffer = await processed.toBuffer();
 
-	// DEBUG: Save processed image to disk
-	import('fs').then((fs) => {
-		fs.writeFileSync('debug-output.webp', outputBuffer);
-	});
+	if (process?.env?.IS_LOCAL) {
+		import('fs').then((fs) => {
+			fs.writeFileSync(
+				'processImageFromUrl-debug-output.webp',
+				outputBuffer
+			);
+		});
+	}
 
 	return {
 		buffer: outputBuffer,
