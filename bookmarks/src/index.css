@@ -276,6 +276,10 @@ section {
 	margin-top: 0;
 	align-items: center;
 	font-size: 0.97em;
+	pointer-events: none; /* Prevent pointer events on container */
+}
+.card-actions-row .card-action-btn {
+	pointer-events: auto; /* Allow pointer events on buttons */
 }
 .card-actions-row button {
 	background: var(--action-btn-bg);

@@ -517,15 +517,15 @@ const formatBookmarkCard = (bookmark) => {
               </div>
             </div>
             <div class="card-actions-row">
-              <button class="btn btn-sm btn-secondary card-action-btn" onclick="editBookmark('${
+              <button class="btn btn-sm btn-secondary card-action-btn" onclick="(event) => { event.stopPropagation(); event.preventDefault(); editBookmark('${
 					bookmark.id
-				}')" title="Edit"><i class="fas fa-edit"></i></button>
-              <button class="btn btn-sm btn-secondary card-action-btn" onclick="copyBookmarkUrl('${
+				}') }" title="Edit"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-sm btn-secondary card-action-btn" onclick="(event) => { event.stopPropagation(); event.preventDefault(); copyBookmarkUrl('${
 					bookmark.id
-				}')" title="Copy URL"><i class="fas fa-copy"></i></button>
-              <button class="btn btn-sm btn-danger card-action-btn" onclick="deleteBookmark('${
+				}') }" title="Copy URL"><i class="fas fa-copy"></i></button>
+              <button class="btn btn-sm btn-danger card-action-btn" onclick="(event) => { event.stopPropagation(); event.preventDefault(); deleteBookmark('${
 					bookmark.id
-				}')" title="Delete"><i class="fas fa-trash"></i></button>
+				}') }" title="Delete"><i class="fas fa-trash"></i></button>
               <!-- ${getStarIcon(bookmark)} -->
             </div>
           </div>
