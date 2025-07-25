@@ -138,13 +138,14 @@ function parseQueryParams() {
 // Check if URL has bookmark creation parameters
 function hasBookmarkParams() {
 	const params = parseQueryParams();
-	return params.url && isValidUrl(params.url);
+	return params.bookmark_url && isValidUrl(params.bookmark_url);
 }
 
 // Add bookmark from query parameters
 async function addBookmarkFromParams() {
 	const params = parseQueryParams();
-	const { url, title, description, tags } = params;
+	const { bookmark_url, title, description, tags } = params;
+	const url = bookmark_url;
 
 	if (!url || !isValidUrl(url)) {
 		showError('Invalid URL provided');

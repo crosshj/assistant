@@ -25,7 +25,7 @@
         "params": {
             "title": "title",
             "text": "text",
-            "url": "url"
+            "url": "bookmark_url"
         }
     }
 }

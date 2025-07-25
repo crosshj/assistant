@@ -10,10 +10,4 @@ export default defineConfig({
 		__BUILD_DATE__: JSON.stringify(new Date().toISOString()),
 		__PACKAGE_VERSION__: JSON.stringify(pkg.version),
 	},
-	server: {
-		port: 4422,
-		proxy: {
-			'/api': 'http://localhost:4433',
-		},
-	},
 });
