@@ -4,6 +4,12 @@ import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
 
+// Ensure test output directory exists
+const TEST_OUTPUT_DIR = path.join(process.cwd(), 'test-results');
+if (!fs.existsSync(TEST_OUTPUT_DIR)) {
+	fs.mkdirSync(TEST_OUTPUT_DIR, { recursive: true });
+}
+
 const localTest = process.env.IS_LOCAL ? test : test.skip;
 
 describe('processImageFromUrl', () => {
@@ -11,26 +17,59 @@ describe('processImageFromUrl', () => {
 		'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/320px-PNG_transparency_demonstration_1.png';
 
 	it('should download, resize, and compress an image to WEBP', async () => {
-		const buffer = await processImageFromUrl(testImageUrl, {
+		const result = await processImageFromUrl(testImageUrl, {
 			width: 240,
 			height: 160,
 			quality: 50,
 		});
-		expect(Buffer.isBuffer(buffer)).toBe(true);
+		expect(result).toHaveProperty('buffer');
+		expect(result).toHaveProperty('format');
+		expect(result).toHaveProperty('contentType');
+		expect(Buffer.isBuffer(result.buffer)).toBe(true);
+		expect(result.format).toBe('webp');
+		expect(result.contentType).toBe('image/webp');
 		// Check that the buffer is a WEBP image
-		const metadata = await sharp(buffer).metadata();
+		const metadata = await sharp(result.buffer).metadata();
 		expect(metadata.format).toBe('webp');
 		expect(metadata.width).toBe(240);
 		expect(metadata.height).toBe(160);
 		// Should be reasonably small
-		expect(buffer.length).toBeLessThan(20000);
+		expect(result.buffer.length).toBeLessThan(20000);
+	});
+
+	it('should handle SVG images correctly', async () => {
+		// Mock SVG URL (since we can't guarantee a real SVG URL will always be available)
+		const mockSvgUrl = 'https://example.com/test.svg';
+		const mockSvgContent =
+			'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><circle cx="50" cy="50" r="40" fill="red"/></svg>';
+
+		// Mock fetch for this test
+		const originalFetch = global.fetch;
+		global.fetch = function (url) {
+			return Promise.resolve({
+				ok: true,
+				arrayBuffer: () =>
+					Promise.resolve(Buffer.from(mockSvgContent).buffer),
+			});
+		};
+
+		const result = await processImageFromUrl(mockSvgUrl);
+
+		expect(result).toHaveProperty('buffer');
+		expect(result).toHaveProperty('format', 'svg');
+		expect(result).toHaveProperty('contentType', 'image/svg+xml');
+		expect(Buffer.isBuffer(result.buffer)).toBe(true);
+		expect(result.buffer.toString('utf8')).toContain('<svg');
+
+		// Restore original fetch
+		global.fetch = originalFetch;
 	});
 
 	it('should throw for an invalid URL', async () => {
 		await expect(
 			processImageFromUrl('https://invalid.example.com/image.png')
 		).rejects.toThrow();
-	});
+	}, 20000);
 
 	it('should throw for a non-image URL', async () => {
 		await expect(
@@ -62,7 +101,7 @@ describe('output images at different qualities (local only)', () => {
 		'should output images at different qualities for visual comparison',
 		async () => {
 			for (const quality of qualities) {
-				const buffer = await processImageFromUrl(testImageUrl, {
+				const result = await processImageFromUrl(testImageUrl, {
 					width: 360,
 					height: 240,
 					quality,
@@ -76,11 +115,11 @@ describe('output images at different qualities (local only)', () => {
 					monotone: quality >= 10,
 				});
 				const outPath = path.join(
-					process.cwd(),
-					`test-output-${quality}.webp`
+					TEST_OUTPUT_DIR,
+					`image-quality-${quality}.webp`
 				);
-				fs.writeFileSync(outPath, buffer);
-				console.log(`Saved ${outPath} (${buffer.length} bytes)`);
+				fs.writeFileSync(outPath, result.buffer);
+				console.log(`Saved ${outPath} (${result.buffer.length} bytes)`);
 			}
 		},
 		20000 //test timeout

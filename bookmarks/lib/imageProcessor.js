@@ -23,6 +23,47 @@ function hexToRgb(hex) {
 		: [128, 128, 128];
 }
 
+/**
+ * Detects if a URL or buffer contains an SVG image
+ * @param {string} url - The image URL
+ * @param {Buffer} buffer - The image buffer (optional)
+ * @returns {boolean} - True if it's an SVG
+ */
+function isSvgImage(url, buffer = null) {
+	// Check URL extension
+	if (url && url.toLowerCase().includes('.svg')) {
+		return true;
+	}
+
+	// Check buffer content for SVG signature
+	if (buffer) {
+		const bufferStart = buffer.toString(
+			'utf8',
+			0,
+			Math.min(100, buffer.length)
+		);
+		return bufferStart.includes('<svg') || bufferStart.includes('<?xml');
+	}
+
+	return false;
+}
+
+/**
+ * Handles SVG images by returning them as-is or converting to PNG
+ * @param {Buffer} svgBuffer - The SVG buffer
+ * @param {object} options - Processing options
+ * @returns {Promise<{buffer: Buffer, format: string}>} - Processed result
+ */
+async function processSvgImage(svgBuffer, options = {}) {
+	// For now, we'll return SVG as-is since it's scalable
+	// In the future, you could convert to PNG using a library like svg2png
+	return {
+		buffer: svgBuffer,
+		format: 'svg',
+		contentType: 'image/svg+xml',
+	};
+}
+
 export async function processImageFromUrl(url, options = {}) {
 	const width = options.width || 240;
 	const height = options.height || 160;
@@ -44,6 +85,12 @@ export async function processImageFromUrl(url, options = {}) {
 	}
 	const arrayBuffer = await response.arrayBuffer();
 	const inputBuffer = Buffer.from(arrayBuffer);
+
+	// Check if it's an SVG and handle accordingly
+	if (isSvgImage(url, inputBuffer)) {
+		console.log('Detected SVG image, handling separately');
+		return processSvgImage(inputBuffer, options);
+	}
 
 	let processed = sharp(inputBuffer);
 
@@ -125,5 +172,9 @@ export async function processImageFromUrl(url, options = {}) {
 		fs.writeFileSync('debug-output.webp', outputBuffer);
 	});
 
-	return outputBuffer;
+	return {
+		buffer: outputBuffer,
+		format: 'webp',
+		contentType: 'image/webp',
+	};
 }

@@ -1,13 +1,17 @@
 import './index.css';
 import { library, dom } from '@fortawesome/fontawesome-svg-core';
+
+// Show content once styles are loaded to prevent FOUC
+document.body.classList.add('styles-loaded');
 import {
 	faEdit,
 	faTrash,
 	faStar as faStarSolid,
+	faCopy,
 } from '@fortawesome/free-solid-svg-icons';
 import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons';
 
-library.add(faEdit, faTrash, faStarSolid, faStarRegular);
+library.add(faEdit, faTrash, faStarSolid, faStarRegular, faCopy);
 dom.watch();
 
 // Expose build meta to window (redundant if already in HTML, but safe)
@@ -77,7 +81,7 @@ async function loadBookmarks(initial = false) {
 		bookmarks = [];
 		currentOffset = 0;
 		allLoaded = false;
-		renderLoadingCard();
+		// Don't call renderLoadingCard() since it's already in the HTML
 	} else {
 		appendBottomSpinner();
 	}
@@ -121,8 +125,77 @@ function isValidUrl(str) {
 	}
 }
 
+// Parse query parameters from URL
+function parseQueryParams() {
+	const urlParams = new URLSearchParams(window.location.search);
+	const params = {};
+	for (const [key, value] of urlParams.entries()) {
+		params[key] = decodeURIComponent(value);
+	}
+	return params;
+}
+
+// Check if URL has bookmark creation parameters
+function hasBookmarkParams() {
+	const params = parseQueryParams();
+	return params.url && isValidUrl(params.url);
+}
+
+// Add bookmark from query parameters
+async function addBookmarkFromParams() {
+	const params = parseQueryParams();
+	const { url, title, description, tags } = params;
+
+	if (!url || !isValidUrl(url)) {
+		showError('Invalid URL provided');
+		return false;
+	}
+
+	try {
+		const response = await fetch('/api/bookmarks', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				url: url,
+				title: title || '',
+				description: description || '',
+				tags: tags || '',
+			}),
+		});
+
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(error.error || 'Failed to add bookmark');
+		}
+
+		const newBookmark = await response.json();
+		showSuccess('Bookmark added successfully!');
+
+		// Navigate to clean URL after a delay
+		setTimeout(() => {
+			window.location.href = '/';
+		}, 2500); // 2.5 seconds delay to show the success message
+
+		return true;
+	} catch (error) {
+		console.error('Error adding bookmark from params:', error);
+		showError(error.message);
+		return false;
+	}
+}
+
 let observer;
 document.addEventListener('DOMContentLoaded', function () {
+	// Check for bookmark creation via query parameters first
+	if (hasBookmarkParams()) {
+		// Special mode: don't load bookmarks, just add the new one
+		setupEventListeners();
+		addBookmarkFromParams();
+		return; // Exit early, don't load bookmarks or setup observer
+	}
+
 	// Check for share target POST
 	if (window.location.search.includes('share-target')) {
 		// Not used, but for future query param detection
@@ -231,6 +304,17 @@ function setupEventListeners() {
 			hideEditModal();
 		});
 	});
+	// Add escape key listener to dismiss modals
+	document.addEventListener('keydown', function (event) {
+		if (event.key === 'Escape') {
+			if (addBookmarkModal.style.display === 'block') {
+				hideAddModal();
+			}
+			if (editBookmarkModal.style.display === 'block') {
+				hideEditModal();
+			}
+		}
+	});
 	if (addBookmarkForm) {
 		addBookmarkForm.addEventListener('submit', handleAddBookmark);
 	}
@@ -297,6 +381,7 @@ async function handleEditBookmark(event) {
 	event.preventDefault();
 
 	const id = document.getElementById('editId').value;
+	const url = document.getElementById('editUrl').value;
 	const title = document.getElementById('editTitle').value;
 	const description = document.getElementById('editDescription').value;
 	const tags = document.getElementById('editTags').value;
@@ -306,12 +391,14 @@ async function handleEditBookmark(event) {
 	const favorite = document.getElementById('editFavorite').checked ? 1 : 0;
 
 	try {
-		const response = await fetch(`/api/bookmarks/${id}`, {
+		const response = await fetch('/api/bookmarks', {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
+				id,
+				url,
 				title,
 				description,
 				tags,
@@ -380,7 +467,7 @@ const formatBookmarkCard = (bookmark) => {
 	if (bookmark.image_storage_url) {
 		imageSrc = bookmark.image_storage_url;
 	} else if (bookmark.image_storage_url_present) {
-		imageSrc = `/api/bookmarks/image/${bookmark.id}`;
+		imageSrc = `/api/bookmarks?image=true&id=${bookmark.id}`;
 	} else if (bookmark.image) {
 		imageSrc = bookmark.image;
 	}
@@ -423,19 +510,22 @@ const formatBookmarkCard = (bookmark) => {
 								.join('')
 						: ''
 				}
-                <span class="read-status-pill">${
+                <!-- <span class="read-status-pill">${
 					bookmark.read_status === 1 ? 'Read' : 'Unread'
-				}</span>
+				}</span> -->
               </div>
             </div>
             <div class="card-actions-row">
               <button class="btn btn-sm btn-secondary card-action-btn" onclick="editBookmark('${
 					bookmark.id
 				}')" title="Edit"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-sm btn-secondary card-action-btn" onclick="copyBookmarkUrl('${
+					bookmark.id
+				}')" title="Copy URL"><i class="fas fa-copy"></i></button>
               <button class="btn btn-sm btn-danger card-action-btn" onclick="deleteBookmark('${
 					bookmark.id
 				}')" title="Delete"><i class="fas fa-trash"></i></button>
-              ${getStarIcon(bookmark)}
+              <!-- ${getStarIcon(bookmark)} -->
             </div>
           </div>
         </div>
@@ -478,10 +568,12 @@ function renderBookmarks(bookmarks) {
 		} else {
 			// Mobile: whole card except actions is clickable
 			card.addEventListener('click', function (e) {
-				if (e.target.closest('.card-action-btn')) {
+				// Check if the click target is or is inside a card action button
+				const actionBtn = e.target.closest('.card-action-btn');
+				if (actionBtn) {
 					e.stopPropagation();
 					e.preventDefault();
-					return;
+					return false;
 				}
 				if (url) window.open(url, '_blank', 'noopener');
 			});
@@ -508,6 +600,7 @@ function hideAddModal() {
 }
 function showEditModal(bookmark) {
 	document.getElementById('editId').value = bookmark.id;
+	document.getElementById('editUrl').value = bookmark.url || '';
 	document.getElementById('editTitle').value = bookmark.title || '';
 	document.getElementById('editDescription').value =
 		bookmark.description || '';
@@ -574,8 +667,12 @@ async function deleteBookmark(id) {
 	}
 	try {
 		showCardLoadingOverlay(id, true);
-		const response = await fetch(`/api/bookmarks/${id}`, {
+		const response = await fetch('/api/bookmarks', {
 			method: 'DELETE',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ id }),
 		});
 		if (!response.ok) {
 			const error = await response.json();
@@ -653,16 +750,42 @@ window.toggleFavorite = async function (id) {
 	const newFavorite =
 		bookmark.favorite === 1 || bookmark.favorite === true ? 0 : 1;
 	try {
-		const response = await fetch(`/api/bookmarks/${id}`, {
+		const response = await fetch('/api/bookmarks', {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ favorite: newFavorite }),
+			body: JSON.stringify({ id, favorite: newFavorite }),
 		});
 		if (!response.ok) throw new Error('Failed to update favorite');
 		bookmark.favorite = newFavorite;
 		renderBookmarks(bookmarks);
 	} catch (e) {
 		showError('Could not update favorite');
+	}
+};
+
+window.copyBookmarkUrl = async function (id) {
+	const bookmark = bookmarks.find((b) => b.id == id);
+	if (!bookmark || !bookmark.url) {
+		showError('Could not find bookmark URL');
+		return;
+	}
+
+	try {
+		await navigator.clipboard.writeText(bookmark.url);
+		showSuccess('URL copied to clipboard');
+	} catch (e) {
+		// Fallback for older browsers
+		const textArea = document.createElement('textarea');
+		textArea.value = bookmark.url;
+		document.body.appendChild(textArea);
+		textArea.select();
+		try {
+			document.execCommand('copy');
+			showSuccess('URL copied to clipboard');
+		} catch (fallbackError) {
+			showError('Could not copy URL to clipboard');
+		}
+		document.body.removeChild(textArea);
 	}
 };
 

@@ -1,6 +1,7 @@
 import ogs from 'open-graph-scraper';
 import * as cheerio from 'cheerio';
 import probe from 'probe-image-size';
+import { sanitizeDescription, sanitizeTitle } from './sanitizer.js';
 
 // User agent string for web requests
 const USER_AGENT =
@@ -9,6 +10,8 @@ const USER_AGENT =
 // Helper function to resolve relative URLs
 function resolveUrl(src, baseUrl) {
 	try {
+		// Handle null/undefined gracefully
+		if (src == null) return src;
 		return new URL(src, baseUrl).href;
 	} catch {
 		return src;
@@ -147,8 +150,8 @@ async function extractMetadataWithCheerio(url) {
 		}
 
 		return {
-			title: title.trim(),
-			description: description.trim(),
+			title: sanitizeTitle(title.trim()),
+			description: sanitizeDescription(description.trim()),
 			image: finalImage,
 		};
 	} catch (error) {
@@ -207,8 +210,8 @@ export async function extractMetadata(url) {
 		}
 
 		scrapedMetadata = {
-			title: title.trim(),
-			description: description.trim(),
+			title: sanitizeTitle(title.trim()),
+			description: sanitizeDescription(description.trim()),
 			image: image.trim(),
 		};
 
@@ -227,7 +230,17 @@ export async function extractMetadata(url) {
 		console.log(
 			'open-graph-scraper provided complete metadata, skipping cheerio'
 		);
-		return scrapedMetadata;
+
+		// Always resolve image URL to absolute before returning
+		const finalMetadata = {
+			...scrapedMetadata,
+			image: scrapedMetadata.image
+				? resolveUrl(scrapedMetadata.image, url)
+				: '',
+		};
+
+		console.log('Final metadata (early return):', finalMetadata);
+		return finalMetadata;
 	}
 
 	// Use cheerio to fill in missing information
@@ -241,11 +254,13 @@ export async function extractMetadata(url) {
 		const cheerioMetadata = await extractMetadataWithCheerio(url);
 
 		// Merge results: use open-graph-scraper data if available, otherwise use cheerio data
+		const mergedImage = scrapedMetadata.image || cheerioMetadata.image;
+
 		const finalMetadata = {
 			title: scrapedMetadata.title || cheerioMetadata.title,
 			description:
 				scrapedMetadata.description || cheerioMetadata.description,
-			image: scrapedMetadata.image || cheerioMetadata.image,
+			image: mergedImage ? resolveUrl(mergedImage, url) : '',
 		};
 
 		console.log('Final merged metadata:', finalMetadata);
@@ -253,6 +268,15 @@ export async function extractMetadata(url) {
 	} catch (error) {
 		console.error('Error with cheerio fallback:', error.message);
 		// If cheerio fails, return whatever we got from open-graph-scraper
-		return scrapedMetadata;
+		// but still resolve the image URL
+		const fallbackMetadata = {
+			...scrapedMetadata,
+			image: scrapedMetadata.image
+				? resolveUrl(scrapedMetadata.image, url)
+				: '',
+		};
+
+		console.log('Final metadata (fallback):', fallbackMetadata);
+		return fallbackMetadata;
 	}
 }

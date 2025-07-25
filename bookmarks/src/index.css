@@ -497,6 +497,9 @@ section {
 	.card-desc {
 		cursor: pointer;
 	}
+	.mobile-only {
+		display: none !important;
+	}
 }
 
 @media (max-width: 700px) {
@@ -512,7 +515,7 @@ section {
 		align-items: center;
 		gap: 0.7em;
 		justify-content: space-between;
-		padding-inline: 0.4em;
+		padding-inline: 0.5em;
 	}
 	.action-buttons {
 		margin-left: 0;
@@ -567,7 +570,7 @@ section {
 		font-size: 0.82em;
 	}
 	.icon-btn {
-		border-radius: 0;
+		border-radius: 0 !important;
 		background: none;
 		border: none;
 		box-shadow: none;
@@ -597,6 +600,9 @@ section {
 	}
 	.card-actions-row {
 		font-size: 0.93em;
+	}
+	.header-title-text {
+		display: none;
 	}
 }
 
@@ -716,4 +722,14 @@ section {
 	border-radius: 50%;
 	animation: spin 1s linear infinite;
 	margin: 0 auto;
+}
+
+.material-symbols-outlined {
+	font-family: 'Material Symbols Outlined', sans-serif;
+	font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+	font-feature-settings: 'liga';
+	font-style: normal;
+	font-display: block;
+	user-select: none;
+	-webkit-user-select: none;
 }

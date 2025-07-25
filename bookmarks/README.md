@@ -6,6 +6,8 @@ A Pocket-like bookmarking system for saving web pages to read later, built with 
 
 -   **Save Web Pages**: Add URLs and automatically extract title, description, and images
 -   **Smart Metadata**: Uses web scraping to get page titles, descriptions, and preview images
+-   **HTML Sanitization**: Automatically removes HTML tags from descriptions for clean, safe display
+-   **Advanced Image Processing**: Automatic image optimization with WebP conversion and SVG support
 -   **Tagging System**: Organize bookmarks with custom tags
 -   **Search & Filter**: Find bookmarks by text, tags, read status, or favorites
 -   **Read Status**: Mark bookmarks as read/unread
@@ -20,8 +22,29 @@ A Pocket-like bookmarking system for saving web pages to read later, built with 
 -   **Frontend**: Vanilla JavaScript with modern CSS, built with [Vite](https://vitejs.dev/)
 -   **Backend**: Vercel Serverless Functions
 -   **Database**: Supabase PostgreSQL (free tier)
--   **Web Scraping**: Cheerio for metadata extraction
+-   **Web Scraping**: Cheerio for metadata extraction + open-graph-scraper with HTML sanitization
+-   **Image Processing**: Sharp for WebP conversion, native SVG support
+-   **Storage**: Supabase Storage for image thumbnails
+-   **Testing**: Jest for unit tests with comprehensive URL resolution coverage and organized test output
 -   **Deployment**: Vercel (free tier)
+
+## Image Handling
+
+The app includes sophisticated image processing capabilities:
+
+### Supported Formats
+
+-   **Raster Images**: JPG, PNG, WebP, GIF - automatically optimized and converted to WebP
+-   **Vector Images**: SVG - stored natively for perfect scalability
+-   **Fallback**: Generates placeholder images with dominant colors when no image is available
+
+### Processing Features
+
+-   **Automatic Optimization**: Images are resized, compressed, and converted to WebP for faster loading
+-   **SVG Preservation**: SVG images are detected and stored as-is to maintain their scalable properties
+-   **Smart Thumbnails**: Generates 360x240px thumbnails with 40% quality for optimal performance
+-   **Universal URL Resolution**: Automatically converts relative image URLs to absolute URLs regardless of extraction method
+-   **Error Handling**: Gracefully handles invalid or inaccessible images
 
 ## Quick Start
 
@@ -90,6 +113,24 @@ Quick steps:
     - `SUPABASE_ANON_KEY`
 
 3. Your app will be live at `https://your-app-name.vercel.app`
+
+## Testing
+
+Run the test suite:
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test files
+npm test -- urlResolver.test.js
+npm test -- imageProcessor.test.js
+
+# Run tests with visual output (generates test files)
+IS_LOCAL=true npm test
+```
+
+Test output files are automatically organized in `test-results/` directory and ignored by git.
 
 ## File Structure
 

@@ -23,6 +23,7 @@
         "get-image-colors": "^4.0.1",
         "open-graph-scraper": "^6.10.0",
         "probe-image-size": "^7.2.3",
+        "sanitize-html": "^2.17.0",
         "sharp": "^0.32.6",
         "uuid": "^9.0.1"
     },
