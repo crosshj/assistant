@@ -517,15 +517,15 @@ const formatBookmarkCard = (bookmark) => {
               </div>
             </div>
             <div class="card-actions-row">
-              <button class="btn btn-sm btn-secondary card-action-btn" onclick="(event) => { event.stopPropagation(); event.preventDefault(); editBookmark('${
+              <button class="btn btn-sm btn-secondary card-action-btn" data-action="edit" data-id="${
 					bookmark.id
-				}') }" title="Edit"><i class="fas fa-edit"></i></button>
-              <button class="btn btn-sm btn-secondary card-action-btn" onclick="(event) => { event.stopPropagation(); event.preventDefault(); copyBookmarkUrl('${
+				}" title="Edit"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-sm btn-secondary card-action-btn" data-action="copy" data-id="${
 					bookmark.id
-				}') }" title="Copy URL"><i class="fas fa-copy"></i></button>
-              <button class="btn btn-sm btn-danger card-action-btn" onclick="(event) => { event.stopPropagation(); event.preventDefault(); deleteBookmark('${
+				}" title="Copy URL"><i class="fas fa-copy"></i></button>
+              <button class="btn btn-sm btn-danger card-action-btn" data-action="delete" data-id="${
 					bookmark.id
-				}') }" title="Delete"><i class="fas fa-trash"></i></button>
+				}" title="Delete"><i class="fas fa-trash"></i></button>
               <!-- ${getStarIcon(bookmark)} -->
             </div>
           </div>
@@ -587,6 +587,20 @@ function renderBookmarks(bookmarks) {
 				}
 			});
 		}
+	});
+
+	document.querySelectorAll('.card-action-btn').forEach((btn) => {
+		const handler = function (e) {
+			e.stopPropagation();
+			e.preventDefault();
+			const id = this.getAttribute('data-id');
+			const action = this.getAttribute('data-action');
+			if (action === 'edit') editBookmark(id);
+			else if (action === 'copy') copyBookmarkUrl(id);
+			else if (action === 'delete') deleteBookmark(id);
+		};
+		btn.addEventListener('click', handler);
+		btn.addEventListener('touchend', handler);
 	});
 }
 
