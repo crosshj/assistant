@@ -32,7 +32,7 @@ export function sanitizeDescription(html, options = {}) {
 		sanitized = decodeHtmlEntities(sanitized);
 
 		// Limit description length to prevent UI issues
-		const maxLength = options.maxLength || 500;
+		const maxLength = options.maxLength || 2000;
 		if (sanitized.length > maxLength) {
 			sanitized = sanitized.substring(0, maxLength).trim();
 			// Add ellipsis if we truncated

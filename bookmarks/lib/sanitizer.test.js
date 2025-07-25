@@ -22,9 +22,9 @@ describe('sanitizer', () => {
 		});
 
 		it('should truncate long descriptions', () => {
-			const longText = 'A'.repeat(600);
+			const longText = 'A'.repeat(2100);
 			const result = sanitizeDescription(longText);
-			expect(result.length).toBeLessThanOrEqual(503); // 500 + 3 for "..."
+			expect(result.length).toBeLessThanOrEqual(2003); // 2000 + 3 for "..."
 			expect(result.endsWith('...')).toBe(true);
 		});
 
