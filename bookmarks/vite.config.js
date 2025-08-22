@@ -5,6 +5,12 @@ export default defineConfig({
 	build: {
 		outDir: 'dist',
 		emptyOutDir: true,
+		rollupOptions: {
+			input: {
+				main: 'index.html',
+				gun: 'gun.html',
+			},
+		},
 	},
 	define: {
 		__BUILD_DATE__: JSON.stringify(new Date().toISOString()),

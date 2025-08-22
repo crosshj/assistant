@@ -5,5 +5,9 @@
             "runtime": "@vercel/node@5.3.5"
         }
     },
-    "routes": [{ "src": "/api/(.*)", "dest": "/api/$1" }]
+    "routes": [
+        { "src": "/api/(.*)", "dest": "/api/$1" },
+        { "src": "/gun", "dest": "/gun.html" },
+        { "src": "/gun/", "dest": "/gun.html" }
+    ]
 }

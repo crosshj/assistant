@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width,initial-scale=1"
+		/>
+		<meta
+			name="color-scheme"
+			content="light dark"
+		/>
+		<title>GunDB Collaborative Graph</title>
+		<link
+			rel="icon"
+			type="image/svg+xml"
+			href="/favicon.svg"
+		/>
+		<link
+			rel="manifest"
+			href="/manifest.json"
+		/>
+		<link
+			rel="stylesheet"
+			href="/src/gun.css"
+		/>
+		<style>
+			/* Hide content until styles are loaded to prevent FOUC */
+			body {
+				visibility: hidden;
+			}
+			body.styles-loaded {
+				visibility: visible;
+			}
+		</style>
+	</head>
+	<body>
+		<header>
+			<div class="row">
+				<div class="row-item">
+					<strong>Room</strong>
+					<input
+						id="room"
+						size="14"
+						placeholder="graph-room"
+					/>
+					<button
+						id="join"
+						class="primary"
+					>
+						Join
+					</button>
+					<span
+						class="pill mono"
+						id="roomStatus"
+						>not joined</span
+					>
+				</div>
+				<div class="header-divider"></div>
+				<div
+					class="row-item"
+					style="
+						display: flex;
+						align-items: center;
+						gap: 0.5rem;
+						justify-content: center;
+					"
+				>
+					<input
+						id="peers"
+						size="40"
+						placeholder="Peer URLs"
+					/>
+					<button id="applyPeers">Apply</button>
+					<button
+						id="testConnection"
+						class="secondary"
+					>
+						Test
+					</button>
+				</div>
+				<div class="header-divider"></div>
+				<div
+					class="row-item"
+					style="
+						display: flex;
+						align-items: center;
+						gap: 0.5rem;
+						justify-content: flex-end;
+					"
+				>
+					<input
+						id="alias"
+						size="10"
+						placeholder="alias"
+					/>
+					<button id="createPair">New ID</button>
+					<button id="login">Login</button>
+					<span
+						class="pill mono"
+						id="whoami"
+						>anon</span
+					>
+				</div>
+			</div>
+		</header>
+
+		<div class="grid">
+			<section class="card">
+				<header><h3 style="margin: 0">Edit</h3></header>
+				<div class="body">
+					<details open>
+						<summary><b>New node</b></summary>
+						<div
+							class="row"
+							style="margin: 0.5rem 0"
+						>
+							<input
+								id="nodeId"
+								class="mono"
+								placeholder="node id (auto if blank)"
+							/>
+							<input
+								id="nodeLabel"
+								placeholder="label"
+							/>
+						</div>
+						<label>Props (JSON object)</label>
+						<textarea
+							id="nodeProps"
+							class="mono"
+							rows="5"
+							placeholder='{"url":"https://example.com","tags":["link"],"note":"..."}'
+						></textarea>
+						<div class="row">
+							<button
+								id="addNode"
+								class="primary"
+							>
+								Upsert node
+							</button>
+							<button id="delNode">Delete node</button>
+						</div>
+					</details>
+					<hr style="border-color: #2a323a" />
+					<details open>
+						<summary><b>New edge</b></summary>
+						<div
+							class="row"
+							style="margin: 0.5rem 0"
+						>
+							<input
+								id="edgeId"
+								class="mono"
+								placeholder="edge id (auto if blank)"
+							/>
+							<input
+								id="edgeFrom"
+								class="mono"
+								placeholder="from id"
+							/>
+							<input
+								id="edgeTo"
+								class="mono"
+								placeholder="to id"
+							/>
+							<input
+								id="edgeLabel"
+								placeholder="label"
+							/>
+						</div>
+						<label>Props (JSON object)</label>
+						<textarea
+							id="edgeProps"
+							class="mono"
+							rows="4"
+							placeholder='{"weight":1}'
+						></textarea>
+						<div class="row">
+							<button
+								id="addEdge"
+								class="primary"
+							>
+								Upsert edge
+							</button>
+							<button id="delEdge">Delete edge</button>
+						</div>
+					</details>
+					<hr style="border-color: #2a323a" />
+					<div class="row">
+						<button id="exportBtn">Export JSON</button>
+						<input
+							type="file"
+							id="importFile"
+							accept="application/json"
+						/>
+						<button id="clearLocal">Clear local cache</button>
+					</div>
+					<p class="note">
+						Data model: <code>graphs/{room}/nodes/{id}</code> and
+						<code>graphs/{room}/edges/{id}</code>.
+					</p>
+				</div>
+			</section>
+
+			<section class="card">
+				<header><h3 style="margin: 0">Graph</h3></header>
+				<div
+					class="body"
+					style="padding: 0; flex: 1"
+				>
+					<div
+						style="
+							padding: 0.5rem 0.75rem;
+							border-bottom: 1px solid #30363d;
+						"
+					>
+						<div class="row">
+							<input
+								id="searchNode"
+								placeholder="Search nodes..."
+								style="flex: 1"
+							/>
+							<button id="clearSearch">Clear</button>
+							<select id="layoutSelect">
+								<option value="cose">Force-directed</option>
+								<option value="grid">Grid</option>
+								<option value="circle">Circle</option>
+								<option value="concentric">Concentric</option>
+							</select>
+							<button id="fitGraph">Fit</button>
+						</div>
+					</div>
+					<div id="cy"></div>
+				</div>
+			</section>
+
+			<aside class="card">
+				<header><h3 style="margin: 0">Activity</h3></header>
+				<div class="body">
+					<ul
+						id="log"
+						class="list"
+					></ul>
+					<hr style="border-color: #2a323a" />
+					<div>
+						<b>Selected</b>
+						<pre
+							id="sel"
+							class="mono"
+							style="white-space: pre-wrap"
+						></pre>
+					</div>
+				</div>
+			</aside>
+		</div>
+
+		<script
+			type="module"
+			src="/src/gun.js"
+		></script>
+	</body>
+</html>
