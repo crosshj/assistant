@@ -1,13 +1,28 @@
 import { log } from '../utils/utils.js';
 
-// Data Synchronization between GunDB and Visualization
+// Data Synchronization between GunDB and UI
 export class DataSync {
-	constructor(roomManager, visualization) {
+	constructor(roomManager) {
 		this.roomManager = roomManager;
-		this.visualization = visualization;
 		this.nodesChain = null;
 		this.edgesChain = null;
 		this.isSubscribed = false;
+		this.eventListeners = new Map();
+	}
+
+	// Event system for UI components to listen to
+	on(event, callback) {
+		if (!this.eventListeners.has(event)) {
+			this.eventListeners.set(event, []);
+		}
+		this.eventListeners.get(event).push(callback);
+	}
+
+	emit(event, data) {
+		const listeners = this.eventListeners.get(event);
+		if (listeners) {
+			listeners.forEach((callback) => callback(data));
+		}
 	}
 
 	subscribeToRoom() {
@@ -16,26 +31,21 @@ export class DataSync {
 			return false;
 		}
 
-		if (!this.visualization.isInitialized()) {
-			log('⚠️ Cytoscape not initialized yet');
-			return false;
-		}
-
 		// Clear existing subscriptions
 		this.unsubscribeFromRoom();
 
-		// Clear the graph
-		this.visualization.clearGraph();
+		// Emit event for UI to clear graph
+		this.emit('clearGraph');
 
 		// Subscribe to nodes
 		this.nodesChain = this.roomManager.getGraphRoot().get('nodes').map();
 		this.nodesChain.on((data, id) => {
 			try {
 				if (!data) {
-					this.visualization.removeNode(id);
+					this.emit('removeNode', { id });
 					return;
 				}
-				this.visualization.addNode(data);
+				this.emit('addNode', { data, id });
 			} catch (error) {
 				log('❌ Error syncing node: ' + error.message);
 			}
@@ -46,10 +56,10 @@ export class DataSync {
 		this.edgesChain.on((data, id) => {
 			try {
 				if (!data) {
-					this.visualization.removeEdge(id);
+					this.emit('removeEdge', { id });
 					return;
 				}
-				this.visualization.addEdge(data);
+				this.emit('addEdge', { data, id });
 			} catch (error) {
 				log('❌ Error syncing edge: ' + error.message);
 			}
@@ -83,8 +93,8 @@ export class DataSync {
 			return false;
 		}
 
-		// Clear current visualization
-		this.visualization.clearGraph();
+		// Emit event for UI to clear graph
+		this.emit('clearGraph');
 
 		// Re-subscribe to get fresh data
 		this.subscribeToRoom();
@@ -100,7 +110,6 @@ export class DataSync {
 			hasNodesChain: !!this.nodesChain,
 			hasEdgesChain: !!this.edgesChain,
 			isInRoom: this.roomManager.isInRoom(),
-			visualizationReady: this.visualization.isInitialized(),
 		};
 	}
 }

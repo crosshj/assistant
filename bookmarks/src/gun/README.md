@@ -8,7 +8,7 @@ A real-time collaborative graph visualization tool built with GunDB and Cytoscap
 gun/
 ├── gun.js                 # Main application
 ├── gun.css                # Styles
-├── components/            # UI components (header, forms, graph, sidebar)
+├── components/            # UI components (header, forms, graph, sidebar, visualization)
 ├── services/              # GunDB & business logic
 └── utils/                 # Shared utilities
 ```

@@ -1,5 +1,5 @@
 import cytoscape from 'cytoscape';
-import { log, $ } from '../utils/utils.js';
+import { log, $ } from '../../utils/utils.js';
 
 // Cytoscape Visualization Management
 export class GraphVisualization {

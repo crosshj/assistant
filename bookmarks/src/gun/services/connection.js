@@ -1,7 +1,7 @@
 import Gun from 'gun';
 import 'gun/sea';
 import 'gun/axe';
-import { log, $ } from '../utils/utils.js';
+import { log } from '../utils/utils.js';
 
 // GunDB Connection Management
 export class GunConnection {
@@ -10,6 +10,22 @@ export class GunConnection {
 		this.user = null;
 		this.peers = [];
 		this.connectionStatus = { connected: 0, total: 0 };
+		this.eventListeners = new Map();
+	}
+
+	// Event system for UI components to listen to
+	on(event, callback) {
+		if (!this.eventListeners.has(event)) {
+			this.eventListeners.set(event, []);
+		}
+		this.eventListeners.get(event).push(callback);
+	}
+
+	emit(event, data) {
+		const listeners = this.eventListeners.get(event);
+		if (listeners) {
+			listeners.forEach(callback => callback(data));
+		}
 	}
 
 	init(peers = []) {
@@ -45,7 +61,7 @@ export class GunConnection {
 		const saved = this.tryJSON(localStorage.getItem('gun_demo_creds'));
 		if (saved) {
 			this.user.auth(saved.alias, saved.pass, () => {
-				$('whoami').textContent = saved.alias;
+				this.emit('userLoggedIn', { alias: saved.alias });
 				log('auto login ' + saved.alias);
 			});
 		}
@@ -83,7 +99,7 @@ export class GunConnection {
 				} else if (connectedPeers > 0 && lastStatus === '0/0') {
 					log('✅ Reconnected to peers');
 					// Reset connection error flag when reconnected
-					window.connectionErrorShown = false;
+					this.emit('connectionRestored');
 				}
 
 				lastStatus = currentStatus;
@@ -99,25 +115,9 @@ export class GunConnection {
 
 	updateConnectionStatus(connected, total) {
 		this.connectionStatus = { connected, total };
-		const statusEl = $('roomStatus');
-
-		if (connected === 0) {
-			statusEl.textContent = '⚠️ Disconnected';
-			statusEl.style.color = '#ff6b6b';
-			statusEl.style.borderColor = '#ff6b6b';
-			statusEl.title =
-				'No peer connections available - Click "Test Connection" for details';
-		} else if (connected < total) {
-			statusEl.textContent = `⚠️ ${connected}/${total} peers`;
-			statusEl.style.color = '#ffa726';
-			statusEl.style.borderColor = '#ffa726';
-			statusEl.title = `${connected} of ${total} peers connected - Partial connection`;
-		} else {
-			statusEl.textContent = `✅ ${connected}/${total} peers`;
-			statusEl.style.color = '#66bb6a';
-			statusEl.style.borderColor = '#66bb6a';
-			statusEl.title = `All ${connected} peers connected - Ready for operations`;
-		}
+		
+		// Emit status update event for UI to consume
+		this.emit('connectionStatusChanged', { connected, total });
 	}
 
 	getConnectionStatus() {

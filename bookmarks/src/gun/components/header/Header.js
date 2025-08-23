@@ -50,7 +50,7 @@ export class Header {
 				return;
 			}
 			const pass = prompt('Password for ' + alias + ':');
-			this.auth.login(alias, pass);
+			this.auth.login(saved.alias, pass);
 		};
 
 		// Room controls
@@ -62,6 +62,37 @@ export class Header {
 
 	setInitialValues() {
 		$('peers').value = this.connection.getDefaultPeers().join(',');
+	}
+
+	// Event handlers for service events
+	updateConnectionStatus(connected, total) {
+		const statusEl = $('roomStatus');
+
+		if (connected === 0) {
+			statusEl.textContent = '⚠️ Disconnected';
+			statusEl.style.color = '#ff6b6b';
+			statusEl.style.borderColor = '#ff6b6b';
+			statusEl.title =
+				'No peer connections available - Click "Test Connection" for details';
+		} else if (connected < total) {
+			statusEl.textContent = `⚠️ ${connected}/${total} peers`;
+			statusEl.style.color = '#ffa726';
+			statusEl.style.borderColor = '#ffa726';
+			statusEl.title = `${connected} of ${total} peers connected - Partial connection`;
+		} else {
+			statusEl.textContent = `✅ ${connected}/${total} peers`;
+			statusEl.style.color = '#66bb6a';
+			statusEl.style.borderColor = '#66bb6a';
+			statusEl.title = `All ${connected} peers connected - Ready for operations`;
+		}
+	}
+
+	updateUserDisplay(alias) {
+		$('whoami').textContent = alias;
+	}
+
+	updateRoomStatus(status) {
+		$('roomStatus').textContent = status;
 	}
 
 	generateId() {

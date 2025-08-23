@@ -1,4 +1,4 @@
-import { log, $ } from '../utils/utils.js';
+import { log } from '../utils/utils.js';
 
 // Room Management
 export class RoomManager {
@@ -8,6 +8,22 @@ export class RoomManager {
 		this.graphRoot = null;
 		this.nodesChain = null;
 		this.edgesChain = null;
+		this.eventListeners = new Map();
+	}
+
+	// Event system for UI components to listen to
+	on(event, callback) {
+		if (!this.eventListeners.has(event)) {
+			this.eventListeners.set(event, []);
+		}
+		this.eventListeners.get(event).push(callback);
+	}
+
+	emit(event, data) {
+		const listeners = this.eventListeners.get(event);
+		if (listeners) {
+			listeners.forEach(callback => callback(data));
+		}
 	}
 
 	joinRoom(room, connectionManager) {
@@ -20,13 +36,13 @@ export class RoomManager {
 				log('⚠️ Cannot join room: No peer connections available');
 				window.connectionErrorShown = true;
 			}
-			$('roomStatus').textContent = '⚠️ No connection';
+			this.emit('roomStatusChanged', { status: '⚠️ No connection' });
 			return false;
 		}
 
 		this.currentRoom = room;
 		this.graphRoot = this.gun.get('graphs').get(room);
-		$('roomStatus').textContent = `📊 ${room}`;
+		this.emit('roomStatusChanged', { status: `📊 ${room}` });
 
 		log('joined room ' + room);
 		return true;
@@ -53,7 +69,7 @@ export class RoomManager {
 		this.nodesChain = null;
 		this.edgesChain = null;
 
-		$('roomStatus').textContent = 'not joined';
+		this.emit('roomStatusChanged', { status: 'not joined' });
 		log('left room');
 	}
 

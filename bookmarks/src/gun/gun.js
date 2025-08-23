@@ -5,7 +5,7 @@ import { GunConnection } from './services/connection.js';
 import { AuthManager } from './services/auth.js';
 import { RoomManager } from './services/room.js';
 import { GraphOperations } from './services/graphOperations.js';
-import { GraphVisualization } from './services/visualization.js';
+import { GraphVisualization } from './components/visualization/visualization.js';
 import { DataSync } from './services/sync.js';
 
 // Import UI components
@@ -41,12 +41,15 @@ class GunApp {
 		this.auth = new AuthManager(this.connection.user);
 		this.rooms = new RoomManager(this.connection.gun);
 		this.graph = new GraphOperations(this.rooms, this.auth);
-		this.sync = new DataSync(this.rooms, this.visualization);
+		this.sync = new DataSync(this.rooms);
 
 		// Initialize UI components
 		this.header = new Header(this.connection, this.auth);
 		this.forms = new GraphForms(this.graph, this.connection);
 		this.graphView = new GraphView(this.visualization);
+
+		// Wire up event system between services and UI
+		this.wireUpEvents();
 
 		// Setup global functions for components to use
 		this.setupGlobalFunctions();
@@ -59,55 +62,75 @@ class GunApp {
 		}
 	}
 
-	setupGlobalFunctions() {
-		// Room management
-		window.joinRoom = (room) => {
-			if (this.rooms.joinRoom(room, this.connection)) {
-				setTimeout(() => {
-					this.sync.subscribeToRoom();
-				}, 100);
-			}
+	wireUpEvents() {
+		// Event mappings: service -> event -> component.method
+		const events = {
+			connection: {
+				connectionStatusChanged:
+					this.header.updateConnectionStatus.bind(this.header),
+				userLoggedIn: this.header.updateUserDisplay.bind(this.header),
+				connectionRestored: () => (window.connectionErrorShown = false),
+			},
+			rooms: {
+				roomStatusChanged: this.header.updateRoomStatus.bind(
+					this.header
+				),
+			},
+			sync: {
+				clearGraph: this.visualization.clearGraph.bind(
+					this.visualization
+				),
+				addNode: ({ data }) => this.visualization.addNode(data),
+				removeNode: ({ id }) => this.visualization.removeNode(id),
+				addEdge: ({ data }) => this.visualization.addEdge(data),
+				removeEdge: ({ id }) => this.visualization.removeEdge(id),
+			},
 		};
 
-		window.refreshRoom = () => {
-			this.sync.refreshData();
-		};
-
-		// Export/import
-		window.exportRoom = async () => {
-			const data = await this.rooms.exportRoom(
-				this.rooms.getCurrentRoom()
-			);
-			const blob = new Blob([JSON.stringify(data, null, 2)], {
-				type: 'application/json',
+		// Wire up all events
+		Object.entries(events).forEach(([service, eventMap]) => {
+			Object.entries(eventMap).forEach(([event, handler]) => {
+				this[service].on(event, handler);
 			});
-			const a = document.createElement('a');
-			a.href = URL.createObjectURL(blob);
-			a.download = `${this.rooms.getCurrentRoom()}-graph.json`;
-			a.click();
-			this.sidebar.success('exported');
+		});
+	}
+
+	setupGlobalFunctions() {
+		// Global function mappings
+		const globals = {
+			joinRoom: (room) => {
+				if (this.rooms.joinRoom(room, this.connection)) {
+					setTimeout(() => this.sync.subscribeToRoom(), 100);
+				}
+			},
+			refreshRoom: () => this.sync.refreshData(),
+			exportRoom: async () => {
+				const data = await this.rooms.exportRoom(
+					this.rooms.getCurrentRoom()
+				);
+				const blob = new Blob([JSON.stringify(data, null, 2)], {
+					type: 'application/json',
+				});
+				const a = document.createElement('a');
+				a.href = URL.createObjectURL(blob);
+				a.download = `${this.rooms.getCurrentRoom()}-graph.json`;
+				a.click();
+				this.sidebar.success('exported');
+			},
+			importRoomData: (data) => this.rooms.importRoomData(data),
+			updateNodeForm: (data) => this.forms.updateNodeForm(data),
+			updateEdgeForm: (data) => this.forms.updateEdgeForm(data),
 		};
 
-		window.importRoomData = (data) => {
-			this.rooms.importRoomData(data);
-		};
-
-		// Form updates
-		window.updateNodeForm = (data) => {
-			this.forms.updateNodeForm(data);
-		};
-
-		window.updateEdgeForm = (data) => {
-			this.forms.updateEdgeForm(data);
-		};
+		// Set up all global functions
+		Object.entries(globals).forEach(([name, fn]) => {
+			window[name] = fn;
+		});
 
 		// Global state
-		window.currentRoom = null;
 		Object.defineProperty(window, 'currentRoom', {
 			get: () => this.rooms.getCurrentRoom(),
-			set: (value) => {
-				// This will be updated by the room manager
-			},
+			set: () => {}, // Read-only
 		});
 	}
 
