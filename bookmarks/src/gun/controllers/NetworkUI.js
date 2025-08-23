@@ -1,0 +1,106 @@
+/**
+ * Network UI Controller
+ * Pure UI rendering based on state - no business logic
+ */
+export class NetworkUI {
+	constructor() {
+		this.elements = null;
+	}
+
+	_getElements() {
+		if (!this.elements) {
+			this.elements = {
+				status: document.getElementById('connectionStatus'),
+				connectBtn: document.getElementById('connectBtn'),
+				disconnectBtn: document.getElementById('disconnectBtn'),
+				testBtn: document.getElementById('testConnection'),
+				connectionControls:
+					document.getElementById('connectionControls'),
+			};
+		}
+		return this.elements;
+	}
+
+	// Render UI based on network state
+	render(networkState) {
+		switch (networkState.status) {
+			case 'disconnected':
+				this._renderDisconnected(networkState);
+				break;
+			case 'connecting':
+				this._renderConnecting(networkState);
+				break;
+			case 'partial':
+				this._renderPartial(networkState);
+				break;
+			case 'connected':
+				this._renderConnected(networkState);
+				break;
+		}
+	}
+
+	_renderDisconnected(state) {
+		const elements = this._getElements();
+		// Status: Hidden - user can infer from UI state
+		elements.status.style.display = 'none';
+
+		// Buttons: Blue Connect + Outlined Test
+		elements.connectBtn.style.display = 'inline-block';
+		elements.connectBtn.className = 'primary';
+		elements.connectBtn.style.backgroundColor = '';
+		elements.connectBtn.style.color = '';
+
+		elements.testBtn.style.display = 'inline-block';
+		elements.testBtn.className = 'secondary';
+		elements.testBtn.style.backgroundColor = '';
+		elements.testBtn.style.color = '';
+
+		elements.disconnectBtn.style.display = 'none';
+		elements.connectionControls.style.display = 'none';
+	}
+
+	_renderConnecting(state) {
+		const elements = this._getElements();
+		// Status: Connecting with orange styling
+		elements.status.style.display = 'inline-block';
+		elements.status.textContent = 'Connecting...';
+		// elements.status.style.color = '#ffa726';
+		// elements.status.style.borderColor = '#ffa726';
+
+		// Hide all buttons during connection
+		elements.connectBtn.style.display = 'none';
+		elements.testBtn.style.display = 'none';
+		elements.disconnectBtn.style.display = 'none';
+		elements.connectionControls.style.display = 'none';
+	}
+
+	_renderPartial(state) {
+		const elements = this._getElements();
+		// Status: Warning with peer count
+		elements.status.style.display = 'inline-block';
+		elements.status.textContent = `Partial: ${state.connected}/${state.total} peers`;
+		elements.status.style.color = '#ffa726';
+		elements.status.style.borderColor = '#ffa726';
+
+		// Only disconnect button visible
+		elements.connectBtn.style.display = 'none';
+		elements.testBtn.style.display = 'none';
+		elements.disconnectBtn.style.display = 'inline-block';
+		elements.connectionControls.style.display = 'none';
+	}
+
+	_renderConnected(state) {
+		const elements = this._getElements();
+		// Status: Success with peer count
+		elements.status.style.display = 'inline-block';
+		elements.status.textContent = `Connected: ${state.connected}/${state.total} peers`;
+		elements.status.style.color = '#66bb6b';
+		elements.status.style.borderColor = '#66bb6b';
+
+		// Only disconnect button visible
+		elements.connectBtn.style.display = 'none';
+		elements.testBtn.style.display = 'none';
+		elements.disconnectBtn.style.display = 'inline-block';
+		elements.connectionControls.style.display = 'none';
+	}
+}

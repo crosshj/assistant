@@ -2,8 +2,9 @@ import { log, $, uuid } from '../utils/utils.js';
 
 // Authentication Management
 export class AuthManager {
-	constructor(user) {
+	constructor(user, stateManager) {
 		this.user = user;
+		this.stateManager = stateManager;
 	}
 
 	createIdentity(alias = null) {
@@ -30,8 +31,10 @@ export class AuthManager {
 			if (err) {
 				log('auth error ' + err);
 			} else {
-				$('whoami').textContent = alias;
 				log('logged in as ' + alias);
+
+				// Update state to reflect authentication
+				this.stateManager.setAuthAuthenticated(alias);
 
 				// Save credentials for auto-login
 				localStorage.setItem(
@@ -49,8 +52,10 @@ export class AuthManager {
 				if (err) {
 					log('auth error ' + err);
 				} else {
-					$('whoami').textContent = saved.alias;
 					log('logged in as ' + saved.alias);
+
+					// Update state to reflect authentication
+					this.stateManager.setAuthAuthenticated(saved.alias);
 				}
 			});
 		}
@@ -74,7 +79,9 @@ export class AuthManager {
 
 	logout() {
 		this.user.leave();
-		$('whoami').textContent = 'anon';
 		log('logged out');
+
+		// Update state to reflect logout
+		this.stateManager.setAuthAnonymous();
 	}
 }

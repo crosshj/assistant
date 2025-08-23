@@ -184,6 +184,18 @@ button.secondary:hover {
 	background: transparent;
 	padding: var(--card-padding);
 	border-bottom: 1px solid var(--card-border);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.card header h3 {
+	margin: 0;
+	flex-shrink: 0;
+}
+
+.card header button {
+	margin-left: auto;
 }
 
 .card .body {
@@ -241,6 +253,16 @@ label {
 }
 
 /* Connection status styling */
+#connectionStatus {
+	border: 2px solid var(--card-border);
+	padding: 0.25rem 0.75rem;
+	border-radius: 999px;
+	font-weight: 600;
+	transition: all 0.3s ease;
+	color: white;
+}
+
+/* Room status styling */
 #roomStatus {
 	border: 2px solid var(--card-border);
 	padding: 0.25rem 0.75rem;

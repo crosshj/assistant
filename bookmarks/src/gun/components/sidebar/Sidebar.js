@@ -11,10 +11,8 @@ export class Sidebar {
 			const target = hash || 'public';
 			$('room').value = target;
 
-			// Wait for everything to initialize before joining
-			setTimeout(() => {
-				window.joinRoom && window.joinRoom(target);
-			}, 500);
+			// Room joining is now handled by the proper event-driven flow
+			// through StateManager -> EventCoordinator -> RoomManager
 		});
 	}
 
@@ -57,6 +55,11 @@ export class Sidebar {
 	// Log error message
 	error(message) {
 		this.logWithStyle(message, 'color: #ff6b6b;');
+	}
+
+	// Log info message
+	info(message) {
+		this.logWithStyle(message, 'color: #42a5f5;');
 	}
 }
 

@@ -7,6 +7,7 @@ export class GraphVisualization {
 		this.cy = null;
 		this.layoutTimeout = null;
 		this.initialized = false;
+		this.isLayoutRunning = false;
 	}
 
 	init(containerId) {
@@ -34,6 +35,17 @@ export class GraphVisualization {
 					},
 				},
 				{
+					selector: 'node:selected',
+					style: {
+						'background-color': '#f78166',
+						'border-color': '#f0f6fc',
+						'border-width': 3,
+						'border-opacity': 1,
+						'text-outline-width': 2,
+						'text-outline-color': '#0b0d10',
+					},
+				},
+				{
 					selector: 'edge',
 					style: {
 						'line-color': '#58a6ff',
@@ -44,6 +56,16 @@ export class GraphVisualization {
 						label: 'data(label)',
 						'font-size': 10,
 						color: '#9fb3c8',
+					},
+				},
+				{
+					selector: 'edge:selected',
+					style: {
+						'line-color': '#f78166',
+						'target-arrow-color': '#f78166',
+						width: 4,
+						'text-outline-width': 2,
+						'text-outline-color': '#0b0d10',
 					},
 				},
 			],
@@ -64,32 +86,9 @@ export class GraphVisualization {
 	setupEventHandlers() {
 		if (!this.cy) return;
 
-		// Cytoscape event handlers
+		// Cytoscape event handlers - simple and direct
 		this.cy.on('select', 'node,edge', (e) => {
-			const d = e.target.data();
-			$('sel').textContent = JSON.stringify(d, null, 2);
-			if (d.id) {
-				if (e.target.isNode && e.target.isNode()) {
-					$('nodeId').value = d.nid || '';
-					$('nodeLabel').value = d.label || '';
-					$('nodeProps').value = JSON.stringify(
-						d.props || {},
-						null,
-						2
-					);
-				}
-				if (e.target.isEdge && e.target.isEdge()) {
-					$('edgeId').value = d.eid || '';
-					$('edgeFrom').value = d.source?.replace('n_', '') || '';
-					$('edgeTo').value = d.target?.replace('n_', '') || '';
-					$('edgeLabel').value = d.label || '';
-					$('edgeProps').value = JSON.stringify(
-						d.props || {},
-						null,
-						2
-					);
-				}
-			}
+			this.handleSelection(e);
 		});
 
 		// Add double-click to center on node
@@ -97,6 +96,42 @@ export class GraphVisualization {
 			this.cy.center(e.target);
 			this.cy.fit(e.target, 50);
 		});
+	}
+
+	// Separate method to handle selection with proper error handling
+	handleSelection(e) {
+		try {
+			const d = e.target.data();
+			if (!d || !d.id) return;
+
+			// Update the UI display with basic data
+			if (e.target.isNode && e.target.isNode()) {
+				// Update form fields
+				$('nodeId').value = d.nid || '';
+				$('nodeLabel').value = d.label || '';
+				$('nodeProps').value = JSON.stringify(d.props || {}, null, 2);
+
+				// Update the "Selected" display with basic data
+				$('sel').textContent = JSON.stringify(d, null, 2);
+			}
+			if (e.target.isEdge && e.target.isEdge()) {
+				// Update form fields
+				$('edgeId').value = d.eid || '';
+				$('edgeFrom').value = d.source?.replace('n_', '') || '';
+				$('edgeTo').value = d.target?.replace('n_', '') || '';
+				$('edgeLabel').value = d.label || '';
+				$('edgeProps').value = JSON.stringify(d.props || {}, null, 2);
+
+				// Update the "Selected" display with basic data
+				$('sel').textContent = JSON.stringify(d, null, 2);
+			}
+
+			// Visualization component should NOT trigger props loading
+			// Props loading should be handled by other components that need the data
+			// This keeps Cytoscape focused only on graph display
+		} catch (error) {
+			console.log('⚠️ Error handling selection:', error.message);
+		}
 	}
 
 	setupKeyboardShortcuts() {
@@ -184,13 +219,7 @@ export class GraphVisualization {
 		});
 
 		this.debounceLayout();
-		log(
-			'📊 Node synced: ' +
-				nodeData.id +
-				' (' +
-				(nodeData.label || nodeData.id) +
-				')'
-		);
+		// Removed duplicate logging - sync service already logs this
 	}
 
 	removeNode(nodeId) {
@@ -224,15 +253,7 @@ export class GraphVisualization {
 		});
 
 		this.debounceLayout();
-		log(
-			'📊 Edge synced: ' +
-				edgeData.id +
-				' (' +
-				edgeData.from +
-				' → ' +
-				edgeData.to +
-				')'
-		);
+		// Removed duplicate logging - sync service already logs this
 	}
 
 	removeEdge(edgeId) {
@@ -246,12 +267,26 @@ export class GraphVisualization {
 	}
 
 	debounceLayout() {
+		// Prevent multiple layouts from running simultaneously
+		if (this.isLayoutRunning) {
+			clearTimeout(this.layoutTimeout);
+			this.layoutTimeout = setTimeout(() => this.debounceLayout(), 200);
+			return;
+		}
+
 		clearTimeout(this.layoutTimeout);
 		this.layoutTimeout = setTimeout(() => {
 			try {
+				this.isLayoutRunning = true;
 				this.cy.layout({ name: 'cose', animate: false }).run();
+
+				// Reset layout flag after a delay to allow layout to complete
+				setTimeout(() => {
+					this.isLayoutRunning = false;
+				}, 500);
 			} catch (e) {
 				log('⚠️ Layout error: ' + e.message);
+				this.isLayoutRunning = false;
 			}
 		}, 100);
 	}

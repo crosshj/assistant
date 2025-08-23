@@ -1,47 +1,73 @@
+import { NetworkUI } from '../../controllers/NetworkUI.js';
+import { RoomUI } from '../../controllers/RoomUI.js';
+
 // Header Component - Top navigation and connection controls
 export class Header {
-	constructor(connection, auth) {
+	constructor(connection, auth, stateManager) {
 		this.connection = connection;
 		this.auth = auth;
+		this.stateManager = stateManager;
+
+		// UI controllers (pure rendering, no logic)
+		this.networkUI = new NetworkUI();
+		this.roomUI = new RoomUI();
+
+		// Listen to state changes
+		this.stateManager.on('stateChanged', (state) => {
+			this.render(state);
+		});
 	}
 
 	setupEventHandlers() {
-		// Connection controls
-		$('applyPeers').onclick = () => {
-			const peers = $('peers')
-				.value.split(',')
-				.map((s) => s.trim())
-				.filter(Boolean);
-
-			if (this.connection.updatePeers(peers)) {
-				// Update room status if we're in a room
-				if (window.currentRoom) {
-					setTimeout(() => {
-						if (this.connection.isConnected()) {
-							log('✅ Reconnected! Room data should sync now.');
-							// Trigger room refresh
-							window.refreshRoom && window.refreshRoom();
-						}
-					}, 2000);
-				}
+		// Room Management - Emit UI events only
+		$('join').onclick = () => {
+			const state = this.stateManager.getState();
+			if (state.room.status === 'joined') {
+				// Emit leave room event
+				document.dispatchEvent(new CustomEvent('ui:leaveRoom'));
+			} else if (state.room.canJoin) {
+				const roomName = $('room').value.trim() || 'public';
+				// Emit join room event
+				document.dispatchEvent(
+					new CustomEvent('ui:joinRoom', {
+						detail: roomName,
+					})
+				);
 			}
 		};
 
-		$('testConnection').onclick = () => {
-			this.connection.testConnection();
+		// Network/Connection Management - Emit UI events only
+		$('connectBtn').onclick = () => {
+			document.dispatchEvent(new CustomEvent('ui:connect'));
 		};
 
-		// Authentication controls
+		$('disconnectBtn').onclick = () => {
+			document.dispatchEvent(new CustomEvent('ui:disconnect'));
+		};
+
+		$('testConnection').onclick = () => {
+			document.dispatchEvent(new CustomEvent('ui:testConnection'));
+		};
+
+		// Authentication/Identity Management
 		$('createPair').onclick = () => {
 			const alias =
 				$('alias').value || `u_${this.generateId().slice(0, 6)}`;
-			this.auth.createIdentity(alias);
+			document.dispatchEvent(
+				new CustomEvent('ui:createIdentity', {
+					detail: alias,
+				})
+			);
 		};
 
 		$('login').onclick = () => {
 			const saved = tryJSON(localStorage.getItem('gun_demo_creds'));
 			if (saved) {
-				this.auth.login(saved.alias, saved.pass);
+				document.dispatchEvent(
+					new CustomEvent('ui:login', {
+						detail: { alias: saved.alias, password: saved.pass },
+					})
+				);
 				return;
 			}
 			const alias = $('alias').value.trim();
@@ -50,49 +76,33 @@ export class Header {
 				return;
 			}
 			const pass = prompt('Password for ' + alias + ':');
-			this.auth.login(saved.alias, pass);
-		};
-
-		// Room controls
-		$('join').onclick = () => {
-			const room = $('room').value.trim() || 'public';
-			window.joinRoom && window.joinRoom(room);
+			document.dispatchEvent(
+				new CustomEvent('ui:login', {
+					detail: { alias: alias, password: pass },
+				})
+			);
 		};
 	}
 
 	setInitialValues() {
 		$('peers').value = this.connection.getDefaultPeers().join(',');
+		// Render initial state
+		this.render(this.stateManager.getState());
 	}
 
-	// Event handlers for service events
-	updateConnectionStatus(connected, total) {
-		const statusEl = $('roomStatus');
+	// Single render method - delegates to UI controllers
+	render(state) {
+		// Render network UI
+		this.networkUI.render(state.network);
 
-		if (connected === 0) {
-			statusEl.textContent = '⚠️ Disconnected';
-			statusEl.style.color = '#ff6b6b';
-			statusEl.style.borderColor = '#ff6b6b';
-			statusEl.title =
-				'No peer connections available - Click "Test Connection" for details';
-		} else if (connected < total) {
-			statusEl.textContent = `⚠️ ${connected}/${total} peers`;
-			statusEl.style.color = '#ffa726';
-			statusEl.style.borderColor = '#ffa726';
-			statusEl.title = `${connected} of ${total} peers connected - Partial connection`;
-		} else {
-			statusEl.textContent = `✅ ${connected}/${total} peers`;
-			statusEl.style.color = '#66bb6a';
-			statusEl.style.borderColor = '#66bb6a';
-			statusEl.title = `All ${connected} peers connected - Ready for operations`;
-		}
-	}
+		// Render room UI
+		this.roomUI.render(state.room, state.room.canJoin);
 
-	updateUserDisplay(alias) {
-		$('whoami').textContent = alias;
-	}
+		// Update auth display (simple, no controller needed yet)
+		$('whoami').textContent = state.auth.alias;
 
-	updateRoomStatus(status) {
-		$('roomStatus').textContent = status;
+		// Control visibility of room and auth sections based on network state
+		this._updateSectionVisibility(state.network);
 	}
 
 	generateId() {
@@ -100,16 +110,32 @@ export class Header {
 			? crypto.randomUUID()
 			: Math.random().toString(16).slice(2) + Date.now().toString(16);
 	}
+
+	// Control visibility of room and auth sections based on network state
+	_updateSectionVisibility(networkState) {
+		const roomSection = document.getElementById('roomSection');
+		const roomDivider = document.getElementById('roomDivider');
+		const authSection = document.getElementById('authSection');
+
+		// Show room and auth sections when connected (partial or full connection)
+		const isConnected =
+			networkState.status === 'partial' ||
+			networkState.status === 'connected';
+
+		if (roomSection) {
+			roomSection.style.visibility = isConnected ? 'visible' : 'hidden';
+		}
+		if (roomDivider) {
+			roomDivider.style.visibility = isConnected ? 'visible' : 'hidden';
+		}
+		if (authSection) {
+			authSection.style.visibility = isConnected ? 'visible' : 'hidden';
+		}
+	}
 }
 
 // Helper functions
 const $ = (id) => document.getElementById(id);
-const log = (msg) => {
-	const li = document.createElement('li');
-	li.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-	$('log').prepend(li);
-	console.log(msg);
-};
 const tryJSON = (t, d) => {
 	try {
 		return t ? JSON.parse(t) : d;

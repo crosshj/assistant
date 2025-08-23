@@ -2,8 +2,9 @@ import { log } from '../utils/utils.js';
 
 // Room Management
 export class RoomManager {
-	constructor(gun) {
+	constructor(gun, stateManager) {
 		this.gun = gun;
+		this.stateManager = stateManager;
 		this.currentRoom = null;
 		this.graphRoot = null;
 		this.nodesChain = null;
@@ -19,32 +20,47 @@ export class RoomManager {
 		this.eventListeners.get(event).push(callback);
 	}
 
-	emit(event, data) {
+	emit(event, ...args) {
 		const listeners = this.eventListeners.get(event);
 		if (listeners) {
-			listeners.forEach(callback => callback(data));
+			listeners.forEach((callback) => callback(...args));
 		}
 	}
 
 	joinRoom(room, connectionManager) {
 		if (!room) return false;
 
-		// Check if we have any peer connections
-		if (!connectionManager.isConnected()) {
-			// Only show this error once per session
-			if (!window.connectionErrorShown) {
-				log('⚠️ Cannot join room: No peer connections available');
-				window.connectionErrorShown = true;
-			}
-			this.emit('roomStatusChanged', { status: '⚠️ No connection' });
-			return false;
-		}
+		// Trust that the StateManager has already verified the connection is ready
+		// The connection check is now handled at the EventCoordinator level
 
 		this.currentRoom = room;
 		this.graphRoot = this.gun.get('graphs').get(room);
-		this.emit('roomStatusChanged', { status: `📊 ${room}` });
 
-		log('joined room ' + room);
+		// Flag to track if join has completed
+		let joinCompleted = false;
+
+		// Gun.js operations are asynchronous, so we need to wait for the operation to complete
+		// before marking the room as joined
+		this.graphRoot.once((data, ack) => {
+			if (!joinCompleted) {
+				joinCompleted = true;
+				// Room operation completed, now emit the success event
+				const status = `📊 ${room}`;
+				this.emit('roomStatusChanged', status, room);
+			}
+		});
+
+		// Fallback: If Gun.js callback doesn't fire within 1 second, assume the room is accessible
+		// This handles cases where the room might be empty or the callback doesn't fire
+		setTimeout(() => {
+			if (!joinCompleted && this.currentRoom === room && this.graphRoot) {
+				joinCompleted = true;
+				const status = `📊 ${room}`;
+				this.emit('roomStatusChanged', status, room);
+			}
+		}, 1000);
+
+		// Return true to indicate the join process has started
 		return true;
 	}
 
@@ -69,7 +85,7 @@ export class RoomManager {
 		this.nodesChain = null;
 		this.edgesChain = null;
 
-		this.emit('roomStatusChanged', { status: 'not joined' });
+		this.emit('roomStatusChanged', 'not joined', null);
 		log('left room');
 	}
 

@@ -33,58 +33,115 @@
 	<body>
 		<header>
 			<div class="row">
-				<div class="row-item">
+				<!-- Network/Connection Section (FIRST position - always visible) -->
+				<div
+					class="row-item"
+					id="networkSection"
+					style="display: flex; gap: 0.5rem; align-items: center"
+				>
+					<strong>Network</strong>
+
+					<!-- Connection Status (always visible) -->
+					<span
+						class="pill mono"
+						id="connectionStatus"
+						title="Connection status"
+					>
+						Connecting...
+					</span>
+
+					<!-- Connection Controls (shown conditionally) -->
+					<div
+						id="connectionControls"
+						style="display: none"
+					>
+						<input
+							id="peers"
+							size="40"
+							placeholder="Peer URLs"
+						/>
+					</div>
+
+					<!-- Connect Button (shown when disconnected or partial) -->
+					<button
+						id="connectBtn"
+						class="primary"
+						style="display: none"
+					>
+						Connect
+					</button>
+
+					<!-- Disconnect Button (shown when connected) -->
+					<button
+						id="disconnectBtn"
+						class="secondary"
+						style="display: none"
+					>
+						Disconnect
+					</button>
+
+					<!-- Test Button (shown when needed) -->
+					<button
+						id="testConnection"
+						class="secondary"
+						style="display: none"
+					>
+						Test
+					</button>
+				</div>
+
+				<div class="header-divider"></div>
+
+				<!-- Room Management Section (SECOND position, hidden when not connected) -->
+				<div
+					class="row-item"
+					id="roomSection"
+					style="
+						display: flex;
+						visibility: hidden;
+						gap: 0.5rem;
+						align-items: center;
+						justify-content: center;
+					"
+				>
 					<strong>Room</strong>
 					<input
 						id="room"
 						size="14"
 						placeholder="graph-room"
 					/>
+					<span
+						class="pill mono"
+						id="roomStatus"
+						title="Room status"
+						>not joined</span
+					>
 					<button
 						id="join"
 						class="primary"
 					>
 						Join
 					</button>
-					<span
-						class="pill mono"
-						id="roomStatus"
-						>not joined</span
-					>
 				</div>
-				<div class="header-divider"></div>
+				<div
+					class="header-divider"
+					id="roomDivider"
+					style="visibility: hidden"
+				></div>
+
+				<!-- Authentication Section (hidden when not connected) -->
 				<div
 					class="row-item"
+					id="authSection"
 					style="
 						display: flex;
-						align-items: center;
-						gap: 0.5rem;
-						justify-content: center;
-					"
-				>
-					<input
-						id="peers"
-						size="40"
-						placeholder="Peer URLs"
-					/>
-					<button id="applyPeers">Apply</button>
-					<button
-						id="testConnection"
-						class="secondary"
-					>
-						Test
-					</button>
-				</div>
-				<div class="header-divider"></div>
-				<div
-					class="row-item"
-					style="
-						display: flex;
+						visibility: hidden;
 						align-items: center;
 						gap: 0.5rem;
 						justify-content: flex-end;
 					"
 				>
+					<strong>Identity</strong>
 					<input
 						id="alias"
 						size="10"
@@ -227,26 +284,119 @@
 							<button id="fitGraph">Fit</button>
 						</div>
 					</div>
+					<div
+						style="
+							padding: 0.5rem 0.75rem;
+							border-bottom: 1px solid #30363d;
+						"
+					>
+						<div>
+							<b>Selected</b>
+							<button
+								id="loadProps"
+								class="secondary"
+								style="margin: 0.5rem 0; font-size: 0.8rem"
+							>
+								Load Props from GunDB
+							</button>
+							<pre
+								id="sel"
+								class="mono"
+								style="
+									white-space: pre-wrap;
+									margin: 0.5rem 0 0 0;
+									font-size: 0.85rem;
+								"
+							></pre>
+						</div>
+					</div>
 					<div id="cy"></div>
 				</div>
 			</section>
 
 			<aside class="card">
-				<header><h3 style="margin: 0">Activity</h3></header>
+				<header
+					style="
+						display: flex;
+						justify-content: space-between;
+						align-items: center;
+					"
+				>
+					<h3 style="margin: 0">Activity</h3>
+					<div
+						style="display: flex; gap: 0.5rem; align-items: center"
+					>
+						<button
+							id="copyLog"
+							class="secondary"
+							style="
+								border: none;
+								background: transparent;
+								padding: 0.5rem;
+								cursor: pointer;
+								border-radius: 4px;
+								transition: background-color 0.2s;
+							"
+							title="Copy activity log to clipboard"
+							onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
+							onmouseout="this.style.backgroundColor='transparent'"
+						>
+							<svg
+								width="18"
+								height="18"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+							>
+								<!-- Back document (filled, slightly offset) -->
+								<path
+									d="M15 0H3c-1.1 0-2 .9-2 2v14h2V2h12V0z"
+									fill="currentColor"
+								/>
+								<!-- Front document (solid/filled) -->
+								<path
+									d="M19 5H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2z"
+									fill="currentColor"
+								/>
+							</svg>
+						</button>
+						<button
+							id="clearLog"
+							class="secondary"
+							style="
+								border: none;
+								background: transparent;
+								padding: 0.5rem;
+								cursor: pointer;
+								border-radius: 4px;
+								transition: background-color 0.2s;
+							"
+							title="Clear activity log"
+							onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
+							onmouseout="this.style.backgroundColor='transparent'"
+						>
+							<svg
+								width="22"
+								height="22"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+							>
+								<!-- Trash can body -->
+								<path
+									d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z"
+								/>
+								<!-- Trash can lid -->
+								<path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+								<!-- Trash can opening -->
+								<path d="M8 9h8v1H8V9z" />
+							</svg>
+						</button>
+					</div>
+				</header>
 				<div class="body">
 					<ul
 						id="log"
 						class="list"
 					></ul>
-					<hr style="border-color: #2a323a" />
-					<div>
-						<b>Selected</b>
-						<pre
-							id="sel"
-							class="mono"
-							style="white-space: pre-wrap"
-						></pre>
-					</div>
 				</div>
 			</aside>
 		</div>
