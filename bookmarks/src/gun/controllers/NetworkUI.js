@@ -80,11 +80,14 @@ export class NetworkUI {
 		}
 
 		const peerData = this.connection.getDetailedPeerInfo();
-		this.peerModal.open(peerData);
+		const networkInfo = this.connection.getNetworkInfo();
+		this.peerModal.open(peerData, networkInfo);
 
 		// Listen for refresh events
 		this.peerModal.modal.addEventListener('refreshPeers', () => {
 			const updatedPeerData = this.connection.getDetailedPeerInfo();
+			const updatedNetworkInfo = this.connection.getNetworkInfo();
+			this.peerModal.updateNetworkInfo(updatedNetworkInfo);
 			this.peerModal.updateTable(updatedPeerData);
 		});
 	}

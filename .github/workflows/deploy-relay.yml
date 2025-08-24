@@ -1,0 +1,50 @@
+name: Deploy GunDB Relay to Render (DISABLED)
+
+on:
+  # push:
+  #   branches:
+  #     - master
+  #   paths:
+  #     - 'relay/**'
+  # workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'relay/package.json'
+
+      - name: Install dependencies
+        working-directory: relay
+        run: npm ci
+
+      - name: Test relay server
+        working-directory: relay
+        run: |
+          # Start server in background
+          npm start &
+          SERVER_PID=$!
+
+          # Wait for server to start
+          sleep 5
+
+          # Test health endpoint
+          curl -f http://localhost:8080/health || exit 1
+
+          # Clean up
+          kill $SERVER_PID
+
+      - name: Deploy to Render
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_RELAY_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}

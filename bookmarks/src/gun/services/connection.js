@@ -36,6 +36,8 @@ export class GunConnection {
 		this.gun = Gun({
 			peers: this.peers,
 			localStorage: true,
+			multicast: true, // + Local network discovery
+			webrtc: true, // + Direct P2P connections
 			retry: 3, // Retry failed connections
 			timeout: 5000, // 5 second timeout
 		});
@@ -277,6 +279,66 @@ export class GunConnection {
 		return detailedPeers;
 	}
 
+	/**
+	 * Get network-wide statistics and information
+	 * @returns {Object} Network information
+	 */
+	getNetworkInfo() {
+		if (!this.gun) {
+			return {
+				totalPeers: 0,
+				connectedPeers: 0,
+				stablePeers: 0,
+				connectionRate: 0,
+				gunOptions: {},
+				networkStatus: 'disconnected',
+			};
+		}
+
+		const peers = this.gun.back('opt.peers') || {};
+		const peerEntries = Object.entries(peers);
+		const totalPeers = peerEntries.length;
+
+		let connectedPeers = 0;
+		let stablePeers = 0;
+
+		peerEntries.forEach(([peerId, peer]) => {
+			if (peer && peer.wire && peer.wire.readyState === 1) {
+				connectedPeers++;
+
+				const stability = this.peerStability.get(peer.url) || {};
+				const stableTime = stability.connected
+					? Date.now() - stability.stableSince
+					: 0;
+				if (stableTime >= 100) {
+					stablePeers++;
+				}
+			}
+		});
+
+		const connectionRate =
+			totalPeers > 0 ? (connectedPeers / totalPeers) * 100 : 0;
+
+		let networkStatus = 'disconnected';
+		if (connectedPeers === totalPeers && totalPeers > 0) {
+			networkStatus = 'connected';
+		} else if (connectedPeers > 0) {
+			networkStatus = 'partial';
+		}
+
+		return {
+			totalPeers,
+			connectedPeers,
+			stablePeers,
+			connectionRate: Math.round(connectionRate),
+			gunOptions: this.gun.back('opt') || {},
+			networkStatus,
+			isDisconnected: this.isDisconnected,
+			defaultPeers: this.getDefaultPeers(),
+			currentPeers: this.peers,
+		};
+	}
+
 	isConnected() {
 		return this.connectionStatus.connected > 0;
 	}
@@ -295,10 +357,11 @@ export class GunConnection {
 		);
 
 		if (connectedPeers === 0) {
-			log('❌ No peers connected. Try updating peer URLs.');
-			log('💡 Tip: Use public GunDB peers like:');
-			log('   https://gun-manhattan.herokuapp.com/gun');
-			log('   https://gun-us.herokuapp.com/gun');
+			log(`❌ No peers connected. Try updating peer URLs.
+💡 Tip: Use public GunDB peers like:
+   • https://gun-manhattan.herokuapp.com/gun
+   • https://gun-us.herokuapp.com/gun
+   • https://gunjs.herokuapp.com/gun`);
 		} else {
 			log('✅ Connection looks good! Graph operations should work.');
 		}

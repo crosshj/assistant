@@ -103,6 +103,17 @@ export class PeerModal {
 		header.appendChild(title);
 		header.appendChild(closeBtn);
 
+		// Create network info section
+		this.networkInfoSection = document.createElement('div');
+		this.networkInfoSection.className = 'network-info-section';
+		this.networkInfoSection.style.cssText = `
+			margin-bottom: 20px;
+			padding: 16px;
+			background: color-mix(in srgb, var(--card-border) 30%, var(--card-bg));
+			border: 1px solid var(--card-border);
+			border-radius: 8px;
+		`;
+
 		// Create table container
 		const tableContainer = document.createElement('div');
 		tableContainer.className = 'peer-table-container';
@@ -179,6 +190,7 @@ export class PeerModal {
 
 		// Assemble modal
 		modalContent.appendChild(header);
+		modalContent.appendChild(this.networkInfoSection);
 		modalContent.appendChild(tableContainer);
 		modalContent.appendChild(refreshBtn);
 		this.modal.appendChild(modalContent);
@@ -217,9 +229,10 @@ export class PeerModal {
 		});
 	}
 
-	open(peerData) {
+	open(peerData, networkInfo = null) {
 		this.isOpen = true;
 		this.modal.style.display = 'flex';
+		this.updateNetworkInfo(networkInfo);
 		this.updateTable(peerData);
 	}
 
@@ -231,6 +244,90 @@ export class PeerModal {
 	refresh() {
 		// Emit refresh event for parent to handle
 		this.modal.dispatchEvent(new CustomEvent('refreshPeers'));
+	}
+
+	updateNetworkInfo(networkInfo) {
+		if (!networkInfo) {
+			this.networkInfoSection.innerHTML =
+				'<p style="color: var(--text-muted); margin: 0;">Network information not available</p>';
+			return;
+		}
+
+		const {
+			totalPeers,
+			connectedPeers,
+			stablePeers,
+			connectionRate,
+			networkStatus,
+			isDisconnected,
+			defaultPeers,
+			currentPeers,
+		} = networkInfo;
+
+		const statusColor = this.getNetworkStatusColor(networkStatus);
+		const statusIcon = this.getNetworkStatusIcon(networkStatus);
+
+		this.networkInfoSection.innerHTML = `
+			<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 12px;">
+				<div>
+					<div style="font-weight: 600; color: var(--text-bright); margin-bottom: 4px;">Network Status</div>
+					<div style="color: ${statusColor}; font-weight: 500;">${statusIcon} ${networkStatus.toUpperCase()}</div>
+				</div>
+				<div>
+					<div style="font-weight: 600; color: var(--text-bright); margin-bottom: 4px;">Connection Rate</div>
+					<div style="color: var(--text-bright);">${connectionRate}% (${connectedPeers}/${totalPeers})</div>
+				</div>
+				<div>
+					<div style="font-weight: 600; color: var(--text-bright); margin-bottom: 4px;">Stable Peers</div>
+					<div style="color: var(--text-bright);">${stablePeers}/${connectedPeers} connected</div>
+				</div>
+				<div>
+					<div style="font-weight: 600; color: var(--text-bright); margin-bottom: 4px;">Manual Disconnect</div>
+					<div style="color: var(--text-bright);">${isDisconnected ? 'Yes' : 'No'}</div>
+				</div>
+			</div>
+			<details style="margin-top: 12px;">
+				<summary style="cursor: pointer; font-weight: 600; color: var(--text-bright); margin-bottom: 8px;">Peer Configuration</summary>
+				<div style="margin-top: 8px; font-size: 0.9rem;">
+					<div style="margin-bottom: 8px;">
+						<strong>Default Peers:</strong>
+						<div style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted); margin-left: 16px;">
+							${defaultPeers.map((peer) => `• ${peer}`).join('<br>')}
+						</div>
+					</div>
+					<div>
+						<strong>Current Peers:</strong>
+						<div style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted); margin-left: 16px;">
+							${currentPeers.map((peer) => `• ${peer}`).join('<br>')}
+						</div>
+					</div>
+				</div>
+			</details>
+		`;
+	}
+
+	getNetworkStatusColor(status) {
+		switch (status) {
+			case 'connected':
+				return '#28a745';
+			case 'partial':
+				return '#ffc107';
+			case 'disconnected':
+			default:
+				return '#dc3545';
+		}
+	}
+
+	getNetworkStatusIcon(status) {
+		switch (status) {
+			case 'connected':
+				return '✅';
+			case 'partial':
+				return '⚠️';
+			case 'disconnected':
+			default:
+				return '❌';
+		}
 	}
 
 	updateTable(peerData) {

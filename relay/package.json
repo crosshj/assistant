@@ -1,0 +1,16 @@
+{
+    "name": "gundb-relay",
+    "version": "1.0.0",
+    "description": "GunDB relay server for bookmarks app",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js"
+    },
+    "dependencies": {
+        "gun": "^0.2020.1241"
+    },
+    "engines": {
+        "node": "18.x"
+    }
+}
