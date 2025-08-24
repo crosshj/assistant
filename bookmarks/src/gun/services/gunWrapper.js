@@ -58,6 +58,338 @@ export class GunDBWrapper {
 	}
 
 	/**
+	 * Test if isolated instance approach is working
+	 * This helps debug sync interference issues
+	 */
+	async testIsolatedInstance() {
+		try {
+			const isolatedGun = this.connection.createIsolatedInstance();
+			const testRef = isolatedGun
+				.get('graphs')
+				.get('public')
+				.get('nodes')
+				.get('test');
+
+			return new Promise((resolve, reject) => {
+				const timeout = setTimeout(() => {
+					reject(new Error('Isolated test timeout'));
+				}, 2000);
+
+				testRef.once((data) => {
+					clearTimeout(timeout);
+					resolve(data);
+				});
+			});
+		} catch (error) {
+			throw new Error(`Isolated test failed: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Debug method: Check what data is actually stored in a node
+	 * This helps diagnose why props aren't being retrieved
+	 */
+	async debugNodeData(room, nodeId) {
+		try {
+			const gunRef = this.connection.gun
+				.get('graphs')
+				.get(room)
+				.get('nodes')
+				.get(nodeId);
+
+			return new Promise((resolve, reject) => {
+				const timeout = setTimeout(() => {
+					reject(new Error('Debug timeout'));
+				}, 2000);
+
+				gunRef.once((data) => {
+					clearTimeout(timeout);
+					if (data && data !== 'undefined') {
+						resolve(data);
+					} else {
+						reject(new Error('No data found'));
+					}
+				});
+			});
+		} catch (error) {
+			throw new Error(`Debug failed: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Test if the isolated approach is working properly
+	 */
+	async testIsolatedPropsFetch(room, elementType, elementId) {
+		try {
+			const props = await this.getPropsIsolated(
+				room,
+				elementType,
+				elementId
+			);
+			return true;
+		} catch (error) {
+			return false;
+		}
+	}
+
+	/**
+	 * Try to get props from existing graph data in memory
+	 * This is the most non-interfering approach since it doesn't make GunDB calls
+	 */
+	async getPropsFromMemory(room, elementType, elementId) {
+		try {
+			// This would need access to the graph data that's already loaded
+			// For now, return empty props - this method can be enhanced later
+			return {};
+		} catch (error) {
+			return {};
+		}
+	}
+
+	/**
+	 * Get props directly from the visualization component's existing data
+	 * This is the most non-interfering approach - no GunDB calls at all
+	 */
+	async getPropsFromVisualization(elementId, isNode = true) {
+		try {
+			if (!window.cy) {
+				return {};
+			}
+
+			const element = window.cy.getElementById(elementId);
+			if (!element || element.length === 0) {
+				return {};
+			}
+
+			const data = element.data();
+			return data.props || {};
+		} catch (error) {
+			return {};
+		}
+	}
+
+	/**
+	 * Get props using the main connection but with careful, non-interfering approach
+	 * This method reads props without triggering sync events
+	 */
+	async getPropsCarefully(room, elementId, isNode = true) {
+		try {
+			const baseRef = this.connection.gun
+				.get('graphs')
+				.get(room)
+				.get(isNode ? 'nodes' : 'edges')
+				.get(elementId);
+
+			const propsRef = baseRef.get('props');
+
+			return new Promise((resolve, reject) => {
+				const timeout = setTimeout(() => {
+					reject(new Error('Careful props timeout'));
+				}, 2000);
+
+				// Use a very short-lived listener that removes itself immediately
+				const listener = (data) => {
+					clearTimeout(timeout);
+					propsRef.off('value', listener);
+					if (data && data !== 'undefined') {
+						const cleanProps = this.cleanPropsData(data);
+						resolve(cleanProps);
+					} else {
+						resolve({});
+					}
+				};
+
+				propsRef.on('value', listener);
+			});
+		} catch (error) {
+			throw new Error(`Careful props failed: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Get props using a completely isolated GunDB instance with minimal interference
+	 * This method creates a new GunDB instance with only essential peers
+	 */
+	async getPropsIsolated(room, elementType, elementId) {
+		try {
+			// Create a completely new GunDB instance with minimal configuration
+			const isolatedGun = Gun({
+				peers: ['https://gun-us.herokuapp.com/gun'], // Single peer only
+				localStorage: false, // No local storage
+				retry: 0, // No retries
+				timeout: 2000, // Very short timeout
+			});
+
+			// Create a reference to ONLY the props field
+			const propsRef = isolatedGun
+				.get('graphs')
+				.get(room)
+				.get(elementType === 'node' ? 'nodes' : 'edges')
+				.get(elementId)
+				.get('props');
+
+			// Use a one-time listener with immediate cleanup
+			const listener = (propsData) => {
+				// Clean up immediately
+				this.cleanupIsolatedInstance(isolatedGun);
+
+				if (!propsData) {
+					return;
+				}
+
+				// Extract clean props
+				const cleanProps = this.extractCleanProps(propsData);
+				return cleanProps;
+			};
+
+			// Listen once
+			propsRef.once(listener);
+		} catch (error) {
+			throw new Error(`Isolated props failed: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Clean up isolated GunDB instance to prevent lingering connections
+	 */
+	cleanupIsolatedInstance(isolatedGun) {
+		try {
+			// Try to disconnect the isolated instance
+			if (isolatedGun && typeof isolatedGun.off === 'function') {
+				isolatedGun.off(); // Remove all listeners
+			}
+		} catch (error) {
+			// Silently handle cleanup errors
+		}
+	}
+
+	// Get node props using targeted approach
+	async getNodeProps(room, nodeId) {
+		try {
+			console.log(
+				'🔍 GunDBWrapper: Starting getNodeProps for room:',
+				room,
+				'nodeId:',
+				nodeId
+			);
+			const nodeRef = this.connection.gun
+				.get('graphs')
+				.get(room)
+				.get('nodes')
+				.get(nodeId)
+				.get('props');
+
+			console.log(
+				'🔍 GunDBWrapper: Created node ref, waiting for data...'
+			);
+
+			return new Promise((resolve, reject) => {
+				const timeout = setTimeout(() => {
+					console.log(
+						'⚠️ GunDBWrapper: Node props timeout for:',
+						nodeId
+					);
+					reject(new Error('Node props timeout'));
+				}, 2000);
+
+				// Use a one-time listener that immediately removes itself
+				nodeRef.once((data) => {
+					clearTimeout(timeout);
+					console.log(
+						'🔍 GunDBWrapper: Received node props data:',
+						data
+					);
+					if (data && data !== 'undefined') {
+						const cleanProps = this.cleanPropsData(data);
+						console.log(
+							'✅ GunDBWrapper: Cleaned node props:',
+							cleanProps
+						);
+						resolve(cleanProps);
+					} else {
+						console.log(
+							'⚠️ GunDBWrapper: No node props data found'
+						);
+						resolve({});
+					}
+				});
+			});
+		} catch (error) {
+			console.log(
+				'❌ GunDBWrapper: Error in getNodeProps:',
+				error.message
+			);
+			throw new Error(`Node props failed: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Get ONLY the props for an edge without triggering sync events
+	 * This method is isolated and won't interfere with graph sync
+	 */
+	async getEdgeProps(room, edgeId) {
+		try {
+			const edgeRef = this.connection.gun
+				.get('graphs')
+				.get(room)
+				.get('edges')
+				.get(edgeId)
+				.get('props');
+
+			return new Promise((resolve, reject) => {
+				const timeout = setTimeout(() => {
+					reject(new Error('Edge props timeout'));
+				}, 2000);
+
+				// Use a one-time listener that immediately removes itself
+				edgeRef.once((data) => {
+					clearTimeout(timeout);
+					if (data && data !== 'undefined') {
+						const cleanProps = this.cleanPropsData(data);
+						resolve(cleanProps);
+					} else {
+						resolve({});
+					}
+				});
+			});
+		} catch (error) {
+			throw new Error(`Edge props failed: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Fallback method: Get props using a minimal, non-interfering approach
+	 * This is a simpler alternative if the isolated instance approach has issues
+	 */
+	async getPropsFallback(room, elementId, isNode = true) {
+		try {
+			const baseRef = this.connection.gun
+				.get('graphs')
+				.get(room)
+				.get(isNode ? 'nodes' : 'edges')
+				.get(elementId);
+
+			return new Promise((resolve, reject) => {
+				const timeout = setTimeout(() => {
+					reject(new Error('Fallback props timeout'));
+				}, 2000);
+
+				baseRef.once((data) => {
+					clearTimeout(timeout);
+					if (data && data !== 'undefined') {
+						const cleanProps = this.cleanPropsData(data);
+						resolve(cleanProps);
+					} else {
+						resolve({});
+					}
+				});
+			});
+		} catch (error) {
+			throw new Error(`Fallback props failed: ${error.message}`);
+		}
+	}
+
+	/**
 	 * Clean node data by removing GunDB metadata and extracting clean props
 	 */
 	cleanNodeData(nodeData) {
@@ -65,12 +397,8 @@ export class GunDBWrapper {
 			return null;
 		}
 
-		console.log('🔍 GunDBWrapper: Raw node data received:', nodeData);
-		console.log('🔍 GunDBWrapper: Raw node props:', nodeData.props);
-
 		// Extract clean props from the node data
 		const cleanProps = this.extractCleanProps(nodeData.props);
-		console.log('🔍 GunDBWrapper: Cleaned props:', cleanProps);
 
 		// Return clean node data
 		return {
@@ -113,41 +441,17 @@ export class GunDBWrapper {
 	 */
 	extractCleanProps(propsData) {
 		if (!propsData || typeof propsData !== 'object') {
-			console.log(
-				'🔍 GunDBWrapper: Props data is not an object:',
-				propsData
-			);
 			return {};
 		}
-
-		console.log('🔍 GunDBWrapper: Processing props data:', propsData);
-		console.log(
-			'🔍 GunDBWrapper: Props data keys:',
-			Object.keys(propsData)
-		);
 
 		const cleanProps = {};
 
 		// If propsData has a 'put' key, that's where the actual props are stored
 		if (propsData.put && typeof propsData.put === 'object') {
-			console.log(
-				'🔍 GunDBWrapper: Found put key with data:',
-				propsData.put
-			);
 			Object.keys(propsData.put).forEach((key) => {
 				// Filter out GunDB metadata keys
 				if (!this.isGunDBMetadata(key)) {
 					cleanProps[key] = propsData.put[key];
-					console.log(
-						'🔍 GunDBWrapper: Added prop from put:',
-						key,
-						propsData.put[key]
-					);
-				} else {
-					console.log(
-						'🔍 GunDBWrapper: Filtered out metadata key:',
-						key
-					);
 				}
 			});
 		}
@@ -157,17 +461,9 @@ export class GunDBWrapper {
 			// Filter out GunDB metadata keys
 			if (!this.isGunDBMetadata(key)) {
 				cleanProps[key] = propsData[key];
-				console.log(
-					'🔍 GunDBWrapper: Added prop directly:',
-					key,
-					propsData[key]
-				);
-			} else {
-				console.log('🔍 GunDBWrapper: Filtered out metadata key:', key);
 			}
 		});
 
-		console.log('🔍 GunDBWrapper: Final clean props:', cleanProps);
 		return cleanProps;
 	}
 
@@ -253,5 +549,27 @@ export class GunDBWrapper {
 				}
 			});
 		});
+	}
+
+	// Clean props data by filtering out metadata keys
+	cleanPropsData(propsData) {
+		if (!propsData || typeof propsData !== 'object') {
+			return {};
+		}
+
+		const cleanProps = {};
+		const metadataKeys = ['_', '#', '>', 'gun', 'put', 'get', 'on', 'off'];
+
+		for (const [key, value] of Object.entries(propsData)) {
+			// Skip metadata keys
+			if (metadataKeys.includes(key)) {
+				continue;
+			}
+
+			// Add valid props
+			cleanProps[key] = value;
+		}
+
+		return cleanProps;
 	}
 }

@@ -32,6 +32,7 @@ html,
 body {
 	height: 100%;
 	margin: 0;
+	padding: 0;
 	background: var(--bg);
 	color: var(--text-bright);
 	font-family: var(--font-body);
@@ -43,6 +44,8 @@ body {
 	display: flex;
 	flex-direction: column;
 	min-height: 100vh;
+	height: 100vh; /* Force full viewport height */
+	overflow: hidden; /* Prevent scrolling */
 }
 
 h1,
@@ -152,16 +155,116 @@ button.secondary:hover {
 }
 
 /* =====================
+      LOADING SPINNER
+      ===================== */
+.loading-spinner {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.loading-spinner::before {
+	content: '';
+	width: 16px;
+	height: 16px;
+	border: 2px solid var(--card-border);
+	border-top: 2px solid var(--accent);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	margin-right: 0.5rem;
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+/* =====================
       GRID LAYOUT
       ===================== */
 .grid {
 	display: grid;
-	grid-template-columns: 300px minmax(0, 1fr) 320px;
-	gap: var(--card-gap);
+	/* Grid only contains main content - header is separate above */
+	grid-template-columns: minmax(0, 1fr) 320px;
+	grid-template-rows: 1fr; /* Only one row for main content */
+	gap: 1rem; /* Gap between grid items (columns) only */
 	min-height: 0;
 	flex: 1;
-	padding: var(--card-gap);
+	padding: 1rem;
 	overflow: hidden;
+	height: 100%; /* Ensure grid takes full height */
+}
+
+/* Header is outside the grid, positioned above */
+header {
+	/* Remove grid positioning - header is now a separate flex item */
+	position: sticky;
+	top: 0;
+	z-index: 100;
+}
+
+/* Activity panel - narrow right column */
+aside.card {
+	grid-column: 2;
+	grid-row: 1; /* Only one row now */
+	height: 100%;
+}
+
+/* =====================
+      ROOM SELECTION MODE LAYOUT
+      ===================== */
+.grid.room-selection-mode {
+	grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.grid.room-selection-mode .room-list {
+	grid-column: 1;
+	grid-row: 1; /* Only one row now */
+	display: block;
+	height: 100%;
+}
+
+.grid.room-selection-mode .edit-panel,
+.grid.room-selection-mode .graph-panel {
+	display: none !important;
+}
+
+/* =====================
+      IN-ROOM MODE LAYOUT
+      ===================== */
+.grid.room-mode {
+	grid-template-columns: 300px minmax(0, 1fr) 320px;
+}
+
+.grid.room-mode .room-list {
+	display: none !important;
+}
+
+.grid.room-mode .edit-panel {
+	grid-column: 1;
+	grid-row: 1; /* Only one row now */
+	display: block;
+	height: 100%;
+}
+
+.grid.room-mode .graph-panel {
+	grid-column: 2;
+	grid-row: 1; /* Only one row now */
+	display: block;
+	height: 100%;
+}
+
+.grid.room-mode aside.card {
+	grid-column: 3;
+	grid-row: 1; /* Only one row now */
+	height: 100%;
 }
 
 /* =====================
@@ -175,8 +278,10 @@ button.secondary:hover {
 	flex-direction: column;
 	min-height: 0;
 	max-height: 100%;
+	height: 100%; /* Ensure cards take full height */
 	box-shadow: var(--card-shadow);
 	overflow: hidden;
+	margin: 0; /* Remove any margins */
 }
 
 .card header {
@@ -187,6 +292,7 @@ button.secondary:hover {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .card header h3 {
@@ -202,6 +308,7 @@ button.secondary:hover {
 	padding: var(--card-padding);
 	overflow: auto;
 	flex: 1;
+	min-height: 0; /* Allow body to shrink */
 }
 
 /* =====================
@@ -215,9 +322,31 @@ button.secondary:hover {
 	max-height: 100%;
 	border-radius: var(--card-radius);
 	background: var(--card-bg);
-	border: 1px solid var(--card-border);
-	box-shadow: inset 0 0 0 1px var(--card-border);
 	overflow: hidden;
+	/* Ensure the canvas takes full height of its container */
+	display: flex;
+	flex-direction: column;
+}
+
+/* Ensure the graph panel body takes full height */
+.graph-panel .body {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: 0; /* Remove padding to maximize canvas space */
+}
+
+/* Search controls above the graph */
+.graph-panel .body > div:first-child {
+	flex-shrink: 0; /* Don't let search controls shrink */
+	padding: 0.5rem 0.75rem;
+	border-bottom: 1px solid #30363d;
+}
+
+/* Cytoscape canvas container */
+.graph-panel .body #cy {
+	flex: 1; /* Take remaining height */
+	min-height: 0; /* Allow shrinking */
 }
 
 /* =====================
@@ -316,26 +445,78 @@ label {
 /* Large desktop screens */
 @media (min-width: 1400px) {
 	.grid {
+		grid-template-columns: minmax(0, 1fr) 280px; /* Slightly narrower activity panel on very wide screens */
+	}
+
+	.grid.room-selection-mode {
+		grid-template-columns: minmax(0, 1fr) 280px;
+	}
+
+	.grid.room-mode {
 		grid-template-columns: 280px minmax(0, 1fr) 280px; /* Slightly narrower sidebars on very wide screens */
 	}
 }
 
 @media (max-width: 1200px) {
 	.grid {
+		grid-template-columns: minmax(0, 1fr) 280px;
+		gap: 0.75rem;
+		padding: 0.75rem;
+	}
+
+	.grid.room-selection-mode {
+		grid-template-columns: minmax(0, 1fr) 280px;
+		gap: 0.75rem;
+		padding: 0.75rem;
+	}
+
+	.grid.room-mode {
 		grid-template-columns: 280px minmax(0, 1fr) 280px;
-		gap: 1rem;
-		padding: 1rem;
+		gap: 0.75rem;
+		padding: 0.75rem;
 	}
 }
 
 @media (max-width: 900px) {
 	.grid {
-		grid-template-columns: 250px minmax(0, 1fr);
+		grid-template-columns: 1fr;
+		grid-template-rows: auto auto; /* Stack panels vertically on mobile */
 	}
 
 	.card:last-child {
-		grid-column: 1 / -1;
+		grid-column: 1;
+		grid-row: 2;
 		height: 200px;
+	}
+
+	.grid.room-selection-mode {
+		grid-template-columns: 1fr;
+		grid-template-rows: auto auto;
+	}
+
+	.grid.room-selection-mode .room-list {
+		grid-column: 1;
+		grid-row: 1;
+	}
+
+	.grid.room-mode {
+		grid-template-columns: 1fr;
+		grid-template-rows: auto auto auto; /* Stack edit, graph, activity vertically */
+	}
+
+	.grid.room-mode .edit-panel {
+		grid-column: 1;
+		grid-row: 1;
+	}
+
+	.grid.room-mode .graph-panel {
+		grid-column: 1;
+		grid-row: 2;
+	}
+
+	.grid.room-mode aside.card {
+		grid-column: 1;
+		grid-row: 3;
 	}
 }
 
@@ -387,6 +568,16 @@ label {
 	textarea {
 		min-height: 80px;
 	}
+
+	/* Mobile room list adjustments */
+	.room-grid {
+		grid-template-columns: 1fr;
+		gap: 1rem;
+	}
+
+	.room-card {
+		padding: 1.5rem;
+	}
 }
 
 @media (max-width: 480px) {
@@ -410,4 +601,95 @@ label {
 	.row > * {
 		width: 100%;
 	}
+}
+
+/* =====================
+      ROOM LIST STYLES
+      ===================== */
+.room-list {
+	grid-column: 1;
+	grid-row: 2;
+	padding: 2rem;
+	text-align: center;
+	background: var(--card-bg);
+	border-radius: var(--card-radius);
+	border: 1px solid var(--card-border);
+	height: 100%;
+	min-height: 0; /* Allow room list to shrink */
+	display: none; /* Hidden by default */
+	margin: 0; /* Remove any margins */
+}
+
+/* Hide room list when room is joined */
+.room-joined .room-list {
+	display: none;
+}
+
+.room-list-header h2 {
+	font-size: 2rem;
+	color: var(--text-bright);
+	margin-bottom: 0.5rem;
+}
+
+.room-list-header p {
+	color: var(--text-muted);
+	margin-bottom: 2rem;
+	font-size: 1.1rem;
+}
+
+.room-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 2rem;
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+.room-card {
+	background: var(--card-bg);
+	border: 2px solid var(--card-border);
+	border-radius: var(--card-radius);
+	padding: 2rem;
+	text-align: center;
+	transition: all 0.3s ease;
+	cursor: pointer;
+}
+
+.room-card:hover {
+	border-color: var(--accent);
+	transform: translateY(-2px);
+	box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.room-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.room-card h3 {
+	font-size: 1.5rem;
+	color: var(--text-bright);
+	margin-bottom: 0.5rem;
+}
+
+.room-card p {
+	color: var(--text-muted);
+	margin-bottom: 1.5rem;
+}
+
+.join-room-btn {
+	background: var(--accent);
+	color: white;
+	border: none;
+	padding: 0.75rem 1.5rem;
+	border-radius: 8px;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.join-room-btn:hover {
+	background: color-mix(in srgb, var(--accent) 80%, white);
+	transform: translateY(-1px);
 }

@@ -12,6 +12,8 @@ export class DataSync {
 		this.edgesChain = null;
 		this.isSubscribed = false;
 		this.eventListeners = new Map();
+		this._isPaused = false; // Added for pausing/resuming
+		this._propsLoadingFlag = false; // Added for props loading protection
 		// this.pendingRemovals = new Map(); // COMMENTED OUT: Not using grace period logic anymore
 	}
 
@@ -28,6 +30,50 @@ export class DataSync {
 		if (listeners) {
 			listeners.forEach((callback) => callback(data));
 		}
+	}
+
+	/**
+	 * Temporarily pause data sync updates without unsubscribing
+	 * This is useful for operations like props loading that shouldn't trigger sync events
+	 */
+	pauseDataSync() {
+		this._isPaused = true;
+	}
+
+	/**
+	 * Resume data sync updates after being paused
+	 */
+	resumeDataSync() {
+		this._isPaused = false;
+	}
+
+	/**
+	 * Check if data sync is currently paused
+	 */
+	get isPaused() {
+		return this._isPaused || false;
+	}
+
+	/**
+	 * Set the paused state
+	 */
+	set isPaused(value) {
+		this._isPaused = value;
+	}
+
+	/**
+	 * Set the props loading flag to prevent graph updates during props loading
+	 */
+	setPropsLoadingFlag(value) {
+		const oldValue = this._propsLoadingFlag;
+		this._propsLoadingFlag = value;
+	}
+
+	/**
+	 * Check if props loading is in progress
+	 */
+	get isPropsLoading() {
+		return this._propsLoadingFlag;
 	}
 
 	subscribeToRoom() {
@@ -88,6 +134,11 @@ export class DataSync {
 			// Subscribe to nodes
 			this.nodesChain.on((data, id) => {
 				try {
+					// Check if props loading is in progress - skip updates if so
+					if (this._propsLoadingFlag) {
+						return;
+					}
+
 					const shortId = id.slice(0, 8);
 
 					if (!data) {
@@ -130,6 +181,11 @@ export class DataSync {
 			// Subscribe to edges
 			this.edgesChain.on((data, id) => {
 				try {
+					// Check if props loading is in progress - skip updates if so
+					if (this._propsLoadingFlag) {
+						return;
+					}
+
 					const shortId = id.slice(0, 8);
 
 					if (!data) {
@@ -213,11 +269,16 @@ export class DataSync {
 			this.edgesChain = null;
 		}
 		this.isSubscribed = false;
+		this._isPaused = false; // Reset paused state
 		// this.processedEdges.clear(); // COMMENTED OUT: Not needed anymore
 
 		// COMMENTED OUT: Not using grace period logic anymore
 		// this.pendingRemovals.forEach((timer) => clearTimeout(timer));
 		// this.pendingRemovals.delete(id);
+
+		// Note: Graph clearing is now handled automatically by the visualization component
+		// when it detects room state changes via the stateChanged event
+		log('✅ Unsubscribed from room data');
 	}
 
 	isSubscribedToRoom() {

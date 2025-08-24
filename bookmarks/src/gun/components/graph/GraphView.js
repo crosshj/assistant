@@ -51,20 +51,8 @@ export class GraphView {
 	setupVisualizationEvents() {
 		if (!this.visualization.cy) return;
 
-		// Element selection
-		this.visualization.cy.on('select', 'node,edge', (e) => {
-			const d = e.target.data();
-			$('sel').textContent = JSON.stringify(d, null, 2);
-
-			if (d.id) {
-				if (e.target.isNode && e.target.isNode()) {
-					window.updateNodeForm && window.updateNodeForm(d);
-				}
-				if (e.target.isEdge && e.target.isEdge()) {
-					window.updateEdgeForm && window.updateEdgeForm(d);
-				}
-			}
-		});
+		// Element selection - now handled by visualization component
+		// No need to duplicate the selection logic here
 
 		// Double-click to center on node
 		this.visualization.cy.on('dblclick', 'node', (e) => {

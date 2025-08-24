@@ -75,6 +75,19 @@ export class GunConnection {
 		];
 	}
 
+	/**
+	 * Create an isolated GunDB instance for operations that shouldn't interfere with main sync
+	 * This is useful for one-time reads like props fetching
+	 */
+	createIsolatedInstance() {
+		return Gun({
+			peers: this.peers,
+			localStorage: false, // Don't persist isolated operations
+			retry: 1, // Minimal retry for isolated ops
+			timeout: 3000, // Shorter timeout for isolated ops
+		});
+	}
+
 	autoLogin() {
 		// Note: Auth autoLogin is handled by AuthManager service
 		// This method is kept for backward compatibility but no longer needed

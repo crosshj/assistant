@@ -276,30 +276,24 @@ export class StateManager {
 			this.state.network.status !== 'connecting' &&
 			!this._userManuallyLeftRoom // Don't auto-join if user manually left
 		) {
-			log('🔍 DEBUG: Auto-join logic triggered!');
-			log('🔍 DEBUG: canJoin:', this.state.room.canJoin);
-			log('🔍 DEBUG: room status:', this.state.room.status);
-			log('🔍 DEBUG: network status:', this.state.network.status);
-			log('🔍 DEBUG: userManuallyLeftRoom:', this._userManuallyLeftRoom);
+			// Check if there's a hash tag that would indicate auto-join
+			const hasHash =
+				window.location.hash && window.location.hash.length > 1;
 
-			// Add small delay to ensure state is fully stable before room joining
-			setTimeout(() => {
-				// Get the room name from the input field, default to 'public'
-				const roomInput = document.getElementById('room');
-				const roomName = roomInput
-					? roomInput.value.trim() || 'public'
-					: 'public';
+			if (hasHash) {
+				// Add small delay to ensure state is fully stable before room joining
+				setTimeout(() => {
+					// Get the room name from the hash tag
+					const roomName = window.location.hash.substring(1);
 
-				log(
-					'🔍 DEBUG: Dispatching auto-join event for room:',
-					roomName
-				);
-				document.dispatchEvent(
-					new CustomEvent('ui:autoJoinRoom', {
-						detail: roomName,
-					})
-				);
-			}, 50); // 50ms delay to ensure state propagation
+					document.dispatchEvent(
+						new CustomEvent('ui:autoJoinRoom', {
+							detail: roomName,
+						})
+					);
+				}, 50); // 50ms delay to ensure state propagation
+			}
+			// Don't auto-join if there's no hash tag - let user choose
 		}
 	}
 

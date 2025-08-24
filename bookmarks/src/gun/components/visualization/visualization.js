@@ -31,7 +31,17 @@ export class GraphVisualization {
 						color: '#e6edf3',
 						'text-outline-width': 1,
 						'text-outline-color': '#0b0d10',
-						'font-size': 12,
+						'font-size': 11,
+						// Add size constraints
+						width: 60,
+						height: 60,
+						'text-wrap': 'wrap',
+						'text-max-width': 50,
+						'text-valign': 'center',
+						'text-halign': 'center',
+						// Additional styling for better appearance
+						padding: 5,
+						shape: 'ellipse',
 					},
 				},
 				{
@@ -43,6 +53,16 @@ export class GraphVisualization {
 						'border-opacity': 1,
 						'text-outline-width': 2,
 						'text-outline-color': '#0b0d10',
+						// Keep same size constraints for selected nodes
+						width: 60,
+						height: 60,
+						'text-wrap': 'wrap',
+						'text-max-width': 50,
+						'text-valign': 'center',
+						'text-halign': 'center',
+						// Additional styling for selected state
+						padding: 5,
+						shape: 'ellipse',
 					},
 				},
 				{
@@ -70,12 +90,22 @@ export class GraphVisualization {
 				},
 			],
 			layout: { name: 'cose', animate: false },
+			// Add default zoom and pan settings
+			minZoom: 0.1,
+			maxZoom: 3,
+			zoom: 1,
+			pan: { x: 0, y: 0 },
 		});
 
 		this.setupEventHandlers();
 		this.setupKeyboardShortcuts();
 		this.setupSearchFunctionality();
 		this.setupLayoutControls();
+
+		// Fit the graph to a reasonable view after initialization
+		setTimeout(() => {
+			this.fitGraphToView();
+		}, 100);
 
 		this.initialized = true;
 		log('Cytoscape visualization initialized');
@@ -96,41 +126,94 @@ export class GraphVisualization {
 			this.cy.center(e.target);
 			this.cy.fit(e.target, 50);
 		});
+
+		// Listen for room state changes to auto-clear graph
+		this.setupRoomStateListener();
+	}
+
+	/**
+	 * Listen for room state changes and automatically clear graph when room is left
+	 */
+	setupRoomStateListener() {
+		// Listen for state changes from the state manager
+		document.addEventListener('stateChanged', (e) => {
+			const state = e.detail;
+
+			if (state.room.status === 'not_joined') {
+				this.clearGraph();
+			}
+		});
+
+		// Also listen for custom room leave events as a backup
+		document.addEventListener('ui:leaveRoom', () => {
+			this.clearGraph();
+		});
 	}
 
 	// Separate method to handle selection with proper error handling
 	handleSelection(e) {
 		try {
 			const d = e.target.data();
-			if (!d || !d.id) return;
+			if (!d || !d.id) {
+				return;
+			}
 
 			// Update the UI display with basic data
 			if (e.target.isNode && e.target.isNode()) {
-				// Update form fields
-				$('nodeId').value = d.nid || '';
-				$('nodeLabel').value = d.label || '';
-				$('nodeProps').value = JSON.stringify(d.props || {}, null, 2);
+				// Update form fields (but NOT the props field - wait for props to load)
+				const nodeIdField = $('nodeId');
+				const nodeLabelField = $('nodeLabel');
 
-				// Update the "Selected" display with basic data
-				$('sel').textContent = JSON.stringify(d, null, 2);
+				if (nodeIdField) nodeIdField.value = d.nid || '';
+				if (nodeLabelField) nodeLabelField.value = d.label || '';
+
+				// DO NOT update nodeProps field here - wait for props to load via event system
+				// This prevents showing stale/incomplete data
+
+				// Emit selection changed event for auto-loading props
+				console.log(
+					'🔍 Visualization: Emitting selectionChanged event for node:',
+					d.nid || d.id,
+					'room:',
+					window.currentRoom
+				);
+				document.dispatchEvent(
+					new CustomEvent('selectionChanged', {
+						detail: {
+							elementId: d.nid || d.id,
+							elementType: 'node',
+							room: window.currentRoom,
+						},
+					})
+				);
 			}
 			if (e.target.isEdge && e.target.isEdge()) {
-				// Update form fields
+				// Update form fields (but NOT the props field - wait for props to load)
 				$('edgeId').value = d.eid || '';
 				$('edgeFrom').value = d.source?.replace('n_', '') || '';
 				$('edgeTo').value = d.target?.replace('n_', '') || '';
 				$('edgeLabel').value = d.label || '';
-				$('edgeProps').value = JSON.stringify(d.props || {}, null, 2);
 
-				// Update the "Selected" display with basic data
-				$('sel').textContent = JSON.stringify(d, null, 2);
+				// DO NOT update edgeProps field here - wait for props to load via event system
+				// This prevents showing stale/incomplete data
+
+				// Emit selection changed event for auto-loading props
+				document.dispatchEvent(
+					new CustomEvent('selectionChanged', {
+						detail: {
+							elementId: d.eid || d.id,
+							elementType: 'edge',
+							room: window.currentRoom,
+						},
+					})
+				);
 			}
 
 			// Visualization component should NOT trigger props loading
 			// Props loading should be handled by other components that need the data
 			// This keeps Cytoscape focused only on graph display
 		} catch (error) {
-			console.log('⚠️ Error handling selection:', error.message);
+			// Silently handle selection errors to avoid console noise
 		}
 	}
 
@@ -200,6 +283,22 @@ export class GraphVisualization {
 		}
 	}
 
+	// Fit graph to a reasonable view with padding
+	fitGraphToView() {
+		if (!this.cy || this.cy.elements().length === 0) return;
+
+		// Fit with some padding around the elements
+		this.cy.fit(null, 50);
+
+		// Ensure zoom is within reasonable bounds
+		const currentZoom = this.cy.zoom();
+		if (currentZoom > 2) {
+			this.cy.zoom(2);
+		} else if (currentZoom < 0.3) {
+			this.cy.zoom(0.3);
+		}
+	}
+
 	addNode(nodeData) {
 		if (!this.cy) return;
 
@@ -219,7 +318,11 @@ export class GraphVisualization {
 		});
 
 		this.debounceLayout();
-		// Removed duplicate logging - sync service already logs this
+
+		// Fit to view after adding node to maintain reasonable zoom
+		setTimeout(() => {
+			this.fitGraphToView();
+		}, 100);
 	}
 
 	removeNode(nodeId) {
@@ -253,7 +356,11 @@ export class GraphVisualization {
 		});
 
 		this.debounceLayout();
-		// Removed duplicate logging - sync service already logs this
+
+		// Fit to view after adding edge to maintain reasonable zoom
+		setTimeout(() => {
+			this.fitGraphToView();
+		}, 100);
 	}
 
 	removeEdge(edgeId) {

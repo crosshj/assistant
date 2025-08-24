@@ -1,17 +1,18 @@
-// import { GunDBWrapper } from './gunWrapper.js'; // COMMENTED OUT: Not using wrapper for now
+import { GunDBWrapper } from './gunWrapper.js';
 
 /**
  * Event Coordinator
  * Listens to UI events and coordinates between services and StateManager
  */
 export class EventCoordinator {
-	constructor(connection, auth, rooms, stateManager, sync) {
+	constructor(connection, auth, rooms, stateManager, sync, roomList) {
 		this.connection = connection;
 		this.auth = auth;
 		this.rooms = rooms;
 		this.stateManager = stateManager;
 		this.sync = sync;
-		// this.gunWrapper = new GunDBWrapper(connection); // COMMENTED OUT: Not using wrapper for now
+		this.gunWrapper = new GunDBWrapper(connection);
+		this.roomList = roomList;
 
 		// Listen to UI events from Header
 		this.setupUIEventListeners();
@@ -42,10 +43,6 @@ export class EventCoordinator {
 
 		// Listen for graph events
 		window.addEventListener('graph:requestProps', (e) => {
-			console.log(
-				'📡 EventCoordinator: Received graph:requestProps event:',
-				e.detail
-			);
 			this.handleRequestProps(e.detail);
 		});
 	}
@@ -53,8 +50,6 @@ export class EventCoordinator {
 	// ===== NETWORK EVENTS =====
 
 	handleConnect() {
-		console.log('🎯 EventCoordinator: Handling connect request');
-
 		// Update state to connecting
 		this.stateManager.setNetworkConnecting();
 
@@ -64,8 +59,6 @@ export class EventCoordinator {
 	}
 
 	handleDisconnect() {
-		console.log('🎯 EventCoordinator: Handling disconnect request');
-
 		// Call connection service first
 		this.connection.disconnect();
 
@@ -74,7 +67,6 @@ export class EventCoordinator {
 	}
 
 	handleTestConnection() {
-		console.log('🎯 EventCoordinator: Handling test connection request');
 		this.connection.testConnection();
 	}
 
@@ -94,20 +86,18 @@ export class EventCoordinator {
 	}
 
 	handleAutoJoinRoom(event) {
-		const roomName = event?.detail || 'public';
-		this.handleJoinRoom(roomName);
+		const roomName = event?.detail;
+		if (roomName) {
+			this.handleJoinRoom(roomName);
+		}
 	}
 
 	handleLeaveRoom() {
-		console.log('🎯 EventCoordinator: Handling leave room request');
-
 		// Call room service first
 		this.rooms.leaveRoom();
 
-		// Unsubscribe from room data (this will clear the graph)
-		if (this.sync) {
-			this.sync.unsubscribeFromRoom();
-		}
+		// Note: Graph clearing is now handled automatically by the visualization component
+		// when it detects room state changes via the stateChanged event
 
 		// Then update state
 		this.stateManager.setRoomLeft();
@@ -116,19 +106,29 @@ export class EventCoordinator {
 	// ===== AUTH EVENTS =====
 
 	handleCreateIdentity(alias) {
-		console.log(
-			'🎯 EventCoordinator: Handling create identity request:',
-			alias
-		);
 		this.auth.createIdentity(alias);
 	}
 
 	handleLogin(credentials) {
-		console.log(
-			'🎯 EventCoordinator: Handling login request:',
-			credentials
-		);
 		this.auth.login(credentials.alias, credentials.password);
+	}
+
+	handleLogout() {
+		this.auth.logout();
+	}
+
+	handleUserAuthenticated(alias) {
+		// Update state to reflect authentication
+		if (this.stateManager) {
+			this.stateManager.setUserAuthenticated(alias);
+		}
+	}
+
+	handleUserLoggedOut() {
+		// Update state to reflect logout
+		if (this.stateManager) {
+			this.stateManager.setUserLoggedOut();
+		}
 	}
 
 	// ===== SERVICE EVENT HANDLERS =====
@@ -139,95 +139,266 @@ export class EventCoordinator {
 		const total = typeof data === 'object' ? data.total : arguments[1];
 
 		this.stateManager.setNetworkConnected(connected, total);
+
+		// If we're connected but not in a room, show room selection mode
+		// But only if we're not already in room selection mode to prevent loops
+		// AND only if there's no hash tag in the URL (which would indicate auto-join)
+		if (connected && this.rooms && !this.rooms.isInRoom()) {
+			// Check if there's a hash tag that would indicate auto-join
+			if (this.shouldShowRoomSelector()) {
+				// Check if we're already in room selection mode to prevent unnecessary switches
+				const mainGrid = document.getElementById('mainGrid');
+				if (
+					mainGrid &&
+					!mainGrid.classList.contains('room-selection-mode')
+				) {
+					this.showRoomSelectionLayout();
+				}
+			} else {
+				// Auto-join the room specified in the hash
+				this.handleAutoJoinFromHash();
+			}
+		}
+	}
+
+	// Handle auto-join from hash tag when connection is established
+	handleAutoJoinFromHash() {
+		const hash = window.location.hash;
+		if (hash && hash.length > 1) {
+			const roomName = hash.substring(1); // Remove the # character
+
+			// Small delay to ensure everything is ready
+			setTimeout(() => {
+				if (this.rooms && this.connection.isConnected()) {
+					this.rooms.joinRoom(roomName, this.connection);
+				}
+			}, 500);
+		}
+	}
+
+	// Check if we should show the room selector (no hash tag)
+	shouldShowRoomSelector() {
+		return !window.location.hash || window.location.hash.length <= 1;
 	}
 
 	onRoomStatusChanged(status, roomName) {
 		if (status && status.includes('📊') && roomName) {
-			this.stateManager.setRoomJoined(roomName);
+			// Check if we're already in room mode to prevent unnecessary switches
+			const mainGrid = document.getElementById('mainGrid');
+			if (mainGrid && !mainGrid.classList.contains('room-mode')) {
+				this.stateManager.setRoomJoined(roomName);
 
-			// COMMENTED OUT: Delay that was causing timing issues
-			// setTimeout(() => {
-			// 	if (this.rooms.isInRoom() && this.sync) {
-			// 		this.sync.subscribeToRoom();
-			// 	} else {
-			// 		console.log(
-			// 			'⚠️ Cannot start data sync: room not ready or sync service unavailable'
-			// 		);
-			// 	}
-			// }, 100);
+				// Update URL hash to reflect current room
+				this.updateRoomHash(roomName);
 
-			// Start data sync immediately instead
-			if (this.rooms.isInRoom() && this.sync) {
-				this.sync.subscribeToRoom();
-			} else {
-				console.log(
-					'⚠️ Cannot start data sync: room not ready or sync service unavailable'
-				);
+				// Hide room list when room is joined
+				if (this.roomList) {
+					this.roomList.hide();
+				}
+
+				// Switch to in-room layout mode
+				this.showInRoomLayout();
+
+				// Start data sync immediately instead
+				if (this.rooms.isInRoom() && this.sync) {
+					this.sync.subscribeToRoom();
+				}
 			}
 		} else if (status === 'not joined') {
-			this.stateManager.setRoomLeft();
+			// Check if we're already in room selection mode to prevent unnecessary switches
+			const mainGrid = document.getElementById('mainGrid');
+			if (
+				mainGrid &&
+				!mainGrid.classList.contains('room-selection-mode')
+			) {
+				this.stateManager.setRoomLeft();
+
+				// Clear room from URL hash
+				this.updateRoomHash(null);
+
+				// Switch to room selection layout mode
+				this.showRoomSelectionLayout();
+
+				// Show room list when no room is joined
+				if (this.roomList) {
+					this.roomList.show();
+				}
+			}
+		}
+	}
+
+	// Switch to in-room layout (narrow left edit, wide middle graph, narrow right activity)
+	showInRoomLayout() {
+		// Call the main app's layout method if available
+		if (
+			window.gunApp &&
+			typeof window.gunApp.showInRoomMode === 'function'
+		) {
+			window.gunApp.showInRoomMode();
 		} else {
-			console.log('⚠️ Unknown room status:', status);
+			// Fallback: manually show/hide panels
+			const editPanel = document.getElementById('editPanel');
+			const graphPanel = document.getElementById('graphPanel');
+			const roomList = document.getElementById('roomList');
+			const mainGrid = document.getElementById('mainGrid');
+
+			if (mainGrid) {
+				mainGrid.classList.remove('room-selection-mode');
+				mainGrid.classList.add('room-mode');
+			}
+			if (roomList) roomList.style.display = 'none';
+			if (editPanel) editPanel.style.display = 'block';
+			if (graphPanel) graphPanel.style.display = 'block';
+		}
+	}
+
+	// Switch to room selection layout (wide left room selection, narrow right activity)
+	showRoomSelectionLayout() {
+		// Call the main app's layout method if available
+		if (
+			window.gunApp &&
+			typeof window.gunApp.showRoomSelectionMode === 'function'
+		) {
+			window.gunApp.showRoomSelectionMode();
+		} else {
+			// Fallback: manually show/hide panels
+			const editPanel = document.getElementById('editPanel');
+			const graphPanel = document.getElementById('graphPanel');
+			const roomList = document.getElementById('roomList');
+			const mainGrid = document.getElementById('mainGrid');
+
+			if (mainGrid) {
+				mainGrid.classList.remove('room-mode');
+				mainGrid.classList.add('room-selection-mode');
+			}
+			if (roomList) roomList.style.display = 'block';
+			if (editPanel) editPanel.style.display = 'none';
+			if (graphPanel) graphPanel.style.display = 'none';
+		}
+	}
+
+	// Show the edit and graph panels
+	showEditAndGraphPanels() {
+		// This method is now replaced by showInRoomLayout()
+		this.showInRoomLayout();
+	}
+
+	// Hide the edit and graph panels
+	hideEditAndGraphPanels() {
+		// This method is now replaced by showRoomSelectionLayout()
+		this.showRoomSelectionLayout();
+	}
+
+	// Update URL hash to reflect current room
+	updateRoomHash(roomName) {
+		if (roomName) {
+			// Set hash to just the room name
+			window.location.hash = `#${roomName}`;
+		} else {
+			// Clear hash when leaving room
+			window.location.hash = '';
 		}
 	}
 
 	onUserAuthenticated(alias) {
-		console.log('🎯 EventCoordinator: User authenticated:', alias);
 		this.stateManager.setAuthAuthenticated(alias);
 	}
 
 	// ===== GRAPH EVENTS =====
 
 	async handleRequestProps(detail) {
-		console.log(
-			'🔍 EventCoordinator: Props request for',
-			detail.elementType,
-			detail.elementId
-		);
 		const { elementId, elementType, room } = detail;
 		if (!elementId || !room || !elementType) {
-			console.log('❌ EventCoordinator: Missing required data');
+			console.log(
+				'❌ EventCoordinator: Missing required data for props request:',
+				detail
+			);
 			return;
 		}
 
-		try {
-			// COMMENTED OUT: GunDB calls that were interfering with graph
-			// const gun = this.connection.gun;
-			// const elementRef = gun
-			// 	.get('graphs')
-			// 	.get(room)
-			// 	.get(elementType === 'node' ? 'nodes' : 'edges')
-			// 	.get(elementId);
-			//
-			// elementRef.once((elementData) => { ... });
+		console.log(
+			'🔍 EventCoordinator: Starting props request for:',
+			elementType,
+			elementId,
+			'in room:',
+			room
+		);
 
-			// TEMPORARY: Just return empty props to prevent graph interference
+		// Set a flag to prevent graph updates during props loading
+		if (this.sync) {
+			this.sync.setPropsLoadingFlag(true);
+		}
+
+		try {
+			let props;
+			try {
+				if (elementType === 'node') {
+					console.log('🔍 EventCoordinator: Fetching node props...');
+					props = await this.gunWrapper.getNodeProps(room, elementId);
+				} else if (elementType === 'edge') {
+					console.log('🔍 EventCoordinator: Fetching edge props...');
+					props = await this.gunWrapper.getEdgeProps(room, elementId);
+				} else {
+					throw new Error(`Unknown element type: ${elementType}`);
+				}
+			} catch (error) {
+				console.log(
+					'⚠️ EventCoordinator: Primary props fetch failed, trying fallback:',
+					error.message
+				);
+				// Try fallback method if primary method fails
+				if (elementType === 'node') {
+					props = await this.gunWrapper.getPropsFallback(
+						room,
+						elementId,
+						true
+					);
+				} else if (elementType === 'edge') {
+					props = await this.gunWrapper.getPropsFallback(
+						room,
+						elementId,
+						false
+					);
+				}
+			}
+
 			console.log(
-				'⚠️ EventCoordinator: Props loading temporarily disabled to prevent graph interference'
+				'🔍 EventCoordinator: Props fetched successfully:',
+				props
 			);
 
-			const event = new CustomEvent('graph:propsLoaded', {
-				detail: {
-					elementId,
-					elementType,
-					props: {},
-				},
-			});
-			window.dispatchEvent(event);
+			// Emit the props loaded event
+			document.dispatchEvent(
+				new CustomEvent('graph:propsLoaded', {
+					detail: {
+						elementId,
+						elementType,
+						props,
+						room,
+					},
+				})
+			);
 		} catch (error) {
 			console.log(
-				'❌ EventCoordinator: Error reading props:',
+				'❌ EventCoordinator: All props fetch methods failed:',
 				error.message
 			);
-
-			const event = new CustomEvent('graph:propsLoaded', {
-				detail: {
-					elementId,
-					elementType,
-					props: {},
-				},
-			});
-			window.dispatchEvent(event);
+			// Emit empty props on error
+			document.dispatchEvent(
+				new CustomEvent('graph:propsLoaded', {
+					detail: {
+						elementId,
+						elementType,
+						props: {},
+						room,
+					},
+				})
+			);
+		} finally {
+			// Clear the props loading flag
+			if (this.sync) {
+				this.sync.setPropsLoadingFlag(false);
+			}
 		}
 	}
 }

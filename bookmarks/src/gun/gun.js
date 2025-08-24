@@ -16,6 +16,7 @@ import { GraphForms } from './components/forms/GraphForms.js';
 import { GraphView } from './components/graph/GraphView.js';
 import { Sidebar } from './components/sidebar/Sidebar.js';
 import { PropsManager } from './components/PropsManager.js';
+import { RoomList } from './components/RoomList.js';
 
 // Main GunDB Application
 class GunApp {
@@ -40,6 +41,7 @@ class GunApp {
 		this.graphView = null;
 		this.sidebar = new Sidebar();
 		this.propsManager = new PropsManager();
+		this.roomList = new RoomList();
 	}
 
 	async start() {
@@ -48,6 +50,13 @@ class GunApp {
 
 		// Initialize state manager first (single source of truth)
 		this.stateManager = new StateManager(this.sidebar);
+
+		// Broadcast state changes as DOM events for components that need them
+		this.stateManager.on('stateChanged', (state) => {
+			document.dispatchEvent(
+				new CustomEvent('stateChanged', { detail: state })
+			);
+		});
 
 		// Initialize connection first with default peers (but don't start monitoring yet)
 		this.connection.init(this.connection.getDefaultPeers());
@@ -68,7 +77,8 @@ class GunApp {
 			this.auth,
 			this.rooms,
 			this.stateManager,
-			this.sync
+			this.sync,
+			this.roomList
 		);
 
 		// Initialize UI components
@@ -85,6 +95,9 @@ class GunApp {
 		// Initialize authentication state
 		this.auth.autoLogin();
 
+		// Check URL hash for room parameter and auto-join if present
+		this.checkHashForRoom();
+
 		// Setup global functions for components to use
 		this.setupGlobalFunctions();
 
@@ -99,6 +112,104 @@ class GunApp {
 		setTimeout(() => {
 			this.connection.startMonitoring();
 		}, 2000); // 2 second delay to show "Connecting..." state
+	}
+
+	// Check URL hash for room parameter and auto-join if present
+	checkHashForRoom() {
+		const hash = window.location.hash;
+
+		// Initially show connecting mode (blank left space, activity on right)
+		this.showConnectingMode();
+
+		// Remove the # and check if there's a room name
+		if (hash && hash.length > 1) {
+			const roomName = hash.substring(1); // Remove the # character
+
+			// Don't show room selection mode - we'll auto-join when connected
+			// The connection status handler will skip room selection mode due to hash
+		} else {
+			// No room specified, but don't show room list yet - wait for connection
+			// Room list will be shown when connection is established (if no hash)
+		}
+	}
+
+	// Show connecting/loading mode (blank left, narrow right activity)
+	showConnectingMode() {
+		const mainGrid = document.getElementById('mainGrid');
+		const roomList = document.getElementById('roomList');
+		const editPanel = document.getElementById('editPanel');
+		const graphPanel = document.getElementById('graphPanel');
+
+		if (mainGrid) {
+			mainGrid.classList.remove('room-selection-mode', 'room-mode');
+		}
+		if (roomList) roomList.style.display = 'none';
+		if (editPanel) editPanel.style.display = 'none';
+		if (graphPanel) graphPanel.style.display = 'none';
+	}
+
+	// Show room selection mode (wide left room selection, narrow right activity)
+	showRoomSelectionMode() {
+		const mainGrid = document.getElementById('mainGrid');
+		const roomList = document.getElementById('roomList');
+		const editPanel = document.getElementById('editPanel');
+		const graphPanel = document.getElementById('graphPanel');
+
+		if (mainGrid) {
+			mainGrid.classList.remove('room-mode');
+			mainGrid.classList.add('room-selection-mode');
+		}
+		if (roomList) roomList.style.display = 'block';
+		if (editPanel) editPanel.style.display = 'none';
+		if (graphPanel) graphPanel.style.display = 'none';
+
+		// Clear the visualization when leaving room mode to free up resources
+		if (this.visualization.isInitialized()) {
+			this.visualization.clearGraph();
+		}
+	}
+
+	// Show in-room mode (narrow left edit, wide middle graph, narrow right activity)
+	showInRoomMode() {
+		const mainGrid = document.getElementById('mainGrid');
+		const roomList = document.getElementById('roomList');
+		const editPanel = document.getElementById('editPanel');
+		const graphPanel = document.getElementById('graphPanel');
+
+		if (mainGrid) {
+			mainGrid.classList.remove('room-selection-mode');
+			mainGrid.classList.add('room-mode');
+		}
+		if (roomList) roomList.style.display = 'none';
+		if (editPanel) editPanel.style.display = 'block';
+		if (graphPanel) graphPanel.style.display = 'block';
+
+		// Initialize Cytoscape visualization when entering room mode
+		if (!this.visualization.isInitialized()) {
+			this.visualization.init('cy');
+		}
+
+		// Ensure the canvas takes full height and resize it
+		this.resizeCytoscapeCanvas();
+	}
+
+	// Resize the Cytoscape canvas to take full available height
+	resizeCytoscapeCanvas() {
+		const cyContainer = document.getElementById('cy');
+		if (cyContainer && this.visualization.isInitialized()) {
+			// Force a resize to ensure the canvas takes full height
+			setTimeout(() => {
+				if (this.visualization.cy) {
+					this.visualization.cy.resize();
+				}
+			}, 100); // Small delay to ensure DOM is ready
+		}
+	}
+
+	// Hide the edit and graph panels initially
+	hideEditAndGraphPanels() {
+		// This method is now replaced by showRoomSelectionMode()
+		this.showRoomSelectionMode();
 	}
 
 	wireUpEvents() {
@@ -261,11 +372,23 @@ class GunApp {
 			get: () => this.propsManager,
 			set: () => {}, // Read-only
 		});
+
+		// Make visualization instance globally accessible for props fetching
+		Object.defineProperty(window, 'cy', {
+			get: () => this.visualization.cy,
+			set: () => {}, // Read-only
+		});
+
+		// Make main app instance globally accessible for layout management
+		Object.defineProperty(window, 'gunApp', {
+			get: () => this,
+			set: () => {}, // Read-only
+		});
 	}
 
 	initUI() {
-		// Initialize visualization
-		this.visualization.init('cy');
+		// Initialize visualization only when needed (in room mode)
+		// this.visualization.init('cy'); // Moved to showInRoomMode()
 
 		// Setup component event handlers
 		this.header.setupEventHandlers();
@@ -282,7 +405,22 @@ class GunApp {
 		// Setup copy log button
 		this.setupCopyLogButton();
 
+		// Setup room list event listeners
+		this.setupRoomListEventListeners();
+
+		// Setup window resize handler for Cytoscape canvas
+		this.setupResizeHandler();
+
 		// Note: Initial header state is set in start() method, not here
+	}
+
+	setupResizeHandler() {
+		// Handle window resize to ensure Cytoscape canvas stays properly sized
+		window.addEventListener('resize', () => {
+			if (this.visualization.isInitialized()) {
+				this.resizeCytoscapeCanvas();
+			}
+		});
 	}
 
 	setupClearLogButton() {
@@ -301,6 +439,49 @@ class GunApp {
 				window.copyActivityLog();
 			};
 		}
+	}
+
+	setupRoomListEventListeners() {
+		// Setup event listeners for the static room list
+		const roomCards = document.querySelectorAll('.room-card');
+		roomCards.forEach((card) => {
+			card.addEventListener('click', (e) => {
+				// Don't trigger if clicking on the button specifically
+				if (e.target.classList.contains('join-room-btn')) {
+					return;
+				}
+
+				// Get room name from the card's onclick attribute or data attribute
+				const roomName =
+					card
+						.getAttribute('onclick')
+						?.match(/joinRoom\('([^']+)'\)/)?.[1] ||
+					card.querySelector('h3')?.textContent;
+
+				if (roomName) {
+					window.joinRoom(roomName);
+				}
+			});
+		});
+
+		// Setup event listeners for join room buttons
+		const joinButtons = document.querySelectorAll('.join-room-btn');
+		joinButtons.forEach((button) => {
+			button.addEventListener('click', (e) => {
+				e.stopPropagation(); // Prevent card click event
+				const roomName =
+					button
+						.closest('.room-card')
+						.getAttribute('onclick')
+						?.match(/joinRoom\('([^']+)'\)/)?.[1] ||
+					button.closest('.room-card').querySelector('h3')
+						?.textContent;
+
+				if (roomName) {
+					window.joinRoom(roomName);
+				}
+			});
+		});
 	}
 
 	// Note: Header visibility is now handled by Header component + NetworkUI controller

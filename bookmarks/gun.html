@@ -158,8 +158,47 @@
 			</div>
 		</header>
 
-		<div class="grid">
-			<section class="card">
+		<div
+			class="grid"
+			id="mainGrid"
+		>
+			<!-- Room List (shown when no room is selected) -->
+			<div
+				class="room-list"
+				id="roomList"
+			>
+				<div class="room-list-header">
+					<h2>Select a Room</h2>
+					<p>Choose a room to join and start collaborating</p>
+				</div>
+				<div class="room-grid">
+					<div
+						class="room-card"
+						onclick="joinRoom('public')"
+					>
+						<div class="room-icon">📊</div>
+						<h3>public</h3>
+						<p>Join this room to start working</p>
+						<button class="join-room-btn">Join Room</button>
+					</div>
+					<div
+						class="room-card"
+						onclick="joinRoom('super-duper')"
+					>
+						<div class="room-icon">📊</div>
+						<h3>super-duper</h3>
+						<p>Join this room to start working</p>
+						<button class="join-room-btn">Join Room</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Edit Panel (shown when in a room) -->
+			<section
+				class="card edit-panel"
+				id="editPanel"
+				style="display: none"
+			>
 				<header><h3 style="margin: 0">Edit</h3></header>
 				<div class="body">
 					<details open>
@@ -256,7 +295,12 @@
 				</div>
 			</section>
 
-			<section class="card">
+			<!-- Graph Panel (shown when in a room) -->
+			<section
+				class="card graph-panel"
+				id="graphPanel"
+				style="display: none"
+			>
 				<header><h3 style="margin: 0">Graph</h3></header>
 				<div
 					class="body"
@@ -284,36 +328,11 @@
 							<button id="fitGraph">Fit</button>
 						</div>
 					</div>
-					<div
-						style="
-							padding: 0.5rem 0.75rem;
-							border-bottom: 1px solid #30363d;
-						"
-					>
-						<div>
-							<b>Selected</b>
-							<button
-								id="loadProps"
-								class="secondary"
-								style="margin: 0.5rem 0; font-size: 0.8rem"
-							>
-								Load Props from GunDB
-							</button>
-							<pre
-								id="sel"
-								class="mono"
-								style="
-									white-space: pre-wrap;
-									margin: 0.5rem 0 0 0;
-									font-size: 0.85rem;
-								"
-							></pre>
-						</div>
-					</div>
 					<div id="cy"></div>
 				</div>
 			</section>
 
+			<!-- Activity Panel (always visible on the right) -->
 			<aside class="card">
 				<header
 					style="

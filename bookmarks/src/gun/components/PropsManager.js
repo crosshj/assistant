@@ -1,137 +1,125 @@
+import { $ } from '../utils/utils.js';
+
 // PropsManager Component - Handles loading and displaying props data
 export class PropsManager {
 	constructor() {
 		this.setupEventListeners();
+		this.isLoading = false;
 	}
 
 	setupEventListeners() {
-		// Listen for props data loaded events
-		window.addEventListener('graph:propsLoaded', (e) => {
-			console.log('🔍 PropsManager: Received props event:', e.detail);
+		// Listen for props loaded events
+		document.addEventListener('graph:propsLoaded', (e) => {
 			this.handlePropsLoaded(e.detail);
 		});
 
-		// Listen for manual props loading requests
-		document.addEventListener('click', (e) => {
-			if (e.target.id === 'loadProps') {
-				this.loadPropsForSelected();
-			}
+		// Listen for selection changes to auto-load props
+		document.addEventListener('selectionChanged', (e) => {
+			this.handleSelectionChanged(e.detail);
 		});
+	}
+
+	// Handle selection changes and auto-load props
+	handleSelectionChanged(detail) {
+		const { elementId, elementType, room } = detail;
+		if (!elementId || !elementType || !room) {
+			return;
+		}
+
+		// Clear the props field immediately to show loading state
+		this.clearPropsField(elementType);
+
+		// Show loading spinner
+		this.showLoading(true);
+
+		// Request props from GunDB
+		window.dispatchEvent(
+			new CustomEvent('graph:requestProps', {
+				detail: {
+					elementId,
+					elementType,
+					room,
+				},
+			})
+		);
+	}
+
+	// Clear the appropriate props field
+	clearPropsField(elementType) {
+		if (elementType === 'node') {
+			const nodePropsField = $('nodeProps');
+			if (nodePropsField) {
+				nodePropsField.value = '';
+			}
+		} else if (elementType === 'edge') {
+			const edgePropsField = $('edgeProps');
+			if (edgePropsField) {
+				edgePropsField.value = '';
+			}
+		}
+	}
+
+	// Show/hide loading spinner
+	showLoading(show) {
+		this.isLoading = show;
+
+		// Update the "New node" section
+		const nodePropsField = $('nodeProps');
+		if (nodePropsField) {
+			if (show) {
+				nodePropsField.placeholder = 'Loading props...';
+				nodePropsField.disabled = true;
+			} else {
+				nodePropsField.placeholder = 'Props (JSON object)';
+				nodePropsField.disabled = false;
+			}
+		}
+
+		// Update the "New edge" section
+		const edgePropsField = $('edgeProps');
+		if (edgePropsField) {
+			if (show) {
+				edgePropsField.placeholder = 'Loading props...';
+				edgePropsField.disabled = true;
+			} else {
+				edgePropsField.placeholder = 'Props (JSON object)';
+				edgePropsField.disabled = false;
+			}
+		}
 	}
 
 	// Handle props loaded event
 	handlePropsLoaded(detail) {
-		const { elementId, elementType, props } = detail;
-		console.log('🔍 PropsManager: Raw props from GunDB:', props);
-
-		// Safely extract props data from GunDB object
-		const safeProps = this.extractSafeProps(props);
-		console.log('🔒 PropsManager: Cleaned props:', safeProps);
-
-		// Update the "Selected" display with the loaded props
-		const selElement = document.getElementById('sel');
-		if (selElement) {
-			try {
-				// Parse the current display data
-				const currentData = JSON.parse(selElement.textContent);
-				const idField = elementType === 'node' ? 'nid' : 'eid';
-
-				if (currentData && currentData[idField] === elementId) {
-					// Create a NEW object with updated props to avoid reference issues
-					const updatedData = {
-						...currentData,
-						props: safeProps,
-					};
-
-					selElement.textContent = JSON.stringify(
-						updatedData,
-						null,
-						2
-					);
-					console.log('✅ PropsManager: UI updated successfully');
-					console.log(
-						'🔍 PropsManager: New UI content:',
-						selElement.textContent
-					);
-
-					// Check if something overwrites our update
-					setTimeout(() => {
-						console.log(
-							'🔍 PropsManager: UI content after 100ms:',
-							selElement.textContent
-						);
-					}, 100);
-				}
-			} catch (error) {
-				console.log(
-					'❌ PropsManager: Error updating UI:',
-					error.message
-				);
-			}
-		}
-
-		// Also update the appropriate form field
-		const propsField = document.getElementById(
-			elementType === 'node' ? 'nodeProps' : 'edgeProps'
-		);
-		if (propsField) {
-			propsField.value = JSON.stringify(safeProps, null, 2);
-		}
-	}
-
-	// Method to load props for the currently selected element
-	loadPropsForSelected() {
-		console.log('🔍 PropsManager: Starting props load...');
-
-		const selElement = document.getElementById('sel');
-		if (!selElement || !selElement.textContent) {
-			console.log('❌ PropsManager: No selected element');
+		const { elementId, elementType, props, room } = detail;
+		if (!elementId || !elementType || !props) {
 			return;
 		}
 
 		try {
-			const data = JSON.parse(selElement.textContent);
-			console.log(
-				'🔍 PropsManager: Selected element:',
-				data.nid || data.eid
-			);
+			// Clean the props data
+			const safeProps = this.extractSafeProps(props);
 
-			// Check if we have a room context
-			if (!window.currentRoom) {
-				console.log('❌ PropsManager: No room context');
-				return;
+			// Update the form fields with the loaded props
+			if (elementType === 'node') {
+				const nodePropsField = $('nodeProps');
+				if (nodePropsField) {
+					nodePropsField.value = JSON.stringify(safeProps, null, 2);
+				}
+			} else if (elementType === 'edge') {
+				const edgePropsField = $('edgeProps');
+				if (edgePropsField) {
+					edgePropsField.value = JSON.stringify(safeProps, null, 2);
+				}
 			}
 
-			// Determine if this is a node or edge
-			let elementId, elementType;
-			if (data.nid) {
-				elementId = data.nid;
-				elementType = 'node';
-			} else if (data.eid) {
-				elementId = data.eid;
-				elementType = 'edge';
-			} else {
-				console.log('❌ PropsManager: Cannot determine element type');
-				return;
-			}
-
-			console.log(
-				'🔍 PropsManager: Requesting props for',
-				elementType,
-				elementId
-			);
-
-			// Trigger the props loading event
-			const event = new CustomEvent('graph:requestProps', {
-				detail: {
-					elementId,
-					elementType,
-					room: window.currentRoom,
-				},
-			});
-			window.dispatchEvent(event);
+			// Hide loading spinner
+			this.showLoading(false);
 		} catch (error) {
-			console.log('❌ PropsManager: Error:', error.message);
+			console.error(
+				'❌ PropsManager: Error handling props loaded:',
+				error
+			);
+			this.showLoading(false);
 		}
 	}
 
