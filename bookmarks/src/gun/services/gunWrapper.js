@@ -33,6 +33,42 @@ export class GunDBWrapper {
 	}
 
 	/**
+	 * Get FULL node data including ALL GunDB metadata for debugging
+	 * This shows the raw data structure that GunDB returns
+	 */
+	async getNodeFullData(room, nodeId) {
+		return new Promise((resolve) => {
+			const gun = this.connection.gun;
+			const nodeRef = gun
+				.get('graphs')
+				.get(room)
+				.get('nodes')
+				.get(nodeId);
+
+			console.log(
+				'🔍 GunDBWrapper: Getting FULL node data for debugging:',
+				room,
+				nodeId
+			);
+
+			nodeRef.once((nodeData) => {
+				console.log(
+					'🔍 GunDBWrapper: FULL NODE DATA with metadata:',
+					nodeData
+				);
+				console.log(
+					'🔍 GunDBWrapper: Node data type:',
+					typeof nodeData
+				);
+				if (nodeData) {
+					console.log({ nodeData });
+				}
+				resolve(nodeData);
+			});
+		});
+	}
+
+	/**
 	 * Get a clean edge with props included
 	 */
 	async getEdge(room, edgeId) {
@@ -296,8 +332,14 @@ export class GunDBWrapper {
 				nodeRef.once((data) => {
 					clearTimeout(timeout);
 					console.log(
-						'🔍 GunDBWrapper: Received node props data:',
+						'🔍 GunDBWrapper: RAW NODE DATA from GunDB:',
 						data
+					);
+					console.log(
+						'🔍 GunDBWrapper: Data type:',
+						typeof data,
+						'Data keys:',
+						data ? Object.keys(data) : 'null'
 					);
 					if (data && data !== 'undefined') {
 						const cleanProps = this.cleanPropsData(data);
@@ -329,12 +371,22 @@ export class GunDBWrapper {
 	 */
 	async getEdgeProps(room, edgeId) {
 		try {
+			console.log(
+				'🔍 GunDBWrapper: Starting getEdgeProps for room:',
+				room,
+				'edgeId:',
+				edgeId
+			);
 			const edgeRef = this.connection.gun
 				.get('graphs')
 				.get(room)
 				.get('edges')
 				.get(edgeId)
 				.get('props');
+
+			console.log(
+				'🔍 GunDBWrapper: Created edge ref, waiting for data...'
+			);
 
 			return new Promise((resolve, reject) => {
 				const timeout = setTimeout(() => {
@@ -344,6 +396,16 @@ export class GunDBWrapper {
 				// Use a one-time listener that immediately removes itself
 				edgeRef.once((data) => {
 					clearTimeout(timeout);
+					console.log(
+						'🔍 GunDBWrapper: RAW EDGE DATA from GunDB:',
+						data
+					);
+					console.log(
+						'🔍 GunDBWrapper: Edge data type:',
+						typeof data,
+						'Edge data keys:',
+						data ? Object.keys(data) : 'null'
+					);
 					if (data && data !== 'undefined') {
 						const cleanProps = this.cleanPropsData(data);
 						resolve(cleanProps);

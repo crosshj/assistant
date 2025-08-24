@@ -143,16 +143,20 @@ export class DataSync {
 
 					if (!data) {
 						log(
-							`⚠️ Node ${shortId}... received null data - skipping to prevent issues`
+							`🗑️ Node ${shortId}... received null data - removing from graph`
 						);
-						return; // Just skip null data, don't try to remove
+						// Emit removeNode event for proper cleanup
+						this.emit('removeNode', { id });
+						return;
 					}
 
 					// Check if data is actually empty (GunDB sometimes sends empty objects)
 					if (Object.keys(data).length === 0) {
 						log(
-							`⚠️ Node ${shortId}... received empty data object - skipping to prevent removal`
+							`🗑️ Node ${shortId}... received empty data object - removing from graph`
 						);
+						// Emit removeNode event for proper cleanup
+						this.emit('removeNode', { id });
 						return;
 					}
 
@@ -190,9 +194,11 @@ export class DataSync {
 
 					if (!data) {
 						log(
-							`⚠️ Edge ${shortId}... received null data - skipping to prevent issues`
+							`🗑️ Edge ${shortId}... received null data - removing from graph`
 						);
-						return; // Just skip null data, don't try to remove
+						// Emit removeEdge event for proper cleanup
+						this.emit('removeEdge', { id });
+						return;
 					}
 
 					// COMMENTED OUT: Complex grace period logic that was causing issues
@@ -208,8 +214,10 @@ export class DataSync {
 					// Check if data is actually empty (GunDB sometimes sends empty objects)
 					if (Object.keys(data).length === 0) {
 						log(
-							`⚠️ Edge ${shortId}... received empty data object - skipping to prevent removal`
+							`🗑️ Edge ${shortId}... received empty data object - removing from graph`
 						);
+						// Emit removeEdge event for proper cleanup
+						this.emit('removeEdge', { id });
 						return;
 					}
 
@@ -225,21 +233,10 @@ export class DataSync {
 						const label = data.label || 'unnamed';
 
 						log(
-							`Edge synced: ${shortId}... (${shortSource}... → ${shortTarget}...) [${label}]`
+							`📊 Edge synced: ${shortId}... (${shortSource}... → ${shortTarget}...) [${label}]`
 						);
 
-						// Verify both nodes exist before creating the edge
-						const sourceNode = this.roomManager
-							.getGraphRoot()
-							.get('nodes')
-							.get(sourceId);
-						const targetNode = this.roomManager
-							.getGraphRoot()
-							.get('nodes')
-							.get(targetId);
-
-						// COMMENTED OUT: Complex retry logic that was causing issues
-						// Just create the edge directly - let GunDB handle the timing
+						// Create edge immediately - placeholder nodes will be created if needed
 						this.emit('addEdge', { data, id });
 					} else {
 						// Edge data is missing source/target info

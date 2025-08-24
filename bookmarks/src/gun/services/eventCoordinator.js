@@ -335,6 +335,12 @@ export class EventCoordinator {
 				if (elementType === 'node') {
 					console.log('🔍 EventCoordinator: Fetching node props...');
 					props = await this.gunWrapper.getNodeProps(room, elementId);
+
+					// Also get full node data to see metadata and check for version references
+					console.log(
+						'🔍 EventCoordinator: Getting full node data for metadata analysis...'
+					);
+					await this.gunWrapper.getNodeFullData(room, elementId);
 				} else if (elementType === 'edge') {
 					console.log('🔍 EventCoordinator: Fetching edge props...');
 					props = await this.gunWrapper.getEdgeProps(room, elementId);

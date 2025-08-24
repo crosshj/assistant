@@ -8,6 +8,7 @@ export class GraphVisualization {
 		this.layoutTimeout = null;
 		this.initialized = false;
 		this.isLayoutRunning = false;
+		this.selectionOrder = []; // Track the order nodes were selected
 	}
 
 	init(containerId) {
@@ -61,6 +62,27 @@ export class GraphVisualization {
 						'text-valign': 'center',
 						'text-halign': 'center',
 						// Additional styling for selected state
+						padding: 5,
+						shape: 'ellipse',
+					},
+				},
+				{
+					selector: 'node[isPlaceholder = "true"]',
+					style: {
+						'background-color': '#6e7781',
+						'border-color': '#d0d7de',
+						'border-width': 2,
+						'border-style': 'dashed',
+						'border-opacity': 0.8,
+						color: '#656d76',
+						'font-style': 'italic',
+						// Keep same size constraints
+						width: 60,
+						height: 60,
+						'text-wrap': 'wrap',
+						'text-max-width': 50,
+						'text-valign': 'center',
+						'text-halign': 'center',
 						padding: 5,
 						shape: 'ellipse',
 					},
@@ -121,6 +143,12 @@ export class GraphVisualization {
 			this.handleSelection(e);
 		});
 
+		// Handle deselection to clear selection order
+		this.cy.on('unselect', 'node', () => {
+			// Clear selection order when nodes are deselected
+			this.selectionOrder = [];
+		});
+
 		// Add double-click to center on node
 		this.cy.on('dblclick', 'node', (e) => {
 			this.cy.center(e.target);
@@ -160,6 +188,12 @@ export class GraphVisualization {
 
 			// Update the UI display with basic data
 			if (e.target.isNode && e.target.isNode()) {
+				// Track selection order for this node
+				const nodeId = d.nid || d.id;
+				if (!this.selectionOrder.includes(nodeId)) {
+					this.selectionOrder.push(nodeId);
+				}
+
 				// Update form fields (but NOT the props field - wait for props to load)
 				const nodeIdField = $('nodeId');
 				const nodeLabelField = $('nodeLabel');
@@ -186,8 +220,14 @@ export class GraphVisualization {
 						},
 					})
 				);
+
+				// Check if we now have two nodes selected for edge creation
+				this.checkForEdgeCreation();
 			}
 			if (e.target.isEdge && e.target.isEdge()) {
+				// Clear selection order when edge is selected
+				this.selectionOrder = [];
+
 				// Update form fields (but NOT the props field - wait for props to load)
 				$('edgeId').value = d.eid || '';
 				$('edgeFrom').value = d.source?.replace('n_', '') || '';
@@ -214,6 +254,69 @@ export class GraphVisualization {
 			// This keeps Cytoscape focused only on graph display
 		} catch (error) {
 			// Silently handle selection errors to avoid console noise
+		}
+	}
+
+	// Check if two nodes are selected and populate edge creation form
+	checkForEdgeCreation() {
+		const selectedNodes = this.cy.nodes(':selected');
+
+		if (selectedNodes.length === 2 && this.selectionOrder.length >= 2) {
+			// Use selection order to determine edge direction
+			const firstSelectedId = this.selectionOrder[0];
+			const secondSelectedId = this.selectionOrder[1];
+
+			// Find the actual node objects
+			const node1 = selectedNodes.filter((node) => {
+				const nodeId = node.data('nid') || node.id().replace('n_', '');
+				return nodeId === firstSelectedId;
+			})[0];
+			const node2 = selectedNodes.filter((node) => {
+				const nodeId = node.data('nid') || node.id().replace('n_', '');
+				return nodeId === secondSelectedId;
+			})[0];
+
+			if (node1 && node2) {
+				// Check if an edge already exists between these nodes
+				const existingEdge = this.cy.edges().filter((edge) => {
+					const source = edge.source().id().replace('n_', '');
+					const target = edge.target().id().replace('n_', '');
+					// Only check for edges going in the selected direction (first → second)
+					return (
+						source === firstSelectedId &&
+						target === secondSelectedId
+					);
+				});
+
+				if (existingEdge.length === 0) {
+					// No edge exists, populate the edge creation form with correct direction
+					const edgeFromField = $('edgeFrom');
+					const edgeToField = $('edgeTo');
+
+					if (edgeFromField && edgeToField) {
+						edgeFromField.value = firstSelectedId; // First selected = FROM
+						edgeToField.value = secondSelectedId; // Second selected = TO
+
+						// Focus on the edge label field for convenience
+						const edgeLabelField = $('edgeLabel');
+						if (edgeLabelField) {
+							edgeLabelField.focus();
+						}
+
+						console.log(
+							'🔗 Visualization: Two nodes selected in order, populated edge form:',
+							firstSelectedId,
+							'→',
+							secondSelectedId,
+							'(selection order preserved)'
+						);
+					}
+				} else {
+					console.log(
+						'🔗 Visualization: Edge already exists between selected nodes'
+					);
+				}
+			}
 		}
 	}
 
@@ -302,18 +405,25 @@ export class GraphVisualization {
 	addNode(nodeData) {
 		if (!this.cy) return;
 
-		const exists = this.cy.getElementById('n_' + nodeData.id);
-		if (!exists.empty()) exists.remove();
+		const nodeId = 'n_' + nodeData.id;
+		const exists = this.cy.getElementById(nodeId);
 
+		// If there's a placeholder node, remove it first
+		if (!exists.empty()) {
+			exists.remove();
+		}
+
+		// Add the real node
 		this.cy.add({
 			group: 'nodes',
 			data: {
-				id: 'n_' + nodeData.id,
+				id: nodeId,
 				nid: nodeData.id,
 				label: nodeData.label || nodeData.id,
 				props: nodeData.props || {},
 				by: nodeData.by || 'anon',
 				updatedAt: nodeData.updatedAt || 0,
+				isPlaceholder: false, // Mark as real node
 			},
 		});
 
@@ -338,16 +448,54 @@ export class GraphVisualization {
 	addEdge(edgeData) {
 		if (!this.cy) return;
 
-		const exists = this.cy.getElementById('e_' + edgeData.id);
+		const edgeId = 'e_' + edgeData.id;
+		const exists = this.cy.getElementById(edgeId);
 		if (!exists.empty()) exists.remove();
 
+		// Check if source and target nodes exist, create placeholders if they don't
+		const sourceId = 'n_' + edgeData.from;
+		const targetId = 'n_' + edgeData.to;
+
+		// Create placeholder source node if it doesn't exist
+		if (this.cy.getElementById(sourceId).empty()) {
+			this.cy.add({
+				group: 'nodes',
+				data: {
+					id: sourceId,
+					nid: edgeData.from,
+					label: `[${edgeData.from.slice(0, 8)}...]`,
+					props: {},
+					by: 'placeholder',
+					updatedAt: Date.now(),
+					isPlaceholder: true, // Mark as placeholder for styling
+				},
+			});
+		}
+
+		// Create placeholder target node if it doesn't exist
+		if (this.cy.getElementById(targetId).empty()) {
+			this.cy.add({
+				group: 'nodes',
+				data: {
+					id: targetId,
+					nid: edgeData.to,
+					label: `[${edgeData.to.slice(0, 8)}...]`,
+					props: {},
+					by: 'placeholder',
+					updatedAt: Date.now(),
+					isPlaceholder: true, // Mark as placeholder for styling
+				},
+			});
+		}
+
+		// Add the edge
 		this.cy.add({
 			group: 'edges',
 			data: {
-				id: 'e_' + edgeData.id,
+				id: edgeId,
 				eid: edgeData.id,
-				source: 'n_' + edgeData.from,
-				target: 'n_' + edgeData.to,
+				source: sourceId,
+				target: targetId,
 				label: edgeData.label || '',
 				props: edgeData.props || {},
 				by: edgeData.by || 'anon',
