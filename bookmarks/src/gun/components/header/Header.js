@@ -12,6 +12,10 @@ export class Header {
 		this.networkUI = new NetworkUI();
 		this.roomUI = new RoomUI();
 
+		// Wire NetworkUI to connection and initialize modal/status interactions
+		this.networkUI.setConnection(this.connection);
+		this.networkUI.init();
+
 		// Listen to state changes
 		this.stateManager.on('stateChanged', (state) => {
 			this.render(state);

@@ -226,6 +226,57 @@ export class GunConnection {
 		return this.connectionStatus;
 	}
 
+	/**
+	 * Get detailed information about all peers
+	 * @returns {Object} Detailed peer information
+	 */
+	getDetailedPeerInfo() {
+		if (!this.gun) {
+			return {};
+		}
+
+		const peers = this.gun.back('opt.peers') || {};
+		const detailedPeers = {};
+
+		Object.entries(peers).forEach(([peerId, peer]) => {
+			if (!peer) return;
+
+			const stability = this.peerStability.get(peer.url) || {};
+			const isConnected = peer.wire && peer.wire.readyState === 1;
+			const stableTime = stability.connected
+				? Date.now() - stability.stableSince
+				: 0;
+
+			detailedPeers[peerId] = {
+				id: peer.id || peerId,
+				url: peer.url || 'Unknown',
+				wire: peer.wire,
+				readyState: peer.wire ? peer.wire.readyState : null,
+				isConnected,
+				stability: {
+					connected: stability.connected || false,
+					stableSince: stability.stableSince || null,
+					stableTime,
+					stable: stableTime >= 100, // Consider stable after 100ms
+				},
+				lastActivity: {
+					connected: stability.connected
+						? stability.stableSince
+						: null,
+					disconnected: !stability.connected
+						? stability.stableSince
+						: null,
+				},
+				metadata: {
+					pid: peer.pid,
+					opt: peer.opt,
+				},
+			};
+		});
+
+		return detailedPeers;
+	}
+
 	isConnected() {
 		return this.connectionStatus.connected > 0;
 	}

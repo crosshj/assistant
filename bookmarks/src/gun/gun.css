@@ -439,6 +439,34 @@ label {
 }
 
 /* =====================
+      PEER MODAL STYLES
+      ===================== */
+.peer-modal {
+	display: contents;
+}
+
+.peer-modal-content {
+	background: var(--card-bg);
+	border: 1px solid var(--card-border);
+	border-radius: var(--card-radius);
+	color: var(--text-bright);
+	box-shadow: var(--card-shadow);
+}
+
+.peer-modal-header {
+	border-bottom: 1px solid var(--card-border);
+}
+
+.peer-table th,
+.peer-table td {
+	border-bottom: 1px solid var(--card-border);
+}
+
+.peer-table th {
+	color: var(--text-subtle);
+}
+
+/* =====================
       RESPONSIVE BREAKPOINTS
       ===================== */
 

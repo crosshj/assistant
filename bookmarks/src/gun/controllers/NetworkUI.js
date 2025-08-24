@@ -2,13 +2,28 @@
  * Network UI Controller
  * Pure UI rendering based on state - no business logic
  */
+import { PeerModal } from '../components/PeerModal.js';
+
 export class NetworkUI {
 	constructor() {
 		this.elements = null;
+		this.peerModal = null;
+		this.connection = null;
+	}
+
+	setConnection(connection) {
+		this.connection = connection;
 	}
 
 	_getElements() {
-		if (!this.elements) {
+		const needsQuery =
+			!this.elements ||
+			!this.elements.status ||
+			!this.elements.connectBtn ||
+			!this.elements.disconnectBtn ||
+			!this.elements.testBtn ||
+			!this.elements.connectionControls;
+		if (needsQuery) {
 			this.elements = {
 				status: document.getElementById('connectionStatus'),
 				connectBtn: document.getElementById('connectBtn'),
@@ -19,6 +34,59 @@ export class NetworkUI {
 			};
 		}
 		return this.elements;
+	}
+
+	// Initialize the peer modal and make status clickable
+	init() {
+		if (!this.peerModal) {
+			this.peerModal = new PeerModal();
+		}
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', () =>
+				this.makeStatusClickable()
+			);
+		} else {
+			this.makeStatusClickable();
+		}
+	}
+
+	makeStatusClickable() {
+		const elements = this._getElements();
+		if (elements.status) {
+			elements.status.style.cursor = 'pointer';
+			elements.status.title = 'Click to view detailed peer information';
+
+			if (!elements.status._peerModalBound) {
+				elements.status.addEventListener('click', () => {
+					this.openPeerModal();
+				});
+				// Add hover effect
+				elements.status.addEventListener('mouseenter', () => {
+					elements.status.style.opacity = '0.8';
+				});
+				elements.status.addEventListener('mouseleave', () => {
+					elements.status.style.opacity = '1';
+				});
+				// Mark as bound to avoid duplicate listeners
+				elements.status._peerModalBound = true;
+			}
+		}
+	}
+
+	openPeerModal() {
+		if (!this.connection) {
+			console.warn('NetworkUI: Connection service not available');
+			return;
+		}
+
+		const peerData = this.connection.getDetailedPeerInfo();
+		this.peerModal.open(peerData);
+
+		// Listen for refresh events
+		this.peerModal.modal.addEventListener('refreshPeers', () => {
+			const updatedPeerData = this.connection.getDetailedPeerInfo();
+			this.peerModal.updateTable(updatedPeerData);
+		});
 	}
 
 	// Render UI based on network state
