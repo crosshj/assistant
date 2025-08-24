@@ -30,6 +30,7 @@ export class GraphForms {
 					from: $('edgeFrom').value.trim(),
 					to: $('edgeTo').value.trim(),
 					label: $('edgeLabel').value.trim(),
+					direction: $('edgeDirection').value,
 					props: tryJSON($('edgeProps').value, {}),
 				},
 				this.connection
@@ -90,6 +91,7 @@ export class GraphForms {
 		$('edgeFrom').value = edgeData.source?.replace('n_', '') || '';
 		$('edgeTo').value = edgeData.target?.replace('n_', '') || '';
 		$('edgeLabel').value = edgeData.label || '';
+		$('edgeDirection').value = edgeData.direction || 'forward';
 		$('edgeProps').value = JSON.stringify(edgeData.props || {}, null, 2);
 	}
 }

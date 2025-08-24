@@ -92,7 +92,9 @@ export class GraphVisualization {
 					style: {
 						'line-color': '#58a6ff',
 						'target-arrow-color': '#58a6ff',
-						'target-arrow-shape': 'triangle',
+						'target-arrow-shape': 'data(targetArrow)',
+						'source-arrow-color': '#58a6ff',
+						'source-arrow-shape': 'data(sourceArrow)',
 						'curve-style': 'bezier',
 						width: 2,
 						label: 'data(label)',
@@ -105,6 +107,7 @@ export class GraphVisualization {
 					style: {
 						'line-color': '#f78166',
 						'target-arrow-color': '#f78166',
+						'source-arrow-color': '#f78166',
 						width: 4,
 						'text-outline-width': 2,
 						'text-outline-color': '#0b0d10',
@@ -449,14 +452,14 @@ export class GraphVisualization {
 		if (!this.cy) return;
 
 		const edgeId = 'e_' + edgeData.id;
+		const sourceId = 'n_' + edgeData.from;
+		const targetId = 'n_' + edgeData.to;
+
+		// Remove existing edge if it exists
 		const exists = this.cy.getElementById(edgeId);
 		if (!exists.empty()) exists.remove();
 
 		// Check if source and target nodes exist, create placeholders if they don't
-		const sourceId = 'n_' + edgeData.from;
-		const targetId = 'n_' + edgeData.to;
-
-		// Create placeholder source node if it doesn't exist
 		if (this.cy.getElementById(sourceId).empty()) {
 			this.cy.add({
 				group: 'nodes',
@@ -488,6 +491,27 @@ export class GraphVisualization {
 			});
 		}
 
+		// Determine arrow configuration based on direction property
+		const direction = edgeData.direction || 'forward'; // 'forward', 'reverse', 'both'
+		let sourceArrow = 'none';
+		let targetArrow = 'triangle';
+
+		switch (direction) {
+			case 'reverse':
+				sourceArrow = 'triangle';
+				targetArrow = 'none';
+				break;
+			case 'both':
+				sourceArrow = 'triangle';
+				targetArrow = 'triangle';
+				break;
+			case 'forward':
+			default:
+				sourceArrow = 'none';
+				targetArrow = 'triangle';
+				break;
+		}
+
 		// Add the edge
 		this.cy.add({
 			group: 'edges',
@@ -500,6 +524,9 @@ export class GraphVisualization {
 				props: edgeData.props || {},
 				by: edgeData.by || 'anon',
 				updatedAt: edgeData.updatedAt || 0,
+				direction: direction,
+				sourceArrow: sourceArrow,
+				targetArrow: targetArrow,
 			},
 		});
 

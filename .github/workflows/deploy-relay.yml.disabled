@@ -1,12 +1,12 @@
 name: Deploy GunDB Relay to Render (DISABLED)
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'relay/**'
-  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - master
+  #   paths:
+  #     - 'relay/**'
+  # workflow_dispatch:
 
 jobs:
   deploy:

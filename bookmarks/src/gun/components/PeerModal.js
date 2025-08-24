@@ -180,19 +180,33 @@ export class PeerModal {
 		this.emptyState.style.display = 'none';
 		tableContainer.appendChild(this.emptyState);
 
+		// Create button container
+		const buttonContainer = document.createElement('div');
+		buttonContainer.style.cssText = `
+			margin-top: 16px;
+			display: flex;
+			gap: 12px;
+		`;
+
 		// Create refresh button
 		const refreshBtn = document.createElement('button');
 		refreshBtn.textContent = 'Refresh';
 		refreshBtn.className = 'secondary';
-		refreshBtn.style.cssText = `
-			margin-top: 16px;
-		`;
+
+		// Create network discovery button
+		const discoveryBtn = document.createElement('button');
+		discoveryBtn.textContent = 'Network Discovery';
+		discoveryBtn.className = 'secondary';
+		discoveryBtn.title = 'Query relays for catalogs and network info';
+
+		buttonContainer.appendChild(refreshBtn);
+		buttonContainer.appendChild(discoveryBtn);
 
 		// Assemble modal
 		modalContent.appendChild(header);
 		modalContent.appendChild(this.networkInfoSection);
 		modalContent.appendChild(tableContainer);
-		modalContent.appendChild(refreshBtn);
+		modalContent.appendChild(buttonContainer);
 		this.modal.appendChild(modalContent);
 
 		// Add to document
@@ -201,6 +215,7 @@ export class PeerModal {
 		// Store references
 		this.closeBtn = closeBtn;
 		this.refreshBtn = refreshBtn;
+		this.discoveryBtn = discoveryBtn;
 	}
 
 	bindEvents() {
@@ -226,6 +241,11 @@ export class PeerModal {
 		// Refresh button click
 		this.refreshBtn.addEventListener('click', () => {
 			this.refresh();
+		});
+
+		// Network discovery button click
+		this.discoveryBtn.addEventListener('click', () => {
+			document.dispatchEvent(new CustomEvent('networkDiscovery'));
 		});
 	}
 

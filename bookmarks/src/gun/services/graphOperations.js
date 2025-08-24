@@ -55,7 +55,7 @@ export class GraphOperations {
 		}
 	}
 
-	upsertEdge({ id, from, to, label, props }, connectionManager) {
+	upsertEdge({ id, from, to, label, direction, props }, connectionManager) {
 		if (!this.roomManager.isInRoom()) {
 			log('⚠️ Cannot create edge: Not in a room');
 			return false;
@@ -82,6 +82,7 @@ export class GraphOperations {
 			from,
 			to,
 			label: label || '',
+			direction: direction || 'forward',
 			props: props || {},
 			updatedAt: Date.now(),
 			by: this.authManager.getCurrentUser(),
