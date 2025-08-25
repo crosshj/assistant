@@ -57,14 +57,6 @@ export class GunDBWrapper {
 			);
 
 			nodeRef.once((nodeData) => {
-				console.log(
-					'🔍 GunDBWrapper: FULL NODE DATA with metadata:',
-					nodeData
-				);
-				console.log(
-					'🔍 GunDBWrapper: Node data type:',
-					typeof nodeData
-				);
 				if (nodeData) {
 					console.log({ nodeData });
 				}
@@ -780,7 +772,7 @@ export class GunDBWrapper {
 								? Object.keys(roomData.edges).length - 1
 								: 0;
 							console.log(
-								`    📊 ${room}: ${nodeCount} nodes, ${edgeCount} edges`
+								`    🏠 ${room}: ${nodeCount} nodes, ${edgeCount} edges`
 							);
 						}
 					});

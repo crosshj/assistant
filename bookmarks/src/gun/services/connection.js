@@ -1,7 +1,7 @@
 import Gun from 'gun';
 import 'gun/sea';
 import 'gun/axe';
-import { log } from '../utils/utils.js';
+import { log } from '../lib/utils.js';
 
 // GunDB Connection Management
 export class GunConnection {

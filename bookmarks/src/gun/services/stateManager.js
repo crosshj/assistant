@@ -1,11 +1,11 @@
-import { log } from '../utils/utils.js';
+import { log } from '../lib/utils.js';
 
 /**
  * Centralized State Manager
  * Single source of truth for all application state
  */
 export class StateManager {
-	constructor(sidebar = null) {
+	constructor(activity = null) {
 		this.state = {
 			// Network state
 			network: {
@@ -32,7 +32,7 @@ export class StateManager {
 		this.listeners = new Map();
 		this._connectionStartTime = Date.now(); // Track when we started connecting
 		this._maxConnectionTime = 10000; // 10 seconds max connection time
-		this.sidebar = sidebar; // Reference to sidebar for activity logging
+		this.activity = activity; // Reference to activity for activity logging
 		this._timeoutInterval = null; // Track the timeout interval
 		this._userManuallyLeftRoom = false; // Track if user manually left vs. page refresh
 

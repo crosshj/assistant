@@ -1,4 +1,4 @@
-import { $ } from '../utils/utils.js';
+import { $ } from '../lib/utils.js';
 
 // PropsManager Component - Handles loading and displaying props data
 export class PropsManager {
@@ -33,7 +33,8 @@ export class PropsManager {
 		this.showLoading(true);
 
 		// Request props from GunDB
-		window.dispatchEvent(
+
+		document.dispatchEvent(
 			new CustomEvent('graph:requestProps', {
 				detail: {
 					elementId,

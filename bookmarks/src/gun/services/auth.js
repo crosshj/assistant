@@ -1,4 +1,4 @@
-import { log, $, uuid } from '../utils/utils.js';
+import { log, $, uuid } from '../lib/utils.js';
 
 // Authentication Management
 export class AuthManager {

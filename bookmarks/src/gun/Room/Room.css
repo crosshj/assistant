@@ -1,0 +1,299 @@
+/* =====================
+      ROOM LIST STYLES
+      ===================== */
+.room-list {
+	padding: 2rem;
+	text-align: center;
+	background: var(--card-bg);
+	border-radius: var(--card-radius);
+	border: 1px solid var(--card-border);
+	height: 100%;
+	min-height: 0; /* Allow room list to shrink */
+	margin: 0; /* Remove any margins */
+}
+
+.room-list-header h2 {
+	font-size: 2rem;
+	color: var(--text-bright);
+	margin-bottom: 0.5rem;
+}
+
+.room-list-header p {
+	color: var(--text-muted);
+	margin-bottom: 2rem;
+	font-size: 1.1rem;
+}
+
+/* Loading spinner styles */
+.loading-spinner {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	width: 100%;
+}
+
+.spinner {
+	width: 32px;
+	height: 32px;
+	border: 3px solid var(--card-border);
+	border-top: 3px solid var(--accent);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+.room-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 2rem;
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+.room-card {
+	background: var(--card-bg);
+	border: 2px solid var(--card-border);
+	border-radius: var(--card-radius);
+	padding: 2rem;
+	text-align: center;
+	transition: all 0.3s ease;
+	cursor: pointer;
+}
+
+.room-card:hover {
+	border-color: var(--accent);
+	transform: translateY(-2px);
+	box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.room-list .room-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.room-card h3 {
+	font-size: 1.5rem;
+	color: var(--text-bright);
+	margin-bottom: 0.5rem;
+}
+
+.room-card p {
+	color: var(--text-muted);
+	margin-bottom: 1.5rem;
+}
+
+.join-room-btn {
+	background: var(--accent);
+	color: white;
+	border: none;
+	padding: 0.75rem 1.5rem;
+	border-radius: 8px;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.join-room-btn:hover {
+	background: color-mix(in srgb, var(--accent) 80%, white);
+	transform: translateY(-1px);
+}
+
+/* =====================
+      EDIT PANEL STYLES
+      ===================== */
+.edit-panel {
+	/* No longer hidden by default - controlled by JavaScript */
+}
+
+.edit-panel .body {
+	padding: var(--card-padding);
+}
+
+.edit-panel details {
+	margin-bottom: 1rem;
+}
+
+.edit-panel summary {
+	font-weight: bold;
+	margin-bottom: 0.5rem;
+	cursor: pointer;
+}
+
+.edit-panel .row {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	flex-wrap: wrap;
+	margin: 0.5rem 0;
+}
+
+.edit-panel label {
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	font-weight: 500;
+	margin-bottom: 0.25rem;
+	display: block;
+}
+
+.edit-panel textarea {
+	min-height: 80px;
+	resize: vertical;
+}
+
+.edit-panel hr {
+	border-color: #2a323a;
+	margin: 1rem 0;
+}
+
+.edit-panel .note {
+	font-size: 0.85rem;
+	color: var(--text-muted);
+	margin: 0.5rem 0 0 0;
+}
+
+.edit-panel .note code {
+	background: color-mix(in srgb, var(--card-border) 30%, var(--card-bg));
+	padding: 0.1rem 0.3rem;
+	border-radius: 4px;
+	font-family: var(--font-body);
+}
+
+/* =====================
+      GRAPH PANEL STYLES
+      ===================== */
+.graph-panel {
+	/* No longer hidden by default - controlled by JavaScript */
+}
+
+.graph-panel .body {
+	padding: 0; /* Remove padding to maximize canvas space */
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+/* Search controls above the graph */
+.graph-panel .body > div:first-child {
+	flex-shrink: 0; /* Don't let search controls shrink */
+	padding: 0.5rem 0.75rem;
+	border-bottom: 1px solid #30363d;
+}
+
+.graph-panel .body .row {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.graph-panel .body input[placeholder='Search nodes...'] {
+	flex: 1;
+}
+
+/* Cytoscape canvas container */
+#cy {
+	width: 100%;
+	height: 100%;
+	min-height: 400px;
+	max-width: 100%;
+	max-height: 100%;
+	border-radius: var(--card-radius);
+	background: var(--card-bg);
+	overflow: hidden;
+	/* Ensure the canvas takes full height of its container */
+	display: flex;
+	flex-direction: column;
+	flex: 1; /* Take remaining height */
+	min-height: 0; /* Allow shrinking */
+}
+
+/* =====================
+      UTILITY CLASSES
+      ===================== */
+.row {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+/* =====================
+      RESPONSIVE BREAKPOINTS
+      ===================== */
+@media (max-width: 900px) {
+	.room-grid {
+		grid-template-columns: 1fr;
+		gap: 1rem;
+	}
+
+	.room-card {
+		padding: 1.5rem;
+	}
+}
+
+@media (max-width: 700px) {
+	.room-list {
+		padding: 1rem;
+	}
+
+	.room-list-header h2 {
+		font-size: 1.5rem;
+	}
+
+	.room-list-header p {
+		font-size: 1rem;
+	}
+
+	.room-card {
+		padding: 1rem;
+	}
+
+	.room-icon {
+		font-size: 2rem;
+	}
+
+	/* Mobile form layout */
+	.edit-panel .row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.edit-panel .row > * {
+		width: 100%;
+	}
+
+	.edit-panel details {
+		margin-bottom: 1rem;
+	}
+
+	.edit-panel textarea {
+		min-height: 80px;
+	}
+
+	#cy {
+		height: 300px;
+	}
+}
+
+@media (max-width: 480px) {
+	.room-list {
+		padding: 0.5rem;
+	}
+
+	.room-card {
+		padding: 0.75rem;
+	}
+
+	.edit-panel .body {
+		padding: 1rem;
+	}
+}

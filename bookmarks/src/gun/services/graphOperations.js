@@ -1,4 +1,4 @@
-import { log, uuid } from '../utils/utils.js';
+import { log, uuid } from '../lib/utils.js';
 
 // Graph Operations - Node and Edge Management
 export class GraphOperations {

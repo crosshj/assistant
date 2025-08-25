@@ -1,5 +1,5 @@
 import cytoscape from 'cytoscape';
-import { log, $ } from '../../utils/utils.js';
+import { log, $ } from './utils.js';
 
 // Cytoscape Visualization Management
 export class GraphVisualization {
@@ -12,7 +12,9 @@ export class GraphVisualization {
 	}
 
 	init(containerId) {
-		if (this.initialized) return this.cy;
+		if (this.initialized) {
+			return this.cy;
+		}
 
 		// Check if all required modules are loaded
 		if (typeof cytoscape === 'undefined') {
@@ -20,122 +22,140 @@ export class GraphVisualization {
 			return null;
 		}
 
-		// Initialize Cytoscape after DOM is loaded
-		this.cy = cytoscape({
-			container: $(containerId),
-			style: [
-				{
-					selector: 'node',
-					style: {
-						'background-color': '#3fb950',
-						label: 'data(label)',
-						color: '#e6edf3',
-						'text-outline-width': 1,
-						'text-outline-color': '#0b0d10',
-						'font-size': 11,
-						// Add size constraints
-						width: 60,
-						height: 60,
-						'text-wrap': 'wrap',
-						'text-max-width': 50,
-						'text-valign': 'center',
-						'text-halign': 'center',
-						// Additional styling for better appearance
-						padding: 5,
-						shape: 'ellipse',
-					},
-				},
-				{
-					selector: 'node:selected',
-					style: {
-						'background-color': '#f78166',
-						'border-color': '#f0f6fc',
-						'border-width': 3,
-						'border-opacity': 1,
-						'text-outline-width': 2,
-						'text-outline-color': '#0b0d10',
-						// Keep same size constraints for selected nodes
-						width: 60,
-						height: 60,
-						'text-wrap': 'wrap',
-						'text-max-width': 50,
-						'text-valign': 'center',
-						'text-halign': 'center',
-						// Additional styling for selected state
-						padding: 5,
-						shape: 'ellipse',
-					},
-				},
-				{
-					selector: 'node[isPlaceholder = "true"]',
-					style: {
-						'background-color': '#6e7781',
-						'border-color': '#d0d7de',
-						'border-width': 2,
-						'border-style': 'dashed',
-						'border-opacity': 0.8,
-						color: '#656d76',
-						'font-style': 'italic',
-						// Keep same size constraints
-						width: 60,
-						height: 60,
-						'text-wrap': 'wrap',
-						'text-max-width': 50,
-						'text-valign': 'center',
-						'text-halign': 'center',
-						padding: 5,
-						shape: 'ellipse',
-					},
-				},
-				{
-					selector: 'edge',
-					style: {
-						'line-color': '#58a6ff',
-						'target-arrow-color': '#58a6ff',
-						'target-arrow-shape': 'data(targetArrow)',
-						'source-arrow-color': '#58a6ff',
-						'source-arrow-shape': 'data(sourceArrow)',
-						'curve-style': 'bezier',
-						width: 2,
-						label: 'data(label)',
-						'font-size': 10,
-						color: '#9fb3c8',
-					},
-				},
-				{
-					selector: 'edge:selected',
-					style: {
-						'line-color': '#f78166',
-						'target-arrow-color': '#f78166',
-						'source-arrow-color': '#f78166',
-						width: 4,
-						'text-outline-width': 2,
-						'text-outline-color': '#0b0d10',
-					},
-				},
-			],
-			layout: { name: 'cose', animate: false },
-			// Add default zoom and pan settings
-			minZoom: 0.1,
-			maxZoom: 3,
-			zoom: 1,
-			pan: { x: 0, y: 0 },
-		});
+		// Check if container exists
+		const container = $(containerId);
+		if (!container) {
+			log(`Error: Container '${containerId}' not found`);
+			return null;
+		}
 
-		this.setupEventHandlers();
-		this.setupKeyboardShortcuts();
-		this.setupSearchFunctionality();
-		this.setupLayoutControls();
+		try {
+			// Initialize Cytoscape after DOM is loaded
+			const containerElement = $(containerId);
 
-		// Fit the graph to a reasonable view after initialization
-		setTimeout(() => {
-			this.fitGraphToView();
-		}, 100);
+			this.cy = cytoscape({
+				container: containerElement,
+				style: [
+					{
+						selector: 'node',
+						style: {
+							'background-color': '#3fb950',
+							label: 'data(label)',
+							color: '#e6edf3',
+							'text-outline-width': 1,
+							'text-outline-color': '#0b0d10',
+							'font-size': 11,
+							// Add size constraints
+							width: 60,
+							height: 60,
+							'text-wrap': 'wrap',
+							'text-max-width': 50,
+							'text-valign': 'center',
+							'text-halign': 'center',
+							// Additional styling for better appearance
+							padding: 5,
+							shape: 'ellipse',
+						},
+					},
+					{
+						selector: 'node:selected',
+						style: {
+							'background-color': '#f78166',
+							'border-color': '#f0f6fc',
+							'border-width': 3,
+							'border-opacity': 1,
+							'text-outline-width': 2,
+							'text-outline-color': '#0b0d10',
+							// Keep same size constraints for selected nodes
+							width: 60,
+							height: 60,
+							'text-wrap': 'wrap',
+							'text-max-width': 50,
+							'text-valign': 'center',
+							'text-halign': 'center',
+							// Additional styling for selected state
+							padding: 5,
+							shape: 'ellipse',
+						},
+					},
+					{
+						selector: 'node[isPlaceholder = "true"]',
+						style: {
+							'background-color': '#6e7781',
+							'border-color': '#d0d7de',
+							'border-width': 2,
+							'border-style': 'dashed',
+							'border-opacity': 0.8,
+							color: '#656d76',
+							'font-style': 'italic',
+							// Keep same size constraints
+							width: 60,
+							height: 60,
+							'text-wrap': 'wrap',
+							'text-max-width': 50,
+							'text-valign': 'center',
+							'text-halign': 'center',
+							padding: 5,
+							shape: 'ellipse',
+						},
+					},
+					{
+						selector: 'edge',
+						style: {
+							'line-color': '#58a6ff',
+							'target-arrow-color': '#58a6ff',
+							'target-arrow-shape': 'data(targetArrow)',
+							'source-arrow-color': '#58a6ff',
+							'source-arrow-shape': 'data(sourceArrow)',
+							'curve-style': 'bezier',
+							width: 2,
+							label: 'data(label)',
+							'font-size': 10,
+							color: '#9fb3c8',
+						},
+					},
+					{
+						selector: 'edge:selected',
+						style: {
+							'line-color': '#f78166',
+							'target-arrow-color': '#f78166',
+							'source-arrow-color': '#f78166',
+							width: 4,
+							'text-outline-width': 2,
+							'text-outline-color': '#0b0d10',
+						},
+					},
+				],
+				layout: { name: 'cose', animate: false },
+				// Add default zoom and pan settings
+				minZoom: 0.1,
+				maxZoom: 3,
+				zoom: 1,
+				pan: { x: 0, y: 0 },
+			});
 
-		this.initialized = true;
-		log('Cytoscape visualization initialized');
+			this.setupEventHandlers();
+			this.setupKeyboardShortcuts();
+			this.setupSearchFunctionality();
+			this.setupLayoutControls();
 
-		return this.cy;
+			// Fit the graph to a reasonable view after initialization
+			setTimeout(() => {
+				this.fitGraphToView();
+			}, 100);
+
+			this.initialized = true;
+			log('Cytoscape visualization initialized');
+
+			return this.cy;
+		} catch (error) {
+			console.error(
+				'CytoscapeWrapper: Error during initialization:',
+				error
+			);
+			log('Error: Failed to initialize Cytoscape: ' + error.message);
+			return null;
+		}
 	}
 
 	setupEventHandlers() {
@@ -179,6 +199,14 @@ export class GraphVisualization {
 		document.addEventListener('ui:leaveRoom', () => {
 			this.clearGraph();
 		});
+
+		// Listen for layout change events
+		document.addEventListener('graph:layoutChange', (event) => {
+			if (this.cy && this.cy.elements().length > 0) {
+				const layout = event.detail.layout;
+				this.cy.layout({ name: layout, animate: true }).run();
+			}
+		});
 	}
 
 	// Separate method to handle selection with proper error handling
@@ -208,12 +236,6 @@ export class GraphVisualization {
 				// This prevents showing stale/incomplete data
 
 				// Emit selection changed event for auto-loading props
-				console.log(
-					'🔍 Visualization: Emitting selectionChanged event for node:',
-					d.nid || d.id,
-					'room:',
-					window.currentRoom
-				);
 				document.dispatchEvent(
 					new CustomEvent('selectionChanged', {
 						detail: {
@@ -305,19 +327,7 @@ export class GraphVisualization {
 						if (edgeLabelField) {
 							edgeLabelField.focus();
 						}
-
-						console.log(
-							'🔗 Visualization: Two nodes selected in order, populated edge form:',
-							firstSelectedId,
-							'→',
-							secondSelectedId,
-							'(selection order preserved)'
-						);
 					}
-				} else {
-					console.log(
-						'🔗 Visualization: Edge already exists between selected nodes'
-					);
 				}
 			}
 		}
@@ -430,12 +440,8 @@ export class GraphVisualization {
 			},
 		});
 
-		this.debounceLayout();
-
-		// Fit to view after adding node to maintain reasonable zoom
-		setTimeout(() => {
-			this.fitGraphToView();
-		}, 100);
+		// Simple layout update - no complex debouncing needed
+		this.updateLayout();
 	}
 
 	removeNode(nodeId) {
@@ -530,12 +536,8 @@ export class GraphVisualization {
 			},
 		});
 
-		this.debounceLayout();
-
-		// Fit to view after adding edge to maintain reasonable zoom
-		setTimeout(() => {
-			this.fitGraphToView();
-		}, 100);
+		// Simple layout update - no complex debouncing needed
+		this.updateLayout();
 	}
 
 	removeEdge(edgeId) {
@@ -546,6 +548,75 @@ export class GraphVisualization {
 			ele.remove();
 			log('🗑️ Edge removed: ' + edgeId);
 		}
+	}
+
+	updateLayout() {
+		if (!this.cy || !this.cy.container()) {
+			return;
+		}
+
+		const container = this.cy.container();
+
+		if (!container) {
+			return;
+		}
+
+		// Check if container has dimensions
+		const width =
+			container.offsetWidth ||
+			container.clientWidth ||
+			container.getBoundingClientRect?.()?.width;
+		const height =
+			container.offsetHeight ||
+			container.clientHeight ||
+			container.getBoundingClientRect?.()?.height;
+
+		if (!width || !height || width === 0 || height === 0) {
+			// Container not ready, skip layout for now
+			return;
+		}
+
+		// Only run layout if there are elements
+		if (this.cy.elements().length === 0) {
+			return;
+		}
+
+		// Add a small delay to ensure container is fully ready
+		setTimeout(() => {
+			// Re-check container dimensions after delay
+			const delayedContainer = this.cy.container();
+			const delayedWidth =
+				delayedContainer.offsetWidth ||
+				delayedContainer.clientWidth ||
+				delayedContainer.getBoundingClientRect?.()?.width;
+			const delayedHeight =
+				delayedContainer.offsetHeight ||
+				delayedContainer.clientHeight ||
+				delayedContainer.getBoundingClientRect?.()?.height;
+
+			if (
+				!delayedWidth ||
+				!delayedHeight ||
+				delayedWidth === 0 ||
+				delayedHeight === 0
+			) {
+				// Queue another retry instead of giving up
+				if (this._layoutRetryTimer) {
+					clearTimeout(this._layoutRetryTimer);
+				}
+				this._layoutRetryTimer = setTimeout(() => {
+					this.updateLayout();
+				}, 200);
+				return;
+			}
+
+			// Force-directed layout - default and most natural
+			try {
+				this.cy.layout({ name: 'cose', animate: false }).run();
+			} catch (e) {
+				log('⚠️ Force-directed layout failed: ' + e.message);
+			}
+		}, 100);
 	}
 
 	debounceLayout() {
@@ -579,5 +650,29 @@ export class GraphVisualization {
 
 	isInitialized() {
 		return this.initialized;
+	}
+
+	destroy() {
+		// Clear all state
+		if (this.cy) {
+			this.cy.elements().remove();
+		}
+
+		// Destroy Cytoscape instance if it exists
+		if (this.cy) {
+			this.cy.destroy();
+			this.cy = null;
+		}
+
+		// Reset all flags and timeouts
+		this.initialized = false;
+		this.isLayoutRunning = false;
+
+		if (this.layoutTimeout) {
+			clearTimeout(this.layoutTimeout);
+			this.layoutTimeout = null;
+		}
+
+		log('🗑️ Visualization destroyed and reset');
 	}
 }

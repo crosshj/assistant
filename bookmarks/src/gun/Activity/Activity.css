@@ -1,0 +1,97 @@
+/* =====================
+      ACTIVITY PANEL STYLES
+      ===================== */
+.card {
+	background: var(--card-bg);
+	border: 1px solid var(--card-border);
+	border-radius: var(--card-radius);
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	max-height: 100%;
+	height: 100%; /* Ensure cards take full height */
+	box-shadow: var(--card-shadow);
+	overflow: hidden;
+	margin: 0; /* Remove any margins */
+}
+
+.card header {
+	position: unset;
+	background: transparent;
+	padding: var(--card-padding);
+	border-bottom: 1px solid var(--card-border);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.card header h3 {
+	margin: 0;
+	flex-shrink: 0;
+}
+
+.card header button {
+	margin-left: auto;
+}
+
+.card .body {
+	padding: var(--card-padding);
+	overflow: auto;
+	flex: 1;
+	min-height: 0; /* Allow body to shrink */
+}
+
+/* =====================
+      LIST STYLES
+      ===================== */
+.list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.list li {
+	padding: 0.35rem 0.5rem;
+	background: var(--card-bg);
+	border: 1px solid var(--card-border);
+	border-radius: 8px;
+	font-size: 0.85rem;
+}
+
+/* =====================
+      BUTTON STYLES
+      ===================== */
+.secondary {
+	background: transparent;
+	color: var(--text-bright);
+	border: 1px solid var(--card-border);
+	padding: 0.5rem 1rem;
+	border-radius: 8px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.secondary:hover {
+	background: var(--card-border);
+	border-color: var(--accent);
+}
+
+/* =====================
+      RESPONSIVE BREAKPOINTS
+      ===================== */
+@media (max-width: 900px) {
+	.card:last-child {
+		height: 200px;
+	}
+}
+
+@media (max-width: 700px) {
+	.card:last-child {
+		height: 150px;
+	}
+}

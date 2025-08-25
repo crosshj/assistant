@@ -1,5 +1,5 @@
-import { log } from '../utils/utils.js';
-// import { GunDBWrapper } from './gunWrapper.js'; // COMMENTED OUT: Not using wrapper for now
+import { log } from '../lib/utils.js';
+import { GunDBWrapper } from '../lib/gunWrapper.js';
 
 // Data Synchronization between GunDB and UI
 export class DataSync {
@@ -7,7 +7,7 @@ export class DataSync {
 		this.roomManager = roomManager;
 		this.connection = connection;
 		this.stateManager = stateManager;
-		// this.gunWrapper = new GunDBWrapper(connection); // COMMENTED OUT: Not using wrapper for now
+		this.gunWrapper = new GunDBWrapper(connection); // Use wrapper for data cleaning
 		this.nodesChain = null;
 		this.edgesChain = null;
 		this.isSubscribed = false;
@@ -84,8 +84,13 @@ export class DataSync {
 
 		// Additional validation: ensure we have a valid graph root
 		const graphRoot = this.roomManager.getGraphRoot();
+
 		if (!graphRoot) {
 			log('⚠️ Cannot subscribe: No graph root available');
+			// Try again in a moment - room might not be fully ready yet
+			setTimeout(() => {
+				this.subscribeToRoom();
+			}, 100);
 			return false;
 		}
 
@@ -160,14 +165,14 @@ export class DataSync {
 						return;
 					}
 
-					// Use the raw data directly (no wrapper cleaning for now)
-					const cleanData = data;
+					// Use GunDBWrapper to clean the data (same as old working system)
+					const cleanData = this.gunWrapper.cleanNodeData(data);
 
 					// Truncate the ID for display but keep full ID in data
-					const label = cleanData.label || 'unnamed';
+					const label = cleanData?.label || 'unnamed';
 					log(
 						`✅ Node synced: ${shortId}... (${label}) - data keys: [${Object.keys(
-							data
+							cleanData || {}
 						).join(', ')}]`
 					);
 
@@ -236,8 +241,11 @@ export class DataSync {
 							`📊 Edge synced: ${shortId}... (${shortSource}... → ${shortTarget}...) [${label}]`
 						);
 
+						// Use GunDBWrapper to clean the edge data (same as old working system)
+						const cleanData = this.gunWrapper.cleanEdgeData(data);
+
 						// Create edge immediately - placeholder nodes will be created if needed
-						this.emit('addEdge', { data, id });
+						this.emit('addEdge', { data: cleanData, id });
 					} else {
 						// Edge data is missing source/target info
 						const shortId = id.slice(0, 8);

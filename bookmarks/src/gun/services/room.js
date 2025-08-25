@@ -1,4 +1,4 @@
-import { log } from '../utils/utils.js';
+import { log } from '../lib/utils.js';
 
 // Room Management
 export class RoomManager {
@@ -45,7 +45,7 @@ export class RoomManager {
 			if (!joinCompleted) {
 				joinCompleted = true;
 				// Room operation completed, now emit the success event
-				const status = `📊 ${room}`;
+				const status = `🏠 ${room}`;
 				this.emit('roomStatusChanged', status, room);
 			}
 		});
@@ -55,7 +55,7 @@ export class RoomManager {
 		setTimeout(() => {
 			if (!joinCompleted && this.currentRoom === room && this.graphRoot) {
 				joinCompleted = true;
-				const status = `📊 ${room}`;
+				const status = `🏠 ${room}`;
 				this.emit('roomStatusChanged', status, room);
 			}
 		}, 1000);

@@ -61,648 +61,115 @@ h3 {
 }
 
 /* =====================
-      HEADER STYLES
-      ===================== */
-header {
-	display: flex;
-	padding: 0.75rem 1rem;
-	background: var(--card-bg);
-	border-bottom: 1px solid var(--card-border);
-	position: sticky;
-	top: 0;
-	z-index: 100;
-}
-
-header .row {
-	display: flex;
-	gap: 0.5rem;
-	flex-wrap: wrap;
-	align-items: center;
-	width: 100%;
-}
-
-header .row-item {
-	flex: 1;
-}
-
-.header-divider {
-	width: 1px;
-	height: 24px;
-	background: var(--card-border);
-	margin: 0 0.5rem;
-}
-
-/* =====================
-      FORM ELEMENTS
-      ===================== */
-input,
-button,
-textarea,
-select {
-	background: var(--card-bg);
-	color: var(--text-bright);
-	border: 1px solid var(--card-border);
-	border-radius: 10px;
-	padding: 0.5rem 0.6rem;
-	font-family: var(--font-body);
-	font-size: 0.9rem;
-}
-
-input::placeholder {
-	color: var(--text-muted);
-}
-
-button {
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-button:hover {
-	background: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
-	border-color: var(--accent);
-}
-
-button.primary {
-	background: #2563eb;
-	color: white;
-	border: none;
-	padding: 0.5rem 1rem;
-	border-radius: 8px;
-	font-weight: 600;
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-button.primary:hover {
-	background: color-mix(in srgb, var(--accent) 80%, white);
-	transform: translateY(-1px);
-}
-
-button.secondary {
-	background: transparent;
-	color: var(--text-bright);
-	border: 1px solid var(--card-border);
-	padding: 0.5rem 1rem;
-	border-radius: 8px;
-	font-weight: 500;
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-button.secondary:hover {
-	background: var(--card-border);
-	border-color: var(--accent);
-}
-
-/* =====================
-      LOADING SPINNER
-      ===================== */
-.loading-spinner {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 1rem;
-	color: var(--text-muted);
-	font-style: italic;
-}
-
-.loading-spinner::before {
-	content: '';
-	width: 16px;
-	height: 16px;
-	border: 2px solid var(--card-border);
-	border-top: 2px solid var(--accent);
-	border-radius: 50%;
-	animation: spin 1s linear infinite;
-	margin-right: 0.5rem;
-}
-
-@keyframes spin {
-	0% {
-		transform: rotate(0deg);
-	}
-	100% {
-		transform: rotate(360deg);
-	}
-}
-
-/* =====================
       GRID LAYOUT
       ===================== */
 .grid {
 	display: grid;
-	/* Grid only contains main content - header is separate above */
-	grid-template-columns: minmax(0, 1fr) 320px;
-	grid-template-rows: 1fr; /* Only one row for main content */
-	gap: 1rem; /* Gap between grid items (columns) only */
-	min-height: 0;
-	flex: 1;
-	padding: 1rem;
+	grid-template-columns: 1fr 300px;
+	gap: var(--card-gap);
+	padding: var(--card-gap);
+	height: calc(100vh - 80px); /* Account for header */
 	overflow: hidden;
-	height: 100%; /* Ensure grid takes full height */
 }
 
-/* Header is outside the grid, positioned above */
-header {
-	/* Remove grid positioning - header is now a separate flex item */
-	position: sticky;
-	top: 0;
-	z-index: 100;
-}
-
-/* Activity panel - narrow right column */
-aside.card {
-	grid-column: 2;
-	grid-row: 1; /* Only one row now */
+/* Individual pane height constraints */
+#left-pane,
+#right-pane {
 	height: 100%;
-}
-
-/* =====================
-      ROOM SELECTION MODE LAYOUT
-      ===================== */
-.grid.room-selection-mode {
-	grid-template-columns: minmax(0, 1fr) 320px;
-}
-
-.grid.room-selection-mode .room-list {
-	grid-column: 1;
-	grid-row: 1; /* Only one row now */
-	display: block;
-	height: 100%;
-}
-
-.grid.room-selection-mode .edit-panel,
-.grid.room-selection-mode .graph-panel {
-	display: none !important;
-}
-
-/* =====================
-      IN-ROOM MODE LAYOUT
-      ===================== */
-.grid.room-mode {
-	grid-template-columns: 300px minmax(0, 1fr) 320px;
-}
-
-.grid.room-mode .room-list {
-	display: none !important;
-}
-
-.grid.room-mode .edit-panel {
-	grid-column: 1;
-	grid-row: 1; /* Only one row now */
-	display: block;
-	height: 100%;
-}
-
-.grid.room-mode .graph-panel {
-	grid-column: 2;
-	grid-row: 1; /* Only one row now */
-	display: block;
-	height: 100%;
-}
-
-.grid.room-mode aside.card {
-	grid-column: 3;
-	grid-row: 1; /* Only one row now */
-	height: 100%;
-}
-
-/* =====================
-      CARD STYLES
-      ===================== */
-.card {
-	background: var(--card-bg);
-	border: 1px solid var(--card-border);
-	border-radius: var(--card-radius);
+	max-height: 100%;
+	overflow: hidden;
 	display: flex;
 	flex-direction: column;
-	min-height: 0;
+}
+
+/* Ensure panes don't grow beyond their container */
+#left-pane > *,
+#right-pane > * {
 	max-height: 100%;
-	height: 100%; /* Ensure cards take full height */
-	box-shadow: var(--card-shadow);
 	overflow: hidden;
-	margin: 0; /* Remove any margins */
 }
 
-.card header {
-	position: unset;
-	background: transparent;
-	padding: var(--card-padding);
-	border-bottom: 1px solid var(--card-border);
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	flex-shrink: 0; /* Prevent header from shrinking */
-}
-
-.card header h3 {
-	margin: 0;
-	flex-shrink: 0;
-}
-
-.card header button {
-	margin-left: auto;
-}
-
-.card .body {
-	padding: var(--card-padding);
-	overflow: auto;
-	flex: 1;
-	min-height: 0; /* Allow body to shrink */
-}
-
-/* =====================
-      GRAPH CONTAINER
-      ===================== */
-#cy {
+/* Sub-grid layouts for left pane */
+.left-pane-sub-grid {
+	display: grid;
 	width: 100%;
 	height: 100%;
-	min-height: 400px;
-	max-width: 100%;
-	max-height: 100%;
-	border-radius: var(--card-radius);
-	background: var(--card-bg);
+}
+
+/* Room selection mode - spans full width */
+.room-selection-layout {
+	grid-template-columns: 1fr;
+	grid-template-rows: 1fr;
+}
+
+/* In-room mode - edit and graph side by side */
+.in-room-layout {
+	grid-template-columns: 300px 1fr;
+	gap: var(--card-gap);
+}
+
+.edit-panel-container,
+.graph-panel-container {
+	height: 100%;
 	overflow: hidden;
-	/* Ensure the canvas takes full height of its container */
-	display: flex;
-	flex-direction: column;
 }
 
-/* Ensure the graph panel body takes full height */
-.graph-panel .body {
-	display: flex;
-	flex-direction: column;
-	height: 100%;
-	padding: 0; /* Remove padding to maximize canvas space */
-}
-
-/* Search controls above the graph */
-.graph-panel .body > div:first-child {
-	flex-shrink: 0; /* Don't let search controls shrink */
-	padding: 0.5rem 0.75rem;
-	border-bottom: 1px solid #30363d;
-}
-
-/* Cytoscape canvas container */
-.graph-panel .body #cy {
-	flex: 1; /* Take remaining height */
-	min-height: 0; /* Allow shrinking */
-}
-
-/* =====================
-      UTILITY CLASSES
-      ===================== */
-.row {
-	display: flex;
-	gap: 0.5rem;
-	align-items: center;
-	flex-wrap: wrap;
-}
-
-label {
-	font-size: 0.8rem;
-	color: var(--text-muted);
-	font-weight: 500;
-	margin-bottom: 0.25rem;
-	display: block;
-}
-
-.mono {
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-.pill {
-	border: 1px solid var(--card-border);
-	padding: 0.15rem 0.4rem;
-	border-radius: 999px;
-	background: color-mix(in srgb, var(--card-border) 50%, var(--card-bg));
-	color: var(--text-bright);
-	font-size: 0.8rem;
-	transition: all 0.3s ease;
-}
-
-/* Connection status styling */
-#connectionStatus {
-	border: 2px solid var(--card-border);
-	padding: 0.25rem 0.75rem;
-	border-radius: 999px;
-	font-weight: 600;
-	transition: all 0.3s ease;
-	color: white;
-}
-
-/* Room status styling */
-#roomStatus {
-	border: 2px solid var(--card-border);
-	padding: 0.25rem 0.75rem;
-	border-radius: 999px;
-	font-weight: 600;
-	transition: all 0.3s ease;
-}
-
-.list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 0.35rem;
-}
-
-.list li {
-	padding: 0.35rem 0.5rem;
-	background: var(--card-bg);
-	border: 1px solid var(--card-border);
-	border-radius: 8px;
-	font-size: 0.85rem;
-}
-
-.note {
-	font-size: 0.85rem;
-	color: var(--text-muted);
-	margin: 0.5rem 0 0 0;
-}
-
-.note code {
-	background: color-mix(in srgb, var(--card-border) 30%, var(--card-bg));
-	padding: 0.1rem 0.3rem;
-	border-radius: 4px;
-	font-family: var(--font-body);
-}
-
-/* =====================
-      SEARCH HIGHLIGHT
-      ===================== */
-.search-highlight {
-	background-color: #ffd700 !important;
-	color: #000 !important;
-}
-
-/* =====================
-      PEER MODAL STYLES
-      ===================== */
-.peer-modal {
-	display: contents;
-}
-
-.peer-modal-content {
-	background: var(--card-bg);
-	border: 1px solid var(--card-border);
-	border-radius: var(--card-radius);
-	color: var(--text-bright);
-	box-shadow: var(--card-shadow);
-}
-
-.peer-modal-header {
-	border-bottom: 1px solid var(--card-border);
-}
-
-.peer-table th,
-.peer-table td {
-	border-bottom: 1px solid var(--card-border);
-}
-
-.peer-table th {
-	color: var(--text-subtle);
-}
-
-/* =====================
-      RESPONSIVE BREAKPOINTS
-      ===================== */
-
-/* Large desktop screens */
-@media (min-width: 1400px) {
-	.grid {
-		grid-template-columns: minmax(0, 1fr) 280px; /* Slightly narrower activity panel on very wide screens */
-	}
-
-	.grid.room-selection-mode {
-		grid-template-columns: minmax(0, 1fr) 280px;
-	}
-
-	.grid.room-mode {
-		grid-template-columns: 280px minmax(0, 1fr) 280px; /* Slightly narrower sidebars on very wide screens */
-	}
-}
-
-@media (max-width: 1200px) {
-	.grid {
-		grid-template-columns: minmax(0, 1fr) 280px;
-		gap: 0.75rem;
-		padding: 0.75rem;
-	}
-
-	.grid.room-selection-mode {
-		grid-template-columns: minmax(0, 1fr) 280px;
-		gap: 0.75rem;
-		padding: 0.75rem;
-	}
-
-	.grid.room-mode {
-		grid-template-columns: 280px minmax(0, 1fr) 280px;
-		gap: 0.75rem;
-		padding: 0.75rem;
-	}
-}
-
-@media (max-width: 900px) {
-	.grid {
-		grid-template-columns: 1fr;
-		grid-template-rows: auto auto; /* Stack panels vertically on mobile */
-	}
-
-	.card:last-child {
-		grid-column: 1;
-		grid-row: 2;
-		height: 200px;
-	}
-
-	.grid.room-selection-mode {
-		grid-template-columns: 1fr;
-		grid-template-rows: auto auto;
-	}
-
-	.grid.room-selection-mode .room-list {
-		grid-column: 1;
-		grid-row: 1;
-	}
-
-	.grid.room-mode {
-		grid-template-columns: 1fr;
-		grid-template-rows: auto auto auto; /* Stack edit, graph, activity vertically */
-	}
-
-	.grid.room-mode .edit-panel {
-		grid-column: 1;
-		grid-row: 1;
-	}
-
-	.grid.room-mode .graph-panel {
-		grid-column: 1;
-		grid-row: 2;
-	}
-
-	.grid.room-mode aside.card {
-		grid-column: 1;
-		grid-row: 3;
-	}
-}
-
-@media (max-width: 700px) {
-	.grid {
-		grid-template-columns: 1fr;
-		height: auto;
-		padding: 1rem;
-	}
-
-	header {
-		grid-template-columns: 1fr;
-		gap: 0.5rem;
-		padding: 0.5rem;
-	}
-
-	header .row {
-		justify-content: center;
-	}
-
-	.card {
-		margin-bottom: 1rem;
-	}
-
-	.card:last-child {
-		height: 150px;
-	}
-
-	#cy {
-		height: 300px;
-	}
-
-	input,
-	button,
-	textarea,
-	select {
-		font-size: 16px; /* Prevents zoom on iOS */
-	}
-
-	/* Better mobile form layout */
-	.row {
-		gap: 0.75rem;
-	}
-
-	details {
-		margin-bottom: 1rem;
-	}
-
-	textarea {
-		min-height: 80px;
-	}
-
-	/* Mobile room list adjustments */
-	.room-grid {
-		grid-template-columns: 1fr;
-		gap: 1rem;
-	}
-
-	.room-card {
-		padding: 1.5rem;
-	}
-}
-
-@media (max-width: 480px) {
-	.grid {
-		padding: 0.5rem;
-	}
-
-	.card .body {
-		padding: 1rem;
-	}
-
-	.card header {
-		padding: 1rem;
-	}
-
-	.row {
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	.row > * {
-		width: 100%;
-	}
-}
-
-/* =====================
-      ROOM LIST STYLES
-      ===================== */
+/* Room list styling for the left pane */
 .room-list {
-	grid-column: 1;
-	grid-row: 2;
-	padding: 2rem;
-	text-align: center;
-	background: var(--card-bg);
-	border-radius: var(--card-radius);
-	border: 1px solid var(--card-border);
-	height: 100%;
-	min-height: 0; /* Allow room list to shrink */
-	display: none; /* Hidden by default */
-	margin: 0; /* Remove any margins */
+	width: 100%;
+	max-width: 100%;
+	padding: 1rem;
 }
 
-/* Hide room list when room is joined */
-.room-joined .room-list {
-	display: none;
+.room-list-header {
+	text-align: center;
+	margin-bottom: 2rem;
 }
 
 .room-list-header h2 {
-	font-size: 2rem;
-	color: var(--text-bright);
+	font-size: 1.5rem;
 	margin-bottom: 0.5rem;
 }
 
 .room-list-header p {
 	color: var(--text-muted);
-	margin-bottom: 2rem;
-	font-size: 1.1rem;
+	margin: 0;
 }
 
 .room-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-	gap: 2rem;
-	max-width: 800px;
-	margin: 0 auto;
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
 }
 
 .room-card {
 	background: var(--card-bg);
-	border: 2px solid var(--card-border);
+	border: 1px solid var(--card-border);
 	border-radius: var(--card-radius);
-	padding: 2rem;
+	padding: 1.5rem;
 	text-align: center;
-	transition: all 0.3s ease;
 	cursor: pointer;
+	transition: all 0.2s ease;
 }
 
 .room-card:hover {
 	border-color: var(--accent);
 	transform: translateY(-2px);
-	box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
-.room-icon {
-	font-size: 3rem;
+/* .room-icon {
+	font-size: 2rem;
 	margin-bottom: 1rem;
-}
+} */
 
 .room-card h3 {
-	font-size: 1.5rem;
-	color: var(--text-bright);
-	margin-bottom: 0.5rem;
+	margin: 0 0 0.5rem 0;
+	font-size: 1.25rem;
 }
 
 .room-card p {
 	color: var(--text-muted);
-	margin-bottom: 1.5rem;
+	margin: 0 0 1rem 0;
 }
 
 .join-room-btn {
@@ -711,13 +178,33 @@ label {
 	border: none;
 	padding: 0.75rem 1.5rem;
 	border-radius: 8px;
-	font-size: 1rem;
-	font-weight: 600;
+	font-weight: 500;
 	cursor: pointer;
-	transition: all 0.3s ease;
+	transition: background-color 0.2s ease;
 }
 
 .join-room-btn:hover {
-	background: color-mix(in srgb, var(--accent) 80%, white);
-	transform: translateY(-1px);
+	background: color-mix(in srgb, var(--accent) 80%, black);
+}
+
+/* =====================
+      GLOBAL UTILITY CLASSES
+      ===================== */
+.mono {
+	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
+		'Courier New', monospace;
+}
+
+.note {
+	font-size: 0.875rem;
+	color: var(--text-muted);
+	margin: 0.5rem 0;
+}
+
+code {
+	background: var(--card-bg);
+	padding: 0.125rem 0.25rem;
+	border-radius: 4px;
+	font-family: var(--font-mono);
+	font-size: 0.875rem;
 }

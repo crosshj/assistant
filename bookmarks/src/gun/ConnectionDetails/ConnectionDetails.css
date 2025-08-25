@@ -1,0 +1,386 @@
+/* =====================
+      PEER MODAL STYLES
+      ===================== */
+.peer-modal {
+	display: contents;
+}
+
+.peer-modal-content {
+	/* background: var(--card-bg);
+	border: 1px solid var(--card-border);
+	border-radius: var(--card-radius);
+	color: var(--text-bright);
+	box-shadow: var(--card-shadow); */
+}
+
+.peer-modal-header {
+	border-bottom: 1px solid var(--card-border);
+}
+
+.peer-table th,
+.peer-table td {
+	border-bottom: 1px solid var(--card-border);
+}
+
+.peer-table th {
+	color: var(--text-subtle);
+}
+
+/* =====================
+      MODAL OVERLAY STYLES
+      ===================== */
+.modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+}
+
+.modal-content {
+	background: var(--card-bg);
+	border-radius: 16px;
+	padding: 2.5rem;
+	max-width: 900px;
+	max-height: 90vh;
+	overflow: auto;
+	box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+}
+
+.modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1rem;
+	border-bottom: 1px solid var(--card-border);
+	padding-bottom: 0.5rem;
+}
+
+.modal-header h3 {
+	margin: 0;
+}
+
+.modal-close {
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: 1.5rem;
+	padding: 0;
+	width: 30px;
+	height: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 4px;
+	transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+	background: var(--card-border);
+	color: var(--text-bright);
+}
+
+/* =====================
+      TABLE STYLES
+      ===================== */
+.peer-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 1rem;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.peer-table th,
+.peer-table td {
+	padding: 0.75rem 1rem;
+	text-align: left;
+	border-bottom: 1px solid var(--card-border);
+}
+
+.peer-table th {
+	font-weight: 600;
+	color: var(--text-subtle);
+	background: color-mix(in srgb, var(--card-border) 15%, var(--card-bg));
+	text-transform: uppercase;
+	font-size: 0.8rem;
+	letter-spacing: 0.5px;
+}
+
+.peer-table tr:hover {
+	background: color-mix(in srgb, var(--card-border) 8%, var(--card-bg));
+}
+
+.peer-table tr:last-child td {
+	border-bottom: none;
+}
+
+.peer-table .status-connected {
+	color: #10b981;
+}
+
+.peer-table .status-disconnected {
+	color: #ef4444;
+}
+
+.peer-table .status-connecting {
+	color: #f59e0b;
+}
+
+/* =====================
+      NETWORK STATUS SECTION
+      ===================== */
+.network-status-section {
+	margin-bottom: 2rem;
+	padding: 1.5rem;
+	background: color-mix(in srgb, var(--card-border) 5%, var(--card-bg));
+	border-radius: 8px;
+}
+
+.network-status-section label {
+	display: block;
+	font-weight: 600;
+	color: var(--text-subtle);
+	margin-bottom: 0.75rem;
+	font-size: 0.9rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.status-indicator {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.status-icon {
+	color: #10b981;
+	font-size: 1.5rem;
+	font-weight: bold;
+}
+
+.status-text {
+	color: #10b981;
+	font-weight: 700;
+	font-size: 1.25rem;
+	letter-spacing: 0.5px;
+}
+
+/* =====================
+      PEER CONFIGURATION SECTION
+      ===================== */
+.peer-config-section {
+	margin-bottom: 2rem;
+	border-radius: 8px;
+	overflow: hidden;
+	background: color-mix(in srgb, var(--card-border) 3%, var(--card-bg));
+}
+
+.collapsible-header {
+	background: color-mix(in srgb, var(--card-border) 15%, var(--card-bg));
+	padding: 1rem 1.25rem;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	transition: all 0.2s ease;
+	font-weight: 600;
+	color: var(--text-bright);
+}
+
+.collapsible-header:hover {
+	background: color-mix(in srgb, var(--card-border) 25%, var(--card-bg));
+}
+
+.collapsible-icon {
+	transition: transform 0.2s ease;
+	font-size: 0.9rem;
+	color: var(--text-subtle);
+}
+
+.peer-config-section.collapsed .collapsible-icon {
+	transform: rotate(0deg);
+}
+
+.peer-config-section:not(.collapsed) .collapsible-icon {
+	transform: rotate(90deg);
+}
+
+.peer-config-section.collapsed .collapsible-content {
+	display: none;
+}
+
+.collapsible-content {
+	padding: 1.25rem;
+	display: block;
+}
+
+.peer-config-section.collapsed .collapsible-content {
+	display: none;
+}
+
+.peer-lists {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 2rem;
+}
+
+.peer-list-section h4 {
+	margin: 0 0 1rem 0;
+	color: var(--text-subtle);
+	font-size: 0.85rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.peer-list-section ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.peer-list-section li {
+	padding: 0.5rem 0.75rem;
+	margin-bottom: 0.5rem;
+	color: var(--text-muted);
+	font-family: monospace;
+	font-size: 0.8rem;
+	background: color-mix(in srgb, var(--card-border) 8%, var(--card-bg));
+	border-radius: 4px;
+	border-left: 3px solid var(--card-border);
+	transition: all 0.2s ease;
+}
+
+.peer-list-section li:hover {
+	background: color-mix(in srgb, var(--card-border) 15%, var(--card-bg));
+	border-left-color: var(--text-subtle);
+}
+
+.peer-list-section li:last-child {
+	margin-bottom: 0;
+}
+
+/* =====================
+      CONNECTION STATISTICS
+      ===================== */
+.connection-stats {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 1.25rem;
+	margin-bottom: 2rem;
+}
+
+.stat-item {
+	text-align: center;
+	padding: 1.25rem 1rem;
+	background: color-mix(in srgb, var(--card-border) 5%, var(--card-bg));
+	border-radius: 8px;
+	transition: all 0.2s ease;
+}
+
+.stat-item:hover {
+	background: color-mix(in srgb, var(--card-border) 10%, var(--card-bg));
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.stat-item label {
+	display: block;
+	font-size: 0.8rem;
+	color: var(--text-subtle);
+	margin-bottom: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	font-weight: 600;
+}
+
+.stat-item span {
+	font-size: 1.2rem;
+	font-weight: 700;
+	color: var(--text-bright);
+}
+
+/* =====================
+      PEER TABLE SECTION
+      ===================== */
+.peer-table-section {
+	margin-bottom: 2rem;
+}
+
+/* =====================
+      ACTION BUTTONS
+      ===================== */
+.action-buttons {
+	display: flex;
+	gap: 1.5rem;
+	justify-content: center;
+	padding-top: 1.5rem;
+	margin-top: 1rem;
+}
+
+.action-buttons button {
+	min-width: 140px;
+	padding: 0.75rem 1.5rem;
+	font-weight: 600;
+	transition: all 0.2s ease;
+}
+
+.action-buttons button:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* =====================
+      STABILITY STATUS
+      ===================== */
+.stability-connected {
+	color: #10b981;
+	font-weight: 600;
+}
+
+.stability-disconnected {
+	color: #ef4444;
+	font-weight: 600;
+}
+
+/* =====================
+      RESPONSIVE BREAKPOINTS
+      ===================== */
+@media (max-width: 700px) {
+	.modal-content {
+		max-width: 95vw;
+		max-height: 95vh;
+		padding: 1rem;
+	}
+
+	.peer-table {
+		font-size: 0.875rem;
+	}
+
+	.peer-table th,
+	.peer-table td {
+		padding: 0.375rem;
+	}
+}
+
+@media (max-width: 480px) {
+	.modal-content {
+		padding: 0.75rem;
+	}
+
+	.peer-table {
+		font-size: 0.8rem;
+	}
+
+	.peer-table th,
+	.peer-table td {
+		padding: 0.25rem;
+	}
+}
