@@ -37,6 +37,26 @@ export class RoomController {
 		this.onLeaveRoom = this.onLeaveRoom.bind(this);
 		this.onRoomStatusChanged = this.onRoomStatusChanged.bind(this);
 
+		// Bind room component methods for event listeners
+		this.handleRoomLeft = this.roomComponent.handleRoomLeft.bind(
+			this.roomComponent
+		);
+		this.handleClearGraph = this.roomComponent.handleClearGraph.bind(
+			this.roomComponent
+		);
+		this.syncAddNode = this.roomComponent.syncAddNode.bind(
+			this.roomComponent
+		);
+		this.syncRemoveNode = this.roomComponent.syncRemoveNode.bind(
+			this.roomComponent
+		);
+		this.syncAddEdge = this.roomComponent.syncAddEdge.bind(
+			this.roomComponent
+		);
+		this.syncRemoveEdge = this.roomComponent.syncRemoveEdge.bind(
+			this.roomComponent
+		);
+
 		// Graph operations are still handled via roomService events for now
 		this.handleGraphExport = this.handleGraphExport.bind(this);
 		this.handleGraphImport = this.handleGraphImport.bind(this);
@@ -53,21 +73,24 @@ export class RoomController {
 
 	setupEventListeners() {
 		// Room events
+		document.addEventListener('ui:joinRoom', (e) => {
+			const roomName = e.detail;
+			if (roomName) {
+				this.onJoinRoom(roomName);
+			}
+		});
 		document.addEventListener('ui:leaveRoom', () => {
 			this.roomService.leaveRoom();
 			this.roomComponent.leaveRoom();
 		});
-		document.addEventListener(
-			'room:left',
-			this.roomComponent.handleRoomLeft
-		);
+		document.addEventListener('room:left', this.handleRoomLeft);
 
 		// Sync events
-		this.syncService.on('clearGraph', this.roomComponent.handleClearGraph);
-		this.syncService.on('addNode', this.roomComponent.syncAddNode);
-		this.syncService.on('removeNode', this.roomComponent.syncRemoveNode);
-		this.syncService.on('addEdge', this.roomComponent.syncAddEdge);
-		this.syncService.on('removeEdge', this.roomComponent.syncRemoveEdge);
+		this.syncService.on('clearGraph', this.handleClearGraph);
+		this.syncService.on('addNode', this.syncAddNode);
+		this.syncService.on('removeNode', this.syncRemoveNode);
+		this.syncService.on('addEdge', this.syncAddEdge);
+		this.syncService.on('removeEdge', this.syncRemoveEdge);
 
 		// Graph events
 		document.addEventListener('graph:export', this.handleGraphExport);

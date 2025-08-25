@@ -842,16 +842,16 @@ export class Room {
 
 			switch (type) {
 				case 'addNode':
-					this.handleAddNode(data);
+					this.syncAddNode(data);
 					break;
 				case 'removeNode':
-					this.handleRemoveNode(data);
+					this.syncRemoveNode(data);
 					break;
 				case 'addEdge':
-					this.handleAddEdge(data);
+					this.syncAddEdge(data);
 					break;
 				case 'removeEdge':
-					this.handleRemoveEdge(data);
+					this.syncRemoveEdge(data);
 					break;
 				case 'clearGraph':
 					this.handleClearGraph();
