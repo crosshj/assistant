@@ -36,7 +36,204 @@ gun.js (main app)
 
 ## Phase 1: Cleanup Strategy
 
-### **Step 1: Extract gunWrapper Methods (SAFE)**
+### **CRITICAL PRINCIPLE: Exact Replication First**
+
+**Goal**: Reorganize current architecture while preserving exact functionality and appearance
+
+**Why This Approach**:
+
+-   ✅ **No functional changes** - just architectural reorganization
+-   ✅ **Same user experience** - nothing breaks for users
+-   ✅ **Incremental testing** - verify each step works exactly like before
+-   ✅ **Easy rollback** - if something goes wrong, revert to current state
+-   ✅ **Better foundation** - current functionality gets organized for future improvements
+
+### **Step 1: Convert Components to DOM Creators (CRITICAL)**
+
+**Goal**: Make components create their own DOM and CSS instead of manipulating hardcoded HTML
+
+**Current Problem**:
+
+-   **gun.html** has hardcoded DOM structure
+-   **Components** just manipulate existing DOM elements
+-   **Layout is fixed** in HTML, not dynamic
+-   **gun.css** (724 lines) contains all styles for all components
+-   **CSS is centralized** and hard to maintain
+
+**Target State**:
+
+-   **gun.html** is just a shell with placeholder containers
+-   **Components create their own DOM** dynamically
+-   **Components import their own CSS** (self-contained)
+-   **Layout is flexible** and component-driven
+-   **gun.css** is minimal (global styles only)
+
+**IMPORTANT**: Replicate current behavior exactly - no changes to functionality or appearance
+
+**Implementation**:
+
+1. **Convert gun.html to shell**:
+
+    ```html
+    <!-- Before: Hardcoded UI -->
+    <section
+    	class="card edit-panel"
+    	id="editPanel"
+    >
+    	<header><h3>Edit</h3></header>
+    	<div class="body">
+    		<!-- hardcoded form elements -->
+    	</div>
+    </section>
+
+    <!-- After: Just containers -->
+    <div id="app-container">
+    	<div id="left-pane"></div>
+    	<div id="center-pane"></div>
+    	<div id="right-pane"></div>
+    </div>
+    ```
+
+2. **Update components to create DOM and import CSS**:
+
+    ```javascript
+    // Before: Component manipulates existing DOM
+    class GraphForms {
+    	updateNodeForm(data) {
+    		document.getElementById('nodeLabel').value = data.label;
+    	}
+    }
+
+    // After: Component creates its own DOM and imports its own CSS
+    import './DocumentEditor.css';
+
+    class DocumentEditor {
+    	constructor(container) {
+    		this.container = container;
+    		this.render();
+    	}
+
+    	render() {
+    		this.container.innerHTML = `
+          <div class="document-editor">
+            <header><h3>Document Editor</h3></header>
+            <div class="editor-content">
+              <textarea id="doc-content"></textarea>
+            </div>
+          </div>
+        `;
+    	}
+    }
+    ```
+
+3. **Organize CSS co-location** - move component styles to component files
+
+    ```javascript
+    // File structure after CSS reorganization (INTERIM STATE)
+    src/gun/
+    ├── lib/
+    │   ├── gunWrapper.js
+    │   ├── cytoscapeWrapper.js
+    │   └── utils.js
+    ├── Header/
+    │   ├── Header.js (Network, Room, Identity controls)
+    │   ├── Header.css
+    │   └── HeaderController.js
+    ├── Room/
+    │   ├── Room.js (handles both Room List and Room Mode)
+    │   ├── Room.css
+    │   └── RoomController.js
+    ├── Activity/
+    │   ├── Activity.js (activity log)
+    │   ├── Activity.css
+    │   └── ActivityController.js
+    ├── ConnectionDetails/
+    │   ├── ConnectionDetails.js (renamed from PeerModal - connection status modal)
+    │   ├── ConnectionDetails.css
+    │   └── ConnectionDetailsController.js
+    ├── gun.js
+    └── gun.css (global styles only)
+    ```
+
+    **Code Migration Map - Current → Phase 1 Structure**
+
+    #### **Header/**
+
+    ```
+    components/header/Header.js → Header/Header.js
+    gun.css (header styles) → Header/Header.css
+    ```
+
+    #### **Room/**
+
+    ```
+    components/RoomList.js → Room/Room.js
+    components/forms/GraphForms.js → Room/Room.js
+    components/graph/GraphView.js → Room/Room.js
+    components/visualization/visualization.js → Room/Room.js
+    gun.css (room, edit-panel, graph-panel styles) → Room/Room.css
+    ```
+
+    #### **Activity/**
+
+    ```
+    components/sidebar/Sidebar.js → Activity/Activity.js
+    gun.css (activity panel styles) → Activity/Activity.css
+    ```
+
+    #### **ConnectionDetails/**
+
+    ```
+    components/PeerModal.js → ConnectionDetails/ConnectionDetails.js
+    gun.css (modal styles) → ConnectionDetails/ConnectionDetails.css
+    ```
+
+    #### **lib/**
+
+    ```
+    services/gunWrapper.js → lib/gunWrapper.js
+    components/visualization/visualization.js → lib/cytoscapeWrapper.js
+    utils/utils.js → lib/utils.js
+    ```
+
+    #### **Removed**
+
+    ```
+    components/PropsManager.js (functionality moves to Room component)
+    gun.css (becomes global styles only)
+    ```
+
+    **Result**: 4 self-contained components, each with JS + CSS + Controller, plus utility libraries in lib/.
+
+4. **Test DOM creation and CSS** - ensure components render with their own styles
+
+**Interim State Benefits**:
+
+-   ✅ **Matches current layout exactly** - Header, Room (List/Detail), Activity, ConnectionDetails
+-   ✅ **Components are self-contained** - own their DOM, CSS, and logic
+-   ✅ **Simple architecture** - only 4 main components to manage
+-   ✅ **Foundation for future** - easy to change layout later
+
+**Future Migration** (Phase 2):
+
+-   **Change to 2-pane layout**: FileTree | DocumentEditor/GraphView
+-   **Document-centric architecture**: replace graph-centric approach
+-   **Mobile view switching**: responsive design with view switching
+-   **New components**: FileTree, DocumentEditor, GraphView, ConnectionDetails
+
+**Benefits**:
+
+-   ✅ **Components are truly self-contained** - they own their DOM, CSS, and state
+-   ✅ **Layout is flexible** - components can be moved, resized, hidden
+-   ✅ **Better separation of concerns** - UI logic and styles live with UI components
+-   ✅ **Easier testing** - components can render in isolation with their styles
+-   ✅ **More maintainable** - no hardcoded HTML or centralized CSS
+-   ✅ **Better organization** - find styles where you find component code
+-   ✅ **Modular architecture** - components can be moved/reused independently
+
+**Action**: Start with one component (e.g., DocumentEditor), convert it to create its own DOM, extract its CSS to a co-located file, test rendering with styles, then move to next component
+
+### **Step 2: Extract gunWrapper Methods (SAFE)**
 
 **Goal**: Break down 1150-line file into focused utility methods
 
@@ -76,14 +273,14 @@ gun.js (main app)
 
 **Action**: Create method categories, don't move anything yet
 
-### **Step 2: Create ServiceController Skeleton (SAFE)**
+### **Step 3: Create ServiceController Skeleton (SAFE)**
 
 **Goal**: Single controller for all backend operations
 
 **Structure**:
 
 ```javascript
-// controllers/ServiceController.js
+// Application/ServiceController.js
 class ServiceController {
 	constructor(gunWrapper) {
 		this.gunWrapper = gunWrapper;
@@ -136,7 +333,7 @@ class ServiceController {
 
 **Action**: Create file, implement basic structure, don't wire up yet
 
-### **Step 3: Test Basic Operations (CRITICAL)**
+### **Step 4: Test Basic Operations (CRITICAL)**
 
 **Goal**: Ensure gunWrapper methods work before moving anything
 
@@ -150,7 +347,7 @@ class ServiceController {
 
 **Action**: Write simple test functions, run them in browser console
 
-### **Step 4: Gradual Service Migration (RISKY)**
+### **Step 5: Gradual Service Migration (RISKY)**
 
 **Goal**: Move functionality one service at a time
 
@@ -344,7 +541,18 @@ document.addEventListener('ui:createNode', async (e) => {
 
 ## Testing Strategy
 
-### **Test 1: gunWrapper Methods**
+### **CRITICAL: Exact Replication Testing**
+
+**Goal**: Ensure refactored code behaves exactly like current code
+
+**Testing Approach**:
+
+1. **Functional regression testing** - every current feature works exactly the same
+2. **Visual regression testing** - exact same appearance and layout
+3. **Interaction testing** - all current user interactions work identically
+4. **Performance testing** - no performance regression
+
+**Test 1: gunWrapper Methods**
 
 ```javascript
 // Test in browser console
@@ -375,6 +583,15 @@ document.dispatchEvent(
 
 ## Rollback Plan
 
+### **CRITICAL: Maintain Exact Functionality**
+
+**If anything breaks or behaves differently from current state**:
+
+-   **Immediate rollback** - revert to previous working version
+-   **Identify the difference** - what changed from current behavior
+-   **Fix the replication** - ensure exact same functionality
+-   **Test thoroughly** - verify behavior matches current state exactly
+
 ### **If gunWrapper breaks**:
 
 -   Revert to previous version
@@ -397,6 +614,12 @@ document.dispatchEvent(
 
 ### **Phase 1 Complete When**:
 
+-   ✅ **EXACT SAME FUNCTIONALITY** - no changes to user experience
+-   ✅ **EXACT SAME APPEARANCE** - no visual changes
+-   ✅ **Components create their own DOM** (no hardcoded HTML)
+-   ✅ **Components import their own CSS** (co-located styles)
+-   ✅ **gun.css is minimal** (global styles only)
+-   ✅ **Interim file structure** implemented (Header, Room, Activity)
 -   ✅ **gunWrapper.js** < 200 lines (utility methods only)
 -   ✅ **ServiceController** handles all CRUD operations
 -   ✅ **Basic functionality** works (create/read nodes, auth, connection)
@@ -412,6 +635,6 @@ document.dispatchEvent(
 
 ## Next Action
 
-**Start with Step 1**: Analyze gunWrapper.js methods and categorize them by dependency level. Don't move anything yet - just understand what exists and what depends on what.
+**Start with Step 1**: Convert components to create their own DOM and CSS. Start with one component (e.g., DocumentEditor), convert it to create its own DOM, extract its CSS to a co-located file, test rendering with styles, then move to next component. This is the foundation for the entire refactor.
 
 This detailed plan provides the specific steps needed to safely refactor the codebase without breaking functionality.
