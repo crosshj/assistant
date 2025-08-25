@@ -225,26 +225,36 @@ export class GraphVisualization {
 					this.selectionOrder.push(nodeId);
 				}
 
-				// Update form fields (but NOT the props field - wait for props to load)
-				const nodeIdField = $('nodeId');
-				const nodeLabelField = $('nodeLabel');
+				// Clear the new node form when nodes are selected
+				this.clearNewNodeForm();
 
-				if (nodeIdField) nodeIdField.value = d.nid || '';
-				if (nodeLabelField) nodeLabelField.value = d.label || '';
+				// Clear the edge form when single nodes are selected (unless we're about to create an edge)
+				if (this.selectionOrder.length === 1) {
+					this.clearEdgeForm();
+				}
 
-				// DO NOT update nodeProps field here - wait for props to load via event system
-				// This prevents showing stale/incomplete data
+				// Update form fields only for single node selection
+				if (this.selectionOrder.length === 1) {
+					const nodeIdField = $('nodeId');
+					const nodeLabelField = $('nodeLabel');
 
-				// Emit selection changed event for auto-loading props
-				document.dispatchEvent(
-					new CustomEvent('selectionChanged', {
-						detail: {
-							elementId: d.nid || d.id,
-							elementType: 'node',
-							room: window.currentRoom,
-						},
-					})
-				);
+					if (nodeIdField) nodeIdField.value = d.nid || '';
+					if (nodeLabelField) nodeLabelField.value = d.label || '';
+
+					// DO NOT update nodeProps field here - wait for props to load via event system
+					// This prevents showing stale/incomplete data
+
+					// Emit selection changed event for auto-loading props
+					document.dispatchEvent(
+						new CustomEvent('selectionChanged', {
+							detail: {
+								elementId: d.nid || d.id,
+								elementType: 'node',
+								room: window.currentRoom,
+							},
+						})
+					);
+				}
 
 				// Check if we now have two nodes selected for edge creation
 				this.checkForEdgeCreation();
@@ -252,6 +262,9 @@ export class GraphVisualization {
 			if (e.target.isEdge && e.target.isEdge()) {
 				// Clear selection order when edge is selected
 				this.selectionOrder = [];
+
+				// Clear the new node form when edges are selected
+				this.clearNewNodeForm();
 
 				// Update form fields (but NOT the props field - wait for props to load)
 				$('edgeId').value = d.eid || '';
@@ -282,6 +295,36 @@ export class GraphVisualization {
 		}
 	}
 
+	// Clear the new node form when nodes/edges are selected
+	clearNewNodeForm() {
+		const nodeIdField = $('nodeId');
+		const nodeLabelField = $('nodeLabel');
+		const nodePropsField = $('nodeProps');
+
+		// Clear the new node form fields
+		if (nodeIdField) nodeIdField.value = '';
+		if (nodeLabelField) nodeLabelField.value = '';
+		if (nodePropsField) nodePropsField.value = '';
+	}
+
+	// Clear the edge form when single nodes are selected
+	clearEdgeForm() {
+		const edgeIdField = $('edgeId');
+		const edgeFromField = $('edgeFrom');
+		const edgeToField = $('edgeTo');
+		const edgeLabelField = $('edgeLabel');
+		const edgeDirectionField = $('edgeDirection');
+		const edgePropsField = $('edgeProps');
+
+		// Clear the edge form fields
+		if (edgeIdField) edgeIdField.value = '';
+		if (edgeFromField) edgeFromField.value = '';
+		if (edgeToField) edgeToField.value = '';
+		if (edgeLabelField) edgeLabelField.value = '';
+		if (edgeDirectionField) edgeDirectionField.value = 'both'; // Reset to default
+		if (edgePropsField) edgePropsField.value = '';
+	}
+
 	// Check if two nodes are selected and populate edge creation form
 	checkForEdgeCreation() {
 		const selectedNodes = this.cy.nodes(':selected');
@@ -306,26 +349,77 @@ export class GraphVisualization {
 				const existingEdge = this.cy.edges().filter((edge) => {
 					const source = edge.source().id().replace('n_', '');
 					const target = edge.target().id().replace('n_', '');
-					// Only check for edges going in the selected direction (first → second)
+					// Check for edges in both directions
 					return (
-						source === firstSelectedId &&
-						target === secondSelectedId
+						(source === firstSelectedId &&
+							target === secondSelectedId) ||
+						(source === secondSelectedId &&
+							target === firstSelectedId)
 					);
 				});
 
 				if (existingEdge.length === 0) {
-					// No edge exists, populate the edge creation form with correct direction
+					// No edge exists, populate the edge creation form with default direction
 					const edgeFromField = $('edgeFrom');
 					const edgeToField = $('edgeTo');
+					const edgeDirectionField = $('edgeDirection');
 
 					if (edgeFromField && edgeToField) {
 						edgeFromField.value = firstSelectedId; // First selected = FROM
 						edgeToField.value = secondSelectedId; // Second selected = TO
 
+						// Set direction to 'both' by default
+						if (edgeDirectionField) {
+							edgeDirectionField.value = 'both';
+						}
+
 						// Focus on the edge label field for convenience
 						const edgeLabelField = $('edgeLabel');
 						if (edgeLabelField) {
 							edgeLabelField.focus();
+						}
+					}
+				} else {
+					// Edge exists, populate form with existing edge data and set direction
+					const existingEdgeData = existingEdge[0].data();
+					const edgeFromField = $('edgeFrom');
+					const edgeToField = $('edgeTo');
+					const edgeDirectionField = $('edgeDirection');
+					const edgeLabelField = $('edgeLabel');
+					const edgePropsField = $('edgeProps');
+
+					if (edgeFromField && edgeToField) {
+						// Determine the actual direction based on existing edge
+						const source = existingEdgeData.source;
+						const target = existingEdgeData.target;
+						const edgeDirection =
+							existingEdgeData.direction || 'both';
+
+						// Set the form fields to match the existing edge
+						edgeFromField.value = source;
+						edgeToField.value = target;
+
+						// Set the direction dropdown to match existing edge
+						if (edgeDirectionField) {
+							edgeDirectionField.value = edgeDirection;
+						}
+
+						// Set label if it exists
+						if (edgeLabelField && existingEdgeData.label) {
+							edgeLabelField.value = existingEdgeData.label;
+						}
+
+						// Set props if they exist
+						if (edgePropsField && existingEdgeData.props) {
+							try {
+								edgePropsField.value = JSON.stringify(
+									existingEdgeData.props,
+									null,
+									2
+								);
+							} catch (e) {
+								edgePropsField.value = '{}';
+							}
 						}
 					}
 				}
@@ -498,7 +592,7 @@ export class GraphVisualization {
 		}
 
 		// Determine arrow configuration based on direction property
-		const direction = edgeData.direction || 'forward'; // 'forward', 'reverse', 'both'
+		const direction = edgeData.direction || 'both'; // 'forward', 'reverse', 'both' - default to 'both'
 		let sourceArrow = 'none';
 		let targetArrow = 'triangle';
 

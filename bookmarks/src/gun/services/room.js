@@ -46,6 +46,7 @@ export class RoomManager {
 				joinCompleted = true;
 				// Room operation completed, now emit the success event
 				const status = `🏠 ${room}`;
+				// Gun.js callback fired, emitting status
 				this.emit('roomStatusChanged', status, room);
 			}
 		});
@@ -56,7 +57,10 @@ export class RoomManager {
 			if (!joinCompleted && this.currentRoom === room && this.graphRoot) {
 				joinCompleted = true;
 				const status = `🏠 ${room}`;
+				// Timeout fallback fired, emitting status
 				this.emit('roomStatusChanged', status, room);
+			} else if (joinCompleted) {
+				// Timeout fallback skipped - callback already fired
 			}
 		}, 1000);
 

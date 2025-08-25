@@ -16,6 +16,9 @@ import { Activity } from './Activity/Activity.js';
 import { ConnectionDetails } from './ConnectionDetails/ConnectionDetails.js';
 import { PropsManager } from './services/PropsManager.js';
 
+// Import controllers
+import { RoomController } from './Room/RoomController.js';
+
 // Main GunDB Application
 class GunApp {
 	constructor() {
@@ -38,6 +41,9 @@ class GunApp {
 		this.activity = null;
 		this.connectionDetails = null;
 		this.propsManager = null;
+
+		// Controllers
+		this.roomController = null;
 	}
 
 	async start() {
@@ -76,14 +82,22 @@ class GunApp {
 		this.connectionDetails = new ConnectionDetails(this.connection);
 		this.propsManager = new PropsManager();
 
+		// Initialize controllers
+		this.roomController = new RoomController(
+			this.rooms,
+			this.sync,
+			this.connection,
+			this.stateManager,
+			this.graph
+		);
+
 		// Initialize event coordination
 		this.eventCoordinator = new EventCoordinator(
 			this.connection,
 			this.auth,
 			this.rooms,
 			this.stateManager,
-			this.sync,
-			this.room
+			this.sync
 		);
 
 		// Wire up event system between services and UI
@@ -113,20 +127,9 @@ class GunApp {
 
 	// Resize the Cytoscape canvas to take full available height
 	resizeCytoscapeCanvas() {
-		const cyContainer = document.getElementById('cy');
-		if (
-			cyContainer &&
-			this.room &&
-			this.room.visualization &&
-			this.room.visualization.isInitialized()
-		) {
-			// Force a resize to ensure the canvas takes full height
-			setTimeout(() => {
-				if (this.room.visualization.cy) {
-					this.room.visualization.cy.resize();
-				}
-			}, 100); // Small delay to ensure DOM is ready
-		}
+		// Dispatch event for RoomController to handle visualization resizing
+		// This eliminates direct coupling between gun.js and Room component
+		document.dispatchEvent(new CustomEvent('ui:resizeVisualization'));
 	}
 
 	wireUpEvents() {
@@ -145,42 +148,43 @@ class GunApp {
 			},
 			sync: {
 				clearGraph: () => {
-					if (this.room && this.room.visualization) {
-						this.room.visualization.clearGraph();
-					}
+					// Dispatch event for RoomController to handle
+					document.dispatchEvent(new CustomEvent('sync:clearGraph'));
 				},
-				addNode: ({ data }) => {
-					if (this.room && this.room.visualization) {
-						this.room.visualization.addNode(data);
-					}
+				addNode: (nodeData) => {
+					// Dispatch event for RoomController to handle
+					document.dispatchEvent(
+						new CustomEvent('sync:addNode', { detail: nodeData })
+					);
 				},
-				removeNode: ({ id }) => {
-					if (this.room && this.room.visualization) {
-						this.room.visualization.removeNode(id);
-					}
+				removeNode: (nodeData) => {
+					// Dispatch event for RoomController to handle
+					document.dispatchEvent(
+						new CustomEvent('sync:removeNode', { detail: nodeData })
+					);
 				},
-				addEdge: ({ data }) => {
-					if (this.room && this.room.visualization) {
-						this.room.visualization.addEdge(data);
-					}
+				addEdge: (edgeData) => {
+					// Dispatch event for RoomController to handle
+					document.dispatchEvent(
+						new CustomEvent('sync:addEdge', { detail: edgeData })
+					);
 				},
-				removeEdge: ({ id }) => {
-					if (this.room && this.room.visualization) {
-						this.room.visualization.removeEdge(id);
-					}
+				removeEdge: (edgeData) => {
+					// Dispatch event for RoomController to handle
+					document.dispatchEvent(
+						new CustomEvent('sync:removeEdge', { detail: edgeData })
+					);
 				},
 			},
 		};
 
-		// Wire up all events
-		Object.entries(events).forEach(([service, eventMap]) => {
-			Object.entries(eventMap).forEach(([event, handler]) => {
-				this[service].on(event, handler);
-			});
-		});
+		// Sync events are now handled directly by RoomController
+		// No need to wire them up here
 
-		// Wire up connection service events to EventCoordinator (duplicate removed)
-		// The connectionStatusChanged event is already handled in the events object above
+		// Wire up connection service events to EventCoordinator
+		this.connection.on('connectionStatusChanged', (data) => {
+			this.eventCoordinator.onConnectionStatusChanged(data);
+		});
 
 		this.connection.on('userLoggedIn', (data) => {
 			this.eventCoordinator.onUserAuthenticated(data.alias);
@@ -191,31 +195,37 @@ class GunApp {
 		// Global function mappings
 		const globals = {
 			joinRoom: (room) => {
-				if (this.rooms.joinRoom(room, this.connection)) {
-					// Data sync is now handled by EventCoordinator after room join completes
-				}
+				// Dispatch event for RoomController to handle
+				document.dispatchEvent(
+					new CustomEvent('ui:joinRoom', { detail: room })
+				);
 			},
 			leaveRoom: () => {
-				// Use EventCoordinator to ensure proper state management
-				this.eventCoordinator.handleLeaveRoom();
+				// Dispatch event for RoomController to handle
+				document.dispatchEvent(new CustomEvent('ui:leaveRoom'));
 			},
 			refreshRoom: () => this.sync.refreshData(),
 			exportRoom: async () => {
-				const data = await this.rooms.exportRoom(
-					this.rooms.getCurrentRoom()
+				// Dispatch event for RoomController to handle
+				document.dispatchEvent(
+					new CustomEvent('graph:export', {
+						detail: { room: this.rooms.getCurrentRoom() },
+					})
 				);
-				const blob = new Blob([JSON.stringify(data, null, 2)], {
-					type: 'application/json',
-				});
-				const a = document.createElement('a');
-				a.href = URL.createObjectURL(blob);
-				a.download = `${this.rooms.getCurrentRoom()}-graph.json`;
-				a.click();
-				this.activity.success('exported');
 			},
 			importRoomData: (data) => this.rooms.importRoomData(data),
-			updateNodeForm: (data) => this.room.updateNodeForm(data),
-			updateEdgeForm: (data) => this.room.updateEdgeForm(data),
+			updateNodeForm: (data) => {
+				// Dispatch event for RoomController to handle
+				document.dispatchEvent(
+					new CustomEvent('ui:updateNodeForm', { detail: { data } })
+				);
+			},
+			updateEdgeForm: (data) => {
+				// Dispatch event for RoomController to handle
+				document.dispatchEvent(
+					new CustomEvent('ui:updateEdgeForm', { detail: { data } })
+				);
+			},
 			clearActivityLog: () => {
 				// Directly clear the log element
 				const logElement = document.getElementById('log');

@@ -488,6 +488,7 @@ export class GunDBWrapper {
 			from: edgeData.from || edgeData.source,
 			to: edgeData.to || edgeData.target,
 			label: edgeData.label || '',
+			direction: edgeData.direction || 'both', // Default to 'both' instead of 'forward'
 			props: cleanProps,
 			by: edgeData.by || 'anon',
 			updatedAt: edgeData.updatedAt || 0,

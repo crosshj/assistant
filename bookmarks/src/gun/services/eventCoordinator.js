@@ -5,14 +5,19 @@ import { GunDBWrapper } from '../lib/gunWrapper.js';
  * Listens to UI events and coordinates between services and StateManager
  */
 export class EventCoordinator {
-	constructor(connection, auth, rooms, stateManager, sync, room) {
+	constructor(connection, auth, rooms, stateManager, sync) {
 		this.connection = connection;
 		this.auth = auth;
 		this.rooms = rooms;
 		this.stateManager = stateManager;
 		this.sync = sync;
 		this.gunWrapper = new GunDBWrapper(connection);
-		this.room = room;
+
+		// Callback for when room selection mode should be shown
+		this.onShowRoomSelection = null;
+
+		// Track previous connection state to detect real changes
+		this.previousConnectionState = null;
 
 		// Listen to UI events from Header
 		this.setupUIEventListeners();
@@ -27,24 +32,12 @@ export class EventCoordinator {
 		document.addEventListener('ui:testConnection', () =>
 			this.handleTestConnection()
 		);
-		document.addEventListener('ui:joinRoom', (e) =>
-			this.handleJoinRoom(e.detail)
-		);
-		document.addEventListener('ui:autoJoinRoom', (e) =>
-			this.handleAutoJoinRoom(e)
-		);
-		document.addEventListener('ui:leaveRoom', () => this.handleLeaveRoom());
 		document.addEventListener('ui:createIdentity', (e) =>
 			this.handleCreateIdentity(e.detail)
 		);
 		document.addEventListener('ui:login', (e) =>
 			this.handleLogin(e.detail)
 		);
-
-		// Listen for graph events
-		document.addEventListener('graph:requestProps', (e) => {
-			this.handleRequestProps(e.detail);
-		});
 	}
 
 	// ===== NETWORK EVENTS =====
@@ -70,43 +63,7 @@ export class EventCoordinator {
 		this.connection.testConnection();
 	}
 
-	// ===== ROOM EVENTS =====
-
-	handleJoinRoom(roomName) {
-		// Update state to joining
-		this.stateManager.setRoomJoining(roomName);
-
-		// Call room service
-		const result = this.rooms.joinRoom(roomName, this.connection);
-
-		if (result) {
-			// Room joined successfully - state will be updated by room service
-		} else {
-			// Room join failed - revert state
-			this.stateManager.setRoomLeft();
-		}
-	}
-
-	handleAutoJoinRoom(event) {
-		const roomName = event?.detail;
-		if (roomName) {
-			this.handleJoinRoom(roomName);
-		}
-	}
-
-	handleLeaveRoom() {
-		// Call room service first
-		this.rooms.leaveRoom();
-
-		// Note: Graph clearing is now handled automatically by the visualization component
-		// when it detects room state changes via the stateChanged event
-
-		// Then update state
-		this.stateManager.setRoomLeft();
-	}
-
 	// ===== AUTH EVENTS =====
-
 	handleCreateIdentity(alias) {
 		this.auth.createIdentity(alias);
 	}
@@ -140,19 +97,40 @@ export class EventCoordinator {
 		const connected = typeof data === 'object' ? data.connected : data;
 		const total = typeof data === 'object' ? data.total : arguments[1];
 
-		this.stateManager.setNetworkConnected(connected, total);
+		// Create current state object for comparison
+		const currentState = {
+			connected,
+			total,
+			status: typeof data === 'object' ? data.status : 'connected',
+			hash: window.location.hash,
+			roomsInRoom: this.rooms ? this.rooms.isInRoom() : false,
+		};
 
-		// Don't manage UI mode here - let the Room component handle its own UI
-		// based on state changes. Only handle auto-join logic.
-		if (connected && this.rooms && !this.rooms.isInRoom()) {
-			// Check if there's a hash tag that would indicate auto-join
-			if (!this.shouldShowRoomSelector()) {
-				// Auto-join the room specified in the hash
-				this.handleAutoJoinFromHash();
-			} else {
-				// No auto-join, fire room:left event to show room selection
-				document.dispatchEvent(new CustomEvent('room:left'));
+		// Check if state has actually changed
+		const stateChanged =
+			!this.previousConnectionState ||
+			JSON.stringify(this.previousConnectionState) !==
+				JSON.stringify(currentState);
+
+		// Only proceed if state has actually changed
+		if (stateChanged) {
+			this.stateManager.setNetworkConnected(connected, total);
+
+			// Don't manage UI mode here - let the Room component handle its own UI
+			// based on state changes. Only handle auto-join logic.
+			if (connected && this.rooms && !this.rooms.isInRoom()) {
+				// Check if there's a hash tag that would indicate auto-join
+				if (!this.shouldShowRoomSelector()) {
+					// Auto-join the room specified in the hash
+					this.handleAutoJoinFromHash();
+				} else {
+					// No auto-join, fire room:left event to show room selection
+					document.dispatchEvent(new CustomEvent('room:left'));
+				}
 			}
+
+			// Update previous state
+			this.previousConnectionState = currentState;
 		}
 	}
 
@@ -177,142 +155,11 @@ export class EventCoordinator {
 	}
 
 	onRoomStatusChanged(status, roomName) {
-		// Handle case where room service passes room name as status when joining
-		if (status === roomName && roomName) {
-			// Update state - let the Room component handle UI changes
-			this.stateManager.setRoomJoined(roomName);
-
-			// Update URL hash to reflect current room
-			this.updateRoomHash(roomName);
-
-			// Fire event for Room component to listen to
-			document.dispatchEvent(
-				new CustomEvent('room:joined', {
-					detail: { room: roomName },
-				})
-			);
-
-			// Start data sync immediately
-			if (this.rooms.isInRoom() && this.sync) {
-				this.sync.subscribeToRoom();
-			}
-		} else if (status && status.includes('🏠') && roomName) {
-			// Update state - let the Room component handle UI changes
-			this.stateManager.setRoomJoined(roomName);
-
-			// Update URL hash to reflect current room
-			this.updateRoomHash(roomName);
-
-			// Fire event for Room component to listen to
-			document.dispatchEvent(
-				new CustomEvent('room:joined', {
-					detail: { room: roomName },
-				})
-			);
-
-			// Start data sync immediately
-			if (this.rooms.isInRoom() && this.sync) {
-				this.sync.subscribeToRoom();
-			}
-		} else if (status === 'not joined') {
-			// Update state - let the Room component handle UI changes
-			this.stateManager.setRoomLeft();
-
-			// Clear room from URL hash
-			this.updateRoomHash(null);
-
-			// Fire event for Room component to listen to
-			document.dispatchEvent(new CustomEvent('room:left'));
-		}
-	}
-
-	// Update URL hash to reflect current room
-	updateRoomHash(roomName) {
-		if (roomName) {
-			// Set hash to just the room name
-			window.location.hash = `#${roomName}`;
-		} else {
-			// Clear hash when leaving room
-			window.location.hash = '';
-		}
+		// Room status changes are now handled by RoomController
+		// This method is kept for backward compatibility but no longer handles room logic
 	}
 
 	onUserAuthenticated(alias) {
 		this.stateManager.setAuthAuthenticated(alias);
-	}
-
-	// ===== GRAPH EVENTS =====
-
-	async handleRequestProps(detail) {
-		const { elementId, elementType, room } = detail;
-		if (!elementId || !room || !elementType) {
-			return;
-		}
-
-		// Set a flag to prevent graph updates during props loading
-		if (this.sync) {
-			this.sync.setPropsLoadingFlag(true);
-		}
-
-		try {
-			let props;
-			try {
-				if (elementType === 'node') {
-					props = await this.gunWrapper.getNodeProps(room, elementId);
-
-					// Also get full node data to see metadata and check for version references
-					await this.gunWrapper.getNodeFullData(room, elementId);
-				} else if (elementType === 'edge') {
-					props = await this.gunWrapper.getEdgeProps(room, elementId);
-				} else {
-					throw new Error(`Unknown element type: ${elementType}`);
-				}
-			} catch (error) {
-				// Try fallback method if primary method fails
-				// Try fallback method if primary method fails
-				if (elementType === 'node') {
-					props = await this.gunWrapper.getPropsFallback(
-						room,
-						elementId,
-						true
-					);
-				} else if (elementType === 'edge') {
-					props = await this.gunWrapper.getPropsFallback(
-						room,
-						elementId,
-						false
-					);
-				}
-			}
-
-			// Emit the props loaded event
-			document.dispatchEvent(
-				new CustomEvent('graph:propsLoaded', {
-					detail: {
-						elementId,
-						elementType,
-						props,
-						room,
-					},
-				})
-			);
-		} catch (error) {
-			// Emit empty props on error
-			document.dispatchEvent(
-				new CustomEvent('graph:propsLoaded', {
-					detail: {
-						elementId,
-						elementType,
-						props: {},
-						room,
-					},
-				})
-			);
-		} finally {
-			// Clear the props loading flag
-			if (this.sync) {
-				this.sync.setPropsLoadingFlag(false);
-			}
-		}
 	}
 }

@@ -3,13 +3,39 @@ import { GraphVisualization } from '../lib/cytoscapeWrapper.js';
 import './Room.css';
 
 export class Room {
-	constructor(graph, connection) {
-		this.graph = graph;
-		this.connection = connection;
+	constructor({ controller }) {
+		this.controller = controller; // Reference to RoomController
 		this.visualization = null; // Will be created fresh each time
 		this.container = null;
 		this.currentMode = 'connecting'; // 'connecting', 'room-selection', 'room-mode'
 		this.currentRoom = null;
+
+		// Debounce timers for graph updates
+		this.graphUpdateTimers = {
+			addNode: null,
+			removeNode: null,
+			addEdge: null,
+			removeEdge: null,
+		};
+
+		// Debounce delay in milliseconds
+		const DEBOUNCE_DELAY = 100;
+
+		// Event queue for operations that arrive before visualization is ready
+		this.eventQueue = [];
+		this.isVisualizationReady = false;
+
+		// Bind event handlers to preserve context
+		this.handleResizeGraph = this.handleResizeGraph.bind(this);
+		this.handleUpdateNodeForm = this.handleUpdateNodeForm.bind(this);
+		this.handleUpdateEdgeForm = this.handleUpdateEdgeForm.bind(this);
+
+		// Bind sync event handlers to preserve context
+		this.handleClearGraph = this.handleClearGraph.bind(this);
+		this.syncAddNode = this.syncAddNode.bind(this);
+		this.syncRemoveNode = this.syncRemoveNode.bind(this);
+		this.syncAddEdge = this.syncAddEdge.bind(this);
+		this.syncRemoveEdge = this.syncRemoveEdge.bind(this);
 
 		this.render();
 	}
@@ -27,30 +53,14 @@ export class Room {
 		this.renderEditPanel();
 		this.renderGraphPanel();
 
-		// Start in room selection mode by default
-		this.showRoomSelectionMode();
+		// Start in connecting mode by default
+		this.setMode('connecting');
 
 		// Bind only the events that are available in room selection mode
 		this.bindRoomListEvents();
 
-		// Listen for specific events that indicate what actually happened
-		document.addEventListener('ui:joinRoom', (event) => {
-			// User clicked join room - show connecting mode immediately
-			this.setMode('connecting');
-		});
-
-		document.addEventListener('room:joined', (event) => {
-			this.currentRoom = event.detail.room;
-			this.setMode('room-mode');
-		});
-
-		document.addEventListener('room:left', () => {
-			this.currentRoom = null;
-			this.setMode('room-selection');
-		});
-
-		// Start in connecting mode by default
-		this.setMode('connecting');
+		// UI events are now handled by RoomController calling methods directly
+		// No need for DOM event listeners here
 	}
 
 	renderRoomList() {
@@ -171,9 +181,9 @@ export class Room {
 								id="edgeDirection"
 								style="flex: 1"
 							>
+								<option value="both">Both (↔)</option>
 								<option value="forward">Forward (→)</option>
 								<option value="reverse">Reverse (←)</option>
-								<option value="both">Both (↔)</option>
 							</select>
 						</div>
 						<label>Props (JSON object)</label>
@@ -266,17 +276,10 @@ export class Room {
 		// Graph panel events
 		this.bindGraphPanelEvents();
 
-		// Listen for external events
+		// External events are now handled by RoomController calling methods directly
+		// No need for DOM event listeners here
 
-		// Listen for leave room event
-		document.addEventListener('ui:leaveRoom', () => {
-			this.leaveRoom();
-		});
-
-		// Listen for state changes
-		document.addEventListener('stateChanged', (event) => {
-			this.handleStateChange(event.detail);
-		});
+		// Sync events are now set up in constructor to ensure they're always available
 	}
 
 	bindRoomListEvents() {
@@ -308,14 +311,14 @@ export class Room {
 		const addNodeBtn = this.container.left.querySelector('#addNode');
 		if (addNodeBtn) {
 			addNodeBtn.addEventListener('click', () => {
-				this.handleAddNode();
+				this.handleNodeCreate();
 			});
 		}
 
 		const delNodeBtn = this.container.left.querySelector('#delNode');
 		if (delNodeBtn) {
 			delNodeBtn.addEventListener('click', () => {
-				this.handleDeleteNode();
+				this.handleNodeDelete();
 			});
 		}
 
@@ -323,14 +326,14 @@ export class Room {
 		const addEdgeBtn = this.container.left.querySelector('#addEdge');
 		if (addEdgeBtn) {
 			addEdgeBtn.addEventListener('click', () => {
-				this.handleAddEdge();
+				this.handleEdgeCreate();
 			});
 		}
 
 		const delEdgeBtn = this.container.left.querySelector('#delEdge');
 		if (delEdgeBtn) {
 			delEdgeBtn.addEventListener('click', () => {
-				this.handleDeleteEdge();
+				this.handleEdgeDelete();
 			});
 		}
 
@@ -473,59 +476,69 @@ export class Room {
 		this.bindGraphPanelEvents();
 
 		// Initialize visualization when entering room mode
-		// Always start fresh since we tear down completely when leaving
-		const initVisualization = () => {
-			const container = document.getElementById('cy');
-			if (!container) {
-				setTimeout(initVisualization, 50);
-				return;
-			}
+		// Only initialize if not already ready
+		if (!this.isVisualizationReady) {
+			const initVisualization = () => {
+				const container = document.getElementById('cy');
+				if (!container) {
+					setTimeout(initVisualization, 50);
+					return;
+				}
 
-			// Check if container has dimensions
-			const rect = container.getBoundingClientRect();
-			if (rect.width === 0 || rect.height === 0) {
-				setTimeout(initVisualization, 50);
-				return;
-			}
+				// Check if container has dimensions
+				const rect = container.getBoundingClientRect();
+				if (rect.width === 0 || rect.height === 0) {
+					setTimeout(initVisualization, 50);
+					return;
+				}
 
-			// Clean up any existing visualization
-			if (this.visualization) {
-				this.visualization.destroy();
-			}
+				// Clean up any existing visualization
+				if (this.visualization) {
+					this.visualization.destroy();
+				}
 
-			// Create fresh visualization instance
-			this.visualization = new GraphVisualization(this.connection);
-			const result = this.visualization.init('cy');
+				// Create fresh visualization instance
+				this.visualization = new GraphVisualization(this.connection);
+				const result = this.visualization.init('cy');
 
-			// Apply the currently selected layout
-			const layoutSelect = document.querySelector('#layoutSelect');
-			if (layoutSelect && this.visualization.isInitialized()) {
-				const selectedLayout = layoutSelect.value;
-				// Apply the selected layout after a short delay to ensure visualization is ready
-				setTimeout(() => {
-					if (this.visualization && this.visualization.cy) {
-						this.visualization.cy
-							.layout({ name: selectedLayout, animate: false })
-							.run();
-					}
-				}, 300);
-			}
-		};
+				// Visualization initialized successfully
 
-		// Start the initialization process
-		initVisualization();
+				// Mark visualization as ready and process any queued events
+				this.isVisualizationReady = true;
+				this.processEventQueue();
+
+				// Apply the currently selected layout only if there are nodes
+				const layoutSelect = document.querySelector('#layoutSelect');
+				if (layoutSelect && this.visualization.isInitialized()) {
+					const selectedLayout = layoutSelect.value;
+					// Apply the selected layout after a short delay to ensure visualization is ready
+					setTimeout(() => {
+						if (
+							this.visualization &&
+							this.visualization.cy &&
+							this.visualization.cy.nodes().length > 0
+						) {
+							this.visualization.cy
+								.layout({
+									name: selectedLayout,
+									animate: false,
+								})
+								.run();
+						}
+					}, 300);
+				}
+			};
+
+			// Start the initialization process
+			initVisualization();
+		}
 	}
 
 	// Room operations - these are now just UI state updates
-	// The actual room joining is handled by external services
+	// The actual room joining is handled by RoomController
 	joinRoom(roomName) {
-		// Don't change UI state here - wait for state change event
-		// Just dispatch the event for external handling
-		document.dispatchEvent(
-			new CustomEvent('ui:joinRoom', {
-				detail: roomName,
-			})
-		);
+		// Call controller method directly
+		this.controller.onJoinRoom(roomName);
 	}
 
 	leaveRoom() {
@@ -537,14 +550,18 @@ export class Room {
 			this.visualization = null;
 		}
 
+		// Reset visualization state to ensure fresh initialization on rejoin
+		this.isVisualizationReady = false;
+		this.eventQueue = [];
+
 		this.showRoomSelectionMode();
 
-		// Dispatch event for external handling
-		document.dispatchEvent(new CustomEvent('room:left'));
+		// Don't call controller method - this creates a circular call!
+		// The controller already called this method, so we don't need to call back
 	}
 
 	// Node operations
-	handleAddNode() {
+	handleNodeCreate() {
 		const nodeId = this.container.left
 			.querySelector('#nodeId')
 			.value.trim();
@@ -566,7 +583,7 @@ export class Room {
 		}
 
 		const nodeData = {
-			label: nodeLabel || 'Unnamed Node',
+			label: nodeLabel || '',
 			props: props,
 		};
 
@@ -574,30 +591,25 @@ export class Room {
 			nodeData.id = nodeId;
 		}
 
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('node:create', {
-				detail: { room: this.currentRoom, data: nodeData },
-			})
-		);
+		// Call controller method directly
+		this.controller.onNodeCreate({
+			room: this.currentRoom,
+			data: nodeData,
+		});
 	}
 
-	handleDeleteNode() {
+	handleNodeDelete() {
 		const nodeId = this.container.left
 			.querySelector('#nodeId')
 			.value.trim();
 		if (!nodeId) return;
 
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('node:delete', {
-				detail: { room: this.currentRoom, id: nodeId },
-			})
-		);
+		// Call controller method directly
+		this.controller.onNodeDelete({ room: this.currentRoom, id: nodeId });
 	}
 
 	// Edge operations
-	handleAddEdge() {
+	handleEdgeCreate() {
 		const edgeId = this.container.left
 			.querySelector('#edgeId')
 			.value.trim();
@@ -634,7 +646,7 @@ export class Room {
 		const edgeData = {
 			from: edgeFrom,
 			to: edgeTo,
-			label: edgeLabel || 'Unnamed Edge',
+			label: edgeLabel || '',
 			direction: edgeDirection,
 			props: props,
 		};
@@ -643,36 +655,27 @@ export class Room {
 			edgeData.id = edgeId;
 		}
 
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('edge:create', {
-				detail: { room: this.currentRoom, data: edgeData },
-			})
-		);
+		// Call controller method directly
+		this.controller.onEdgeCreate({
+			room: this.currentRoom,
+			data: edgeData,
+		});
 	}
 
-	handleDeleteEdge() {
+	handleEdgeDelete() {
 		const edgeId = this.container.left
 			.querySelector('#edgeId')
 			.value.trim();
 		if (!edgeId) return;
 
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('edge:delete', {
-				detail: { room: this.currentRoom, id: edgeId },
-			})
-		);
+		// Call controller method directly
+		this.controller.onEdgeDelete({ room: this.currentRoom, id: edgeId });
 	}
 
 	// Import/Export
 	handleExport() {
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('graph:export', {
-				detail: { room: this.currentRoom },
-			})
-		);
+		// Call controller method directly
+		this.controller.handleGraphExport({ room: this.currentRoom });
 	}
 
 	handleImport(event) {
@@ -683,12 +686,11 @@ export class Room {
 		reader.onload = (e) => {
 			try {
 				const data = JSON.parse(e.target.result);
-				// Dispatch event for external handling
-				document.dispatchEvent(
-					new CustomEvent('graph:import', {
-						detail: { room: this.currentRoom, data: data },
-					})
-				);
+				// Call controller method directly
+				this.controller.handleGraphImport({
+					room: this.currentRoom,
+					data: data,
+				});
 			} catch (error) {
 				console.error('Failed to parse import file:', error);
 			}
@@ -697,49 +699,35 @@ export class Room {
 	}
 
 	handleClearLocal() {
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('graph:clearLocal', {
-				detail: { room: this.currentRoom },
-			})
-		);
+		// Call controller method directly
+		this.controller.handleGraphClearLocal({ room: this.currentRoom });
 	}
 
 	// Graph operations
 	handleSearch(query) {
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('graph:search', {
-				detail: { room: this.currentRoom, query: query },
-			})
-		);
+		// Call controller method directly
+		this.controller.handleGraphSearch({
+			room: this.currentRoom,
+			query: query,
+		});
 	}
 
 	handleClearSearch() {
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('graph:clearSearch', {
-				detail: { room: this.currentRoom },
-			})
-		);
+		// Call controller method directly
+		this.controller.handleGraphClearSearch({ room: this.currentRoom });
 	}
 
 	handleLayoutChange(layout) {
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('graph:layoutChange', {
-				detail: { room: this.currentRoom, layout: layout },
-			})
-		);
+		// Call controller method directly
+		this.controller.handleGraphLayoutChange({
+			room: this.currentRoom,
+			layout: layout,
+		});
 	}
 
 	handleFitGraph() {
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('graph:fit', {
-				detail: { room: this.currentRoom },
-			})
-		);
+		// Call controller method directly
+		this.controller.handleGraphFit({ room: this.currentRoom });
 	}
 
 	// Public methods for external updates
@@ -797,5 +785,276 @@ export class Room {
 		if (edgePropsInput && data.props) {
 			edgePropsInput.value = JSON.stringify(data.props, null, 2);
 		}
+	}
+
+	// ===== HANDLER METHODS (called by controller) =====
+
+	// Room state management methods called by controller
+	handleRoomJoined(roomName) {
+		if (this.currentMode !== 'room-mode') {
+			this.currentRoom = roomName;
+			this.setMode('room-mode');
+		} else {
+			console.log(
+				'🎨 ROOM: handleRoomJoined called but already in room mode'
+			);
+		}
+	}
+
+	handleRoomLeft() {
+		this.currentRoom = null;
+		this.setMode('room-selection');
+	}
+
+	// UI update methods called by controller
+	handleResizeGraph() {
+		if (this.visualization && this.visualization.isInitialized()) {
+			this.visualization.resize();
+		}
+	}
+
+	handleUpdateNodeForm(data) {
+		this.updateNodeForm(data);
+	}
+
+	handleUpdateEdgeForm(data) {
+		this.updateEdgeForm(data);
+	}
+
+	// State change method called by controller
+	handleStateChange(stateData) {
+		// Handle any state changes that affect the UI
+	}
+
+	// UI join room method called by controller
+	handleJoinRoom() {
+		this.setMode('connecting');
+	}
+
+	// Process queued events when visualization becomes ready
+	processEventQueue() {
+		if (this.eventQueue.length === 0) return;
+
+		// Process all queued events
+		while (this.eventQueue.length > 0) {
+			const event = this.eventQueue.shift();
+			const { type, data } = event;
+
+			switch (type) {
+				case 'addNode':
+					this.handleAddNode(data);
+					break;
+				case 'removeNode':
+					this.handleRemoveNode(data);
+					break;
+				case 'addEdge':
+					this.handleAddEdge(data);
+					break;
+				case 'removeEdge':
+					this.handleRemoveEdge(data);
+					break;
+				case 'clearGraph':
+					this.handleClearGraph();
+					break;
+				default:
+					console.warn('🎨 ROOM: Unknown queued event type:', type);
+			}
+		}
+	}
+
+	// Queue an event if visualization isn't ready
+	queueEvent(type, data) {
+		this.eventQueue.push({ type, data });
+	}
+
+	handleClearGraph() {
+		// If visualization isn't ready, queue the request
+		if (!this.visualization || !this.visualization.isInitialized()) {
+			this.queueEvent('clearGraph');
+			return;
+		}
+		this.visualization.clearGraph();
+	}
+
+	syncAddNode(nodeData) {
+		// If visualization isn't ready, queue the update for later
+		if (!this.visualization || !this.visualization.isInitialized()) {
+			this.queueEvent('addNode', nodeData);
+			return;
+		}
+
+		// Add node immediately instead of debouncing
+		// Debouncing was causing nodes to be canceled when multiple came in
+		if (this.visualization && this.visualization.isInitialized()) {
+			this.visualization.addNode(nodeData.data);
+		}
+	}
+
+	syncRemoveNode(nodeData) {
+		// If visualization isn't ready, queue the request
+		if (!this.visualization || !this.visualization.isInitialized()) {
+			this.queueEvent('removeNode', nodeData);
+			return;
+		}
+
+		if (this.graphUpdateTimers.removeNode) {
+			clearTimeout(this.graphUpdateTimers.removeNode);
+		}
+
+		this.graphUpdateTimers.removeNode = setTimeout(() => {
+			if (this.visualization && this.visualization.isInitialized()) {
+				this.visualization.removeNode(nodeData.id);
+			}
+		}, this.DEBOUNCE_DELAY);
+	}
+
+	syncAddEdge(edgeData) {
+		// If visualization isn't ready, queue the request
+		if (!this.visualization || !this.visualization.isInitialized()) {
+			this.queueEvent('addEdge', edgeData);
+			return;
+		}
+
+		if (this.graphUpdateTimers.addEdge) {
+			clearTimeout(this.graphUpdateTimers.addEdge);
+		}
+
+		this.graphUpdateTimers.addEdge = setTimeout(() => {
+			if (this.visualization && this.visualization.isInitialized()) {
+				this.visualization.addEdge(edgeData.data);
+			}
+		}, this.DEBOUNCE_DELAY);
+	}
+
+	syncRemoveEdge(edgeData) {
+		// If visualization isn't ready, queue the request
+		if (!this.visualization || !this.visualization.isInitialized()) {
+			this.queueEvent('removeEdge', edgeData);
+			return;
+		}
+
+		if (this.graphUpdateTimers.removeEdge) {
+			clearTimeout(this.graphUpdateTimers.removeEdge);
+		}
+
+		this.graphUpdateTimers.removeEdge = setTimeout(() => {
+			if (this.visualization && this.visualization.isInitialized()) {
+				this.visualization.removeEdge(edgeData.id);
+			}
+		}, this.DEBOUNCE_DELAY);
+	}
+
+	handleResizeGraph() {
+		if (this.visualization && this.visualization.isInitialized()) {
+			setTimeout(() => {
+				if (this.visualization.cy) {
+					this.visualization.cy.resize();
+				}
+			}, 100);
+		}
+	}
+
+	handleUpdateNodeForm(detail) {
+		this.updateNodeForm(detail.data);
+	}
+
+	handleUpdateEdgeForm(detail) {
+		this.updateEdgeForm(detail.data);
+	}
+
+	destroy() {
+		// Clean up local UI event listeners
+		// Room list events
+		const joinButtons =
+			this.container?.left?.querySelectorAll('.join-room-btn');
+		if (joinButtons) {
+			joinButtons.forEach((button) => {
+				button.removeEventListener('click', this.joinRoom);
+			});
+		}
+
+		const roomCards = this.container?.left?.querySelectorAll('.room-card');
+		if (roomCards) {
+			roomCards.forEach((card) => {
+				card.removeEventListener('click', this.joinRoom);
+			});
+		}
+
+		// Edit panel events
+		const addNodeBtn = this.container?.left?.querySelector('#addNode');
+		if (addNodeBtn) {
+			addNodeBtn.removeEventListener('click', this.handleNodeCreate);
+		}
+
+		const delNodeBtn = this.container?.left?.querySelector('#delNode');
+		if (delNodeBtn) {
+			delNodeBtn.removeEventListener('click', this.handleDeleteNode);
+		}
+
+		const addEdgeBtn = this.container?.left?.querySelector('#addEdge');
+		if (addEdgeBtn) {
+			addEdgeBtn.removeEventListener('click', this.handleAddEdge);
+		}
+
+		const delEdgeBtn = this.container?.left?.querySelector('#delEdge');
+		if (delEdgeBtn) {
+			delEdgeBtn.removeEventListener('click', this.handleEdgeDelete);
+		}
+
+		const exportBtn = this.container?.left?.querySelector('#exportBtn');
+		if (exportBtn) {
+			exportBtn.removeEventListener('click', this.handleExport);
+		}
+
+		const importFile = this.container?.left?.querySelector('#importFile');
+		if (importFile) {
+			importFile.removeEventListener('change', this.handleImport);
+		}
+
+		const clearLocalBtn =
+			this.container?.left?.querySelector('#clearLocal');
+		if (clearLocalBtn) {
+			clearLocalBtn.removeEventListener('click', this.handleClearLocal);
+		}
+
+		// Graph panel events
+		const searchInput = this.container?.left?.querySelector('#searchNode');
+		if (searchInput) {
+			searchInput.removeEventListener('input', this.handleSearch);
+		}
+
+		const clearSearchBtn =
+			this.container?.left?.querySelector('#clearSearch');
+		if (clearSearchBtn) {
+			clearSearchBtn.removeEventListener('click', this.handleClearSearch);
+		}
+
+		const layoutSelect =
+			this.container?.left?.querySelector('#layoutSelect');
+		if (layoutSelect) {
+			layoutSelect.removeEventListener('change', this.handleLayoutChange);
+		}
+
+		const fitGraphBtn = this.container?.left?.querySelector('#fitGraph');
+		if (fitGraphBtn) {
+			fitGraphBtn.removeEventListener('click', this.handleFitGraph);
+		}
+
+		// Clean up debounce timers
+		if (this.graphUpdateTimers) {
+			Object.values(this.graphUpdateTimers).forEach((timer) => {
+				if (timer) clearTimeout(timer);
+			});
+		}
+
+		// Clean up visualization
+		if (this.visualization && this.visualization.isInitialized()) {
+			this.visualization.destroy();
+			this.visualization = null;
+		}
+
+		// Reset state
+		this.isVisualizationReady = false;
+		this.eventQueue = [];
 	}
 }

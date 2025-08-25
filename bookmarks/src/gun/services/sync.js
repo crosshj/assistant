@@ -165,8 +165,26 @@ export class DataSync {
 						return;
 					}
 
-					// Use GunDBWrapper to clean the data (same as old working system)
-					const cleanData = this.gunWrapper.cleanNodeData(data);
+					// Debug: Log the raw data structure
+					log(`🔍 Raw node data for ${shortId}:`, data);
+					log(
+						`🔍 Raw node data keys: [${Object.keys(data || {}).join(
+							', '
+						)}]`
+					);
+
+					// TEMPORARY: Skip data cleaning to debug the issue
+					// const cleanData = this.gunWrapper.cleanNodeData(data);
+
+					// Create a minimal clean data structure for now
+					const cleanData = {
+						id: id,
+						label: data?.label || 'unnamed',
+						props: data?.props || {},
+					};
+
+					// Debug: Log the cleaned data
+					log(`🧹 Cleaned node data for ${shortId}:`, cleanData);
 
 					// Truncate the ID for display but keep full ID in data
 					const label = cleanData?.label || 'unnamed';
