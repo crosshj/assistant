@@ -2,7 +2,7 @@ import { html } from '../lib/utils.js';
 import './Header.css';
 
 export class Header {
-	constructor(controller) {
+	constructor({ controller }) {
 		this.controller = controller;
 		this.container = null;
 		this.elements = {};
@@ -21,12 +21,11 @@ export class Header {
 
 		// Create the header DOM structure
 		this.container.innerHTML = html`
-			<div class="row">
+			<div class="header-row">
 				<!-- Network/Connection Section (FIRST position - always visible) -->
 				<div
-					class="row-item"
+					class="header-row-item network-section"
 					id="networkSection"
-					style="display: flex; gap: 0.5rem; align-items: center"
 				>
 					<strong>Network</strong>
 
@@ -41,12 +40,12 @@ export class Header {
 
 					<!-- Connection Controls (shown conditionally) -->
 					<div
+						class="connection-controls"
 						id="connectionControls"
-						style="display: none"
 					>
 						<input
 							id="peers"
-							size="40"
+							class="input-size-40"
 							placeholder="Peer URLs"
 						/>
 					</div>
@@ -54,8 +53,7 @@ export class Header {
 					<!-- Connect Button (shown when disconnected or partial) -->
 					<button
 						id="connectBtn"
-						class="primary"
-						style="display: none"
+						class="primary connect-btn"
 					>
 						Connect
 					</button>
@@ -63,8 +61,7 @@ export class Header {
 					<!-- Disconnect Button (shown when connected) -->
 					<button
 						id="disconnectBtn"
-						class="secondary"
-						style="display: none"
+						class="secondary disconnect-btn"
 					>
 						Disconnect
 					</button>
@@ -72,8 +69,7 @@ export class Header {
 					<!-- Test Button (shown when needed) -->
 					<button
 						id="testConnection"
-						class="secondary"
-						style="display: none"
+						class="secondary test-btn"
 					>
 						Test
 					</button>
@@ -83,32 +79,25 @@ export class Header {
 
 				<!-- Room Management Section (SECOND position, hidden when not connected) -->
 				<div
-					class="row-item"
+					class="header-row-item room-section"
 					id="roomSection"
-					style="
-						display: flex;
-						visibility: hidden;
-						gap: 0.5rem;
-						align-items: center;
-						justify-content: center;
-					"
 				>
 					<strong>Room</strong>
 					<!-- Loading state (shown initially) -->
 					<div
+						class="room-loading"
 						id="roomLoading"
-						style="display: flex; gap: 0.5rem; align-items: center;"
 					>
 						<span class="loading-text">Loading...</span>
 					</div>
 					<!-- Room input and join button (shown when not in a room) -->
 					<div
+						class="room-inputs"
 						id="roomInputs"
-						style="display: none; gap: 0.5rem; align-items: center;"
 					>
 						<input
 							id="room"
-							size="14"
+							class="input-size-14"
 							placeholder="graph-room"
 						/>
 						<button
@@ -120,8 +109,8 @@ export class Header {
 					</div>
 					<!-- Room status pill and leave button (shown when in a room) -->
 					<div
+						class="room-status"
 						id="roomStatus"
-						style="display: none; gap: 0.5rem; align-items: center;"
 					>
 						<span
 							class="pill mono room-pill"
@@ -140,32 +129,24 @@ export class Header {
 					</div>
 				</div>
 				<div
-					class="header-divider"
+					class="header-divider room-divider"
 					id="roomDivider"
-					style="visibility: hidden"
 				></div>
 
 				<!-- Authentication Section (visibility controlled by auth status) -->
 				<div
-					class="row-item"
+					class="header-row-item auth-section"
 					id="authSection"
-					style="
-						display: flex;
-						visibility: visible;
-						align-items: center;
-						gap: 0.5rem;
-						justify-content: flex-end;
-					"
 				>
 					<strong>Identity</strong>
 					<!-- Identity inputs and buttons (shown when not authenticated) -->
 					<div
+						class="identity-inputs"
 						id="identityInputs"
-						style="display: flex; gap: 0.5rem; align-items: center;"
 					>
 						<input
 							id="alias"
-							size="10"
+							class="input-size-10"
 							placeholder="alias"
 						/>
 						<button id="createPair">New ID</button>
@@ -173,8 +154,8 @@ export class Header {
 					</div>
 					<!-- Identity status pill (shown when authenticated) -->
 					<div
+						class="identity-status"
 						id="identityStatus"
-						style="display: none;"
 					>
 						<span
 							class="pill mono identity-pill"
@@ -225,9 +206,9 @@ export class Header {
 			this.elements.roomInputs &&
 			this.elements.roomStatus
 		) {
-			this.elements.roomLoading.style.display = 'flex';
-			this.elements.roomInputs.style.display = 'none';
-			this.elements.roomStatus.style.display = 'none';
+			this.elements.roomLoading.classList.add('visible');
+			this.elements.roomInputs.classList.remove('room-inputs--visible');
+			this.elements.roomStatus.classList.remove('room-status--visible');
 		}
 	}
 
@@ -344,9 +325,9 @@ export class Header {
 
 		// Hide the pill completely when disconnected, show it otherwise
 		if (status === 'disconnected' || !displayText) {
-			this.elements.connectionStatus.style.display = 'none';
+			this.elements.connectionStatus.classList.add('hidden');
 		} else {
-			this.elements.connectionStatus.style.display = 'inline-block';
+			this.elements.connectionStatus.classList.remove('hidden');
 			this.elements.connectionStatus.textContent = displayText;
 			// Update status classes for color coding
 			this.elements.connectionStatus.className = `pill mono ${statusClass}`;
@@ -354,44 +335,58 @@ export class Header {
 
 		// Show/hide connection controls based on status
 		if (status === 'connected') {
-			this.elements.connectionControls.style.display = 'none';
-			this.elements.connectBtn.style.display = 'none';
-			this.elements.disconnectBtn.style.display = 'inline-block';
-			this.elements.testConnection.style.display = 'none'; // Only show disconnect button when connected
+			this.elements.connectionControls.classList.remove(
+				'connection-controls--visible'
+			);
+			this.elements.connectBtn.classList.remove('connect-btn--visible');
+			this.elements.disconnectBtn.classList.add(
+				'disconnect-btn--visible'
+			);
+			this.elements.testConnection.classList.remove('test-btn--visible'); // Only show disconnect button when connected
 
 			// Show auth section immediately
-			this.elements.authSection.style.visibility = 'visible';
+			this.elements.authSection.classList.remove('auth-section--hidden');
 
 			// Show room section but keep it in loading state
-			this.elements.roomSection.style.visibility = 'visible';
-			this.elements.roomDivider.style.visibility = 'visible';
+			this.elements.roomSection.classList.add('room-section--visible');
+			this.elements.roomDivider.classList.add('room-divider--visible');
 
 			// Show the room pane when connected
 			document.dispatchEvent(new CustomEvent('ui:roomPaneConnected'));
 		} else if (status === 'disconnected') {
 			// Show only the buttons, not the peer input
-			this.elements.peers.style.display = 'none';
-			this.elements.connectBtn.style.display = 'inline-block';
-			this.elements.disconnectBtn.style.display = 'none';
-			this.elements.testConnection.style.display = 'inline-block';
+			this.elements.connectionControls.classList.remove(
+				'connection-controls--visible'
+			);
+			this.elements.connectBtn.classList.add('connect-btn--visible');
+			this.elements.disconnectBtn.classList.remove(
+				'disconnect-btn--visible'
+			);
+			this.elements.testConnection.classList.add('test-btn--visible');
 
 			// Hide room section but show auth section if user is authenticated
-			this.elements.roomSection.style.visibility = 'hidden';
-			this.elements.roomDivider.style.visibility = 'hidden';
-			// Don't hide auth section here - let updateAuthStatus handle it
+			this.elements.roomSection.classList.remove('room-section--visible');
+			this.elements.roomDivider.classList.remove('room-divider--visible');
+			
+			// Reset auth status to not authenticated when disconnected
+			this.updateAuthStatus(null);
 
 			// Hide the room pane when disconnected
 			document.dispatchEvent(new CustomEvent('ui:roomPaneDisconnected'));
 		} else if (status === 'connecting') {
 			// Hide all controls when connecting - only show the "Connecting..." pill
-			this.elements.connectionControls.style.display = 'none';
-			this.elements.connectBtn.style.display = 'none';
-			this.elements.disconnectBtn.style.display = 'none';
-			this.elements.testConnection.style.display = 'none';
+			this.elements.connectionControls.classList.remove(
+				'connection-controls--visible'
+			);
+			this.elements.connectBtn.classList.remove('connect-btn--visible');
+			this.elements.disconnectBtn.classList.remove(
+				'disconnect-btn--visible'
+			);
+			this.elements.testConnection.classList.remove('test-btn--visible');
 
 			// Hide room section but show auth section if user is authenticated
-			this.elements.roomSection.style.visibility = 'hidden';
-			this.elements.roomDivider.style.visibility = 'hidden';
+			this.elements.roomSection.classList.remove('room-section--visible');
+			this.elements.roomDivider.classList.remove('room-divider--visible');
 			// Don't hide auth section here - let updateAuthStatus handle it
 		}
 	}
@@ -405,12 +400,12 @@ export class Header {
 			return;
 
 		// Hide loading state when we get any room state
-		this.elements.roomLoading.style.display = 'none';
+		this.elements.roomLoading.classList.remove('visible');
 
 		if (status === 'joining') {
 			// Show joining state
-			this.elements.roomInputs.style.display = 'none';
-			this.elements.roomStatus.style.display = 'flex';
+			this.elements.roomInputs.classList.remove('room-inputs--visible');
+			this.elements.roomStatus.classList.add('room-status--visible');
 
 			// Update room pill to show joining
 			if (this.elements.roomName) {
@@ -418,8 +413,8 @@ export class Header {
 			}
 		} else if (status === 'joined' && roomState && roomState.name) {
 			// Show room status pill and leave button
-			this.elements.roomInputs.style.display = 'none';
-			this.elements.roomStatus.style.display = 'flex';
+			this.elements.roomInputs.classList.remove('room-inputs--visible');
+			this.elements.roomStatus.classList.add('room-status--visible');
 
 			// Update room pill content
 			if (this.elements.roomName) {
@@ -427,8 +422,8 @@ export class Header {
 			}
 		} else if (status === 'not_joined') {
 			// Show room input and join button
-			this.elements.roomInputs.style.display = 'flex';
-			this.elements.roomStatus.style.display = 'none';
+			this.elements.roomInputs.classList.add('room-inputs--visible');
+			this.elements.roomStatus.classList.remove('room-status--visible');
 		}
 	}
 
@@ -438,8 +433,10 @@ export class Header {
 
 		if (status && status.alias && status.alias !== 'anon') {
 			// Show identity status pill
-			this.elements.identityInputs.style.display = 'none';
-			this.elements.identityStatus.style.display = 'block';
+			this.elements.identityInputs.classList.add('hidden');
+			this.elements.identityStatus.classList.add(
+				'identity-status--visible'
+			);
 
 			// Update identity pill content
 			if (this.elements.identityName) {
@@ -448,16 +445,20 @@ export class Header {
 
 			// Show the entire auth section when authenticated
 			if (this.elements.authSection) {
-				this.elements.authSection.style.visibility = 'visible';
+				this.elements.authSection.classList.remove(
+					'auth-section--hidden'
+				);
 			}
 		} else {
 			// Show identity inputs and buttons
-			this.elements.identityInputs.style.display = 'flex';
-			this.elements.identityStatus.style.display = 'none';
+			this.elements.identityInputs.classList.remove('hidden');
+			this.elements.identityStatus.classList.remove(
+				'identity-status--visible'
+			);
 
 			// Hide the entire auth section when not authenticated
 			if (this.elements.authSection) {
-				this.elements.authSection.style.visibility = 'hidden';
+				this.elements.authSection.classList.add('auth-section--hidden');
 			}
 		}
 	}
@@ -478,16 +479,9 @@ export class Header {
 
 	// ===== INITIALIZATION =====
 
-	setInitialValues() {
-		// Set initial peer values
-		if (
-			this.elements.peers &&
-			this.controller.connection &&
-			this.controller.connection.getDefaultPeers
-		) {
-			this.elements.peers.value = this.controller.connection
-				.getDefaultPeers()
-				.join(',');
+	setInitialPeers(peers) {
+		if (this.elements.peers) {
+			this.elements.peers.value = peers;
 		}
 	}
 }

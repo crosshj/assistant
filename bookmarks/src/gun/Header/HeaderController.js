@@ -1,10 +1,15 @@
+import { Header } from './Header.js';
+
 export class HeaderController {
-	constructor(header, connection, auth, stateManager) {
-		this.header = header;
+	constructor(connection, auth, stateManager) {
 		this.connection = connection;
 		this.auth = auth;
 		this.stateManager = stateManager;
 		this.currentConnectionStatus = 'disconnected'; // Track current state
+
+		// Create Header component with controller reference
+		this.ui = new Header({ controller: this });
+
 		this.setupEventListeners();
 	}
 
@@ -171,17 +176,17 @@ export class HeaderController {
 		}
 
 		// Delegate to Header component - controller should not manipulate UI directly
-		this.header.updateConnectionStatus(status, networkState);
+		this.ui.updateConnectionStatus(status, networkState);
 	}
 
 	updateRoomStatus(status, roomState = null) {
 		// Delegate to Header component - controller should not manipulate UI directly
-		this.header.updateRoomStatus(status, roomState);
+		this.ui.updateRoomStatus(status, roomState);
 	}
 
 	updateAuthStatus(status) {
 		// Delegate to Header component - controller should not manipulate UI directly
-		this.header.updateAuthStatus(status);
+		this.ui.updateAuthStatus(status);
 	}
 
 	// ===== PUBLIC METHODS FOR EXTERNAL UPDATES =====
@@ -201,11 +206,10 @@ export class HeaderController {
 	// ===== INITIALIZATION =====
 
 	setInitialValues() {
-		// Set initial peer values
-		if (this.header.elements.peers && this.connection.getDefaultPeers) {
-			this.header.elements.peers.value = this.connection
-				.getDefaultPeers()
-				.join(',');
+		// Set initial peer values via component method
+		if (this.connection.getDefaultPeers) {
+			const defaultPeers = this.connection.getDefaultPeers().join(',');
+			this.ui.setInitialPeers(defaultPeers);
 		}
 
 		// Render initial state if stateManager is available

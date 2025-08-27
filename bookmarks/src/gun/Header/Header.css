@@ -11,7 +11,7 @@ header {
 	z-index: 100;
 }
 
-header .row {
+.header-row {
 	display: flex;
 	gap: 0.5rem;
 	flex-wrap: wrap;
@@ -19,7 +19,7 @@ header .row {
 	width: 100%;
 }
 
-header .row-item {
+.header-row-item {
 	flex: 1;
 }
 
@@ -213,4 +213,198 @@ header .identity-icon {
 	header .row > * {
 		width: 100%;
 	}
+}
+
+/* Header Layout */
+.header-row {
+	display: flex;
+}
+
+.header-row-item {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.header-row-item--center {
+	justify-content: center;
+}
+
+.header-row-item--end {
+	justify-content: flex-end;
+}
+
+/* Network Section */
+.network-section {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.connection-controls {
+	display: none;
+}
+
+.connection-controls--visible {
+	display: block;
+}
+
+.connect-btn {
+	display: none;
+}
+
+.connect-btn--visible {
+	display: inline-block;
+}
+
+.disconnect-btn {
+	display: none;
+}
+
+.disconnect-btn--visible {
+	display: inline-block;
+}
+
+.test-btn {
+	display: none;
+}
+
+.test-btn--visible {
+	display: inline-block;
+}
+
+/* Room Section */
+.room-section {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	justify-content: center;
+	visibility: hidden;
+}
+
+.room-section--visible {
+	visibility: visible;
+}
+
+.room-loading {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.room-inputs {
+	display: none;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.room-inputs--visible {
+	display: flex;
+}
+
+.room-status {
+	display: none;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.room-status--visible {
+	display: flex;
+}
+
+.room-divider {
+	visibility: hidden;
+}
+
+.room-divider--visible {
+	visibility: visible;
+}
+
+/* Auth Section */
+.auth-section {
+	display: flex;
+	visibility: visible;
+	align-items: center;
+	gap: 0.5rem;
+	justify-content: flex-end;
+}
+
+.auth-section--hidden {
+	visibility: hidden;
+}
+
+.identity-inputs {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.identity-status {
+	display: none;
+}
+
+.identity-status--visible {
+	display: block;
+}
+
+/* Input Sizes */
+.input-size-10 {
+	width: 6.25rem; /* 10 * 0.625rem (typical character width) */
+}
+
+.input-size-14 {
+	width: 8.75rem; /* 14 * 0.625rem */
+}
+
+.input-size-40 {
+	width: 25rem; /* 40 * 0.625rem */
+}
+
+/* Utility Classes */
+.hidden {
+	display: none !important;
+}
+
+.visible {
+	display: block !important;
+}
+
+.flex {
+	display: flex !important;
+}
+
+.flex-center {
+	display: flex !important;
+	justify-content: center !important;
+}
+
+.flex-end {
+	display: flex !important;
+	justify-content: flex-end !important;
+}
+
+/* Connection Status Pill */
+#connectionStatus {
+	display: inline-block;
+}
+
+#connectionStatus.hidden {
+	display: none !important;
+}
+
+/* Identity Section Elements */
+#identityInputs {
+	display: flex;
+}
+
+#identityInputs.hidden {
+	display: none !important;
+}
+
+#identityStatus {
+	display: none;
+}
+
+#identityStatus.identity-status--visible {
+	display: block;
 }

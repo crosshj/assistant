@@ -30,7 +30,7 @@ export class RoomController {
 		this.visualization = null;
 
 		// Create Room component with controller reference
-		this.roomComponent = new Room({ controller: this });
+		this.ui = new Room({ controller: this });
 
 		// Bind methods to preserve context
 		this.onJoinRoom = this.onJoinRoom.bind(this);
@@ -38,24 +38,12 @@ export class RoomController {
 		this.onRoomStatusChanged = this.onRoomStatusChanged.bind(this);
 
 		// Bind room component methods for event listeners
-		this.handleRoomLeft = this.roomComponent.handleRoomLeft.bind(
-			this.roomComponent
-		);
-		this.handleClearGraph = this.roomComponent.handleClearGraph.bind(
-			this.roomComponent
-		);
-		this.syncAddNode = this.roomComponent.syncAddNode.bind(
-			this.roomComponent
-		);
-		this.syncRemoveNode = this.roomComponent.syncRemoveNode.bind(
-			this.roomComponent
-		);
-		this.syncAddEdge = this.roomComponent.syncAddEdge.bind(
-			this.roomComponent
-		);
-		this.syncRemoveEdge = this.roomComponent.syncRemoveEdge.bind(
-			this.roomComponent
-		);
+		this.handleRoomLeft = this.ui.handleRoomLeft.bind(this.ui);
+		this.handleClearGraph = this.ui.handleClearGraph.bind(this.ui);
+		this.syncAddNode = this.ui.syncAddNode.bind(this.ui);
+		this.syncRemoveNode = this.ui.syncRemoveNode.bind(this.ui);
+		this.syncAddEdge = this.ui.syncAddEdge.bind(this.ui);
+		this.syncRemoveEdge = this.ui.syncRemoveEdge.bind(this.ui);
 
 		// Graph operations are still handled via roomService events for now
 		this.handleGraphExport = this.handleGraphExport.bind(this);
@@ -81,14 +69,14 @@ export class RoomController {
 		});
 		document.addEventListener('ui:leaveRoom', () => {
 			this.roomService.leaveRoom();
-			this.roomComponent.leaveRoom();
+			this.ui.leaveRoom();
 		});
 		document.addEventListener('room:left', this.handleRoomLeft);
 
 		// Room pane events from Header
 		document.addEventListener('ui:showConnectingSpinner', () => {
 			// Show connecting spinner when user actively clicks Connect
-			this.roomComponent.showConnectingSpinner();
+			this.ui.showConnectingSpinner();
 		});
 
 		// Sync events
@@ -120,7 +108,7 @@ export class RoomController {
 						!this.currentRoom &&
 						!this.stateManager.isAutoJoining()
 					) {
-						this.roomComponent.setMode('room-selection');
+						this.ui.setMode('room-selection');
 					}
 					// If auto-join is happening, stay in connecting mode until it completes
 				} else if (
@@ -128,7 +116,7 @@ export class RoomController {
 					state.network.status === 'connecting'
 				) {
 					// Show connecting mode when disconnected or connecting (blank the room pane)
-					this.roomComponent.setMode('connecting');
+					this.ui.setMode('connecting');
 				}
 			}
 		});
@@ -161,11 +149,11 @@ export class RoomController {
 
 	onLeaveRoom() {
 		this.roomService.leaveRoom();
-		this.roomComponent.leaveRoom();
+		this.ui.leaveRoom();
 	}
 
 	onRoomLeft() {
-		this.roomComponent.handleRoomLeft();
+		this.ui.handleRoomLeft();
 	}
 
 	onNodeCreate(detail) {
@@ -193,7 +181,7 @@ export class RoomController {
 			this.currentRoom = roomName;
 			this.stateManager.setRoomJoined(roomName);
 			this.updateRoomHash(roomName);
-			this.roomComponent.handleRoomJoined(roomName);
+			this.ui.handleRoomJoined(roomName);
 			if (this.roomService.isInRoom() && this.syncService) {
 				this.syncService.subscribeToRoom();
 			}
@@ -201,7 +189,7 @@ export class RoomController {
 			this.currentRoom = roomName;
 			this.stateManager.setRoomJoined(roomName);
 			this.updateRoomHash(roomName);
-			this.roomComponent.handleRoomJoined(roomName);
+			this.ui.handleRoomJoined(roomName);
 			if (this.roomService.isInRoom() && this.syncService) {
 				this.syncService.subscribeToRoom();
 			}
@@ -209,7 +197,7 @@ export class RoomController {
 			this.currentRoom = null;
 			this.stateManager.setRoomLeft();
 			this.updateRoomHash(null);
-			this.roomComponent.handleRoomLeft();
+			this.ui.handleRoomLeft();
 		}
 	}
 

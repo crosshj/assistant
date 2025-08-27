@@ -10,8 +10,6 @@ import { GraphOperations } from './services/graphOperations.js';
 import { DataSync } from './services/sync.js';
 
 // Import new UI components
-import { Header } from './Header/Header.js';
-import { Room } from './Room/Room.js';
 import { Activity } from './Activity/Activity.js';
 import { ConnectionDetails } from './ConnectionDetails/ConnectionDetails.js';
 import { PropsManager } from './services/PropsManager.js';
@@ -78,11 +76,10 @@ class GunApp {
 		);
 
 		// Initialize remaining UI components after services are ready
-		this.room = new Room(this.graph, this.connection);
 		this.connectionDetails = new ConnectionDetails(this.connection);
 		this.propsManager = new PropsManager();
 
-		// Initialize controllers
+		// Initialize controllers (they create their own components)
 		this.roomController = new RoomController(
 			this.rooms,
 			this.sync,
@@ -91,15 +88,25 @@ class GunApp {
 			this.graph
 		);
 
-		// Initialize HeaderController and Header
+		// Initialize HeaderController (creates its own Header component)
 		this.headerController = new HeaderController(
-			null, // Will be set after Header creation
 			this.connection,
 			this.auth,
 			this.stateManager
 		);
-		this.header = new Header(this.headerController);
-		this.headerController.header = this.header; // Set the header reference
+
+		// Get component references from controllers
+		this.room = this.roomController.ui; // TODO: this is BAD, we don't want room UI being accessed directly!!!
+		this.header = this.headerController.ui; // TODO: this is BAD, we don't want header UI being accessed directly!!!
+
+		// ARCHITECTURAL ISSUE TO FIX:
+		// gun.js should NEVER directly access UI components. This violates separation of concerns.
+		// Instead, gun.js should:
+		// 1. Only interact with controllers
+		// 2. Controllers handle UI updates
+		// 3. UI components are completely encapsulated
+		//
+		// TODO: Remove these direct UI references and ensure all UI updates go through controllers
 
 		// Initialize event coordination
 		this.eventCoordinator = new EventCoordinator(
