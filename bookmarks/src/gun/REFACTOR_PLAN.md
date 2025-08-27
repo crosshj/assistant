@@ -168,30 +168,35 @@ src/gun/
 
 #### **HeaderController**
 
--   Network connection/disconnection events
--   Room selection events
--   Authentication state management
--   Header visibility logic
+-   **Event wiring** - Connect DOM events to service calls
+-   **Minimal business logic** - Mainly coordinate between UI and services
+-   **Network connection/disconnection events**
+-   **Room selection events**
+-   **Authentication state management**
 
 #### **RoomController**
 
--   Room join/leave events
--   Visualization initialization/destruction
--   Node/edge CRUD events
--   Layout change events
--   Room state management
+-   **Event wiring** - Connect DOM events to service calls
+-   **Minimal business logic** - Mainly coordinate between UI and services
+-   **Room join/leave events**
+-   **Visualization initialization/destruction**
+-   **Node/edge CRUD events**
+-   **Layout change events**
 
 #### **ActivityController**
 
--   Activity log updates
--   Log clearing/copying
--   Activity state management
+-   **Event wiring** - Connect DOM events to service calls
+-   **Minimal business logic** - Mainly coordinate between UI and services
+-   **Activity log updates**
+-   **Log clearing/copying**
 
 #### **ConnectionDetailsController**
 
--   Peer connection events
--   Network status updates
--   Connection testing events
+-   **Event wiring** - Connect DOM events to service calls
+-   **Minimal business logic** - Mainly coordinate between UI and services
+-   **Peer connection events**
+-   **Network status updates**
+-   **Connection testing events**
 
 ### **Phase 2: Future Architecture (Document-Centric)**
 
@@ -259,21 +264,41 @@ src/gun/
 7. **Test controller integration** - ensure all functionality works through controllers
 8. **Prepare for gunWrapper refactoring** - once controllers are stable
 
-## **✅ PHASE 1 COMPLETED: RoomController Implementation**
+## **✅ PHASE 1 COMPLETED: Controller Architecture Implementation**
 
-**What Was Accomplished:**
+### **RoomController (COMPLETED):**
 
--   ✅ **RoomController Created** - Centralized all room-related business logic
--   ✅ **Event-Driven Architecture** - All communication now goes through events
--   ✅ **Clean Separation** - Room component is now pure UI, RoomController handles logic
+-   ✅ **RoomController Created** - Centralized all room-related event wiring
+-   ✅ **Event-Driven Architecture** - All external communication now goes through events
+-   ✅ **Clean Separation** - Room component is now pure UI, RoomController handles coordination
 -   ✅ **Direct Dependencies Eliminated** - gun.js no longer directly accesses Room component
 -   ✅ **Enhanced Edge Handling** - Improved edge direction management and form clearing
 -   ✅ **Form State Management** - Smart form clearing based on selection state
 
+### **HeaderController (COMPLETED):**
+
+-   ✅ **HeaderController Created** - Centralized all header-related event wiring
+-   ✅ **Event-Driven Architecture** - Listens to connection service events, coordinates UI updates
+-   ✅ **Clean Separation** - Header component is now pure UI, HeaderController handles coordination
+-   ✅ **Optimistic UI Updates** - Connect button immediately shows "Connecting..." state
+-   ✅ **Event Coordination** - Emits events for room pane visibility management
+-   ✅ **Service Integration** - Coordinates between Header UI and connection/auth services
+
+**Critical Controller Design Principles (ESTABLISHED):**
+
+-   ✅ **Controllers are event wiring hubs** - Connect DOM events to service calls
+-   ✅ **Minimal business logic** - Controllers coordinate, don't implement complex logic
+-   ✅ **Tight coupling with component** - Controller owns component instance (`this.room`, `this.header`)
+-   ✅ **External events → Controller → Component** via CustomEvents
+-   ✅ **User events → Component → Controller** via direct method calls
+-   ✅ **Controller → Services** via service method calls (intermediate step)
+-   ✅ **Future goal**: Controller → Services via DOM events (when architecture allows)
+
 **New Event Flow (IMPLEMENTED):**
 
 ```
-gun.js → CustomEvent → RoomController → CustomEvent → Room component
+gun.js → CustomEvent → RoomController → Direct calls → Room component
+User → Room component → Direct calls → RoomController → Service calls → Services
 ```
 
 **Architecture Changes (COMPLETED):**
@@ -290,9 +315,8 @@ gun.js → CustomEvent → RoomController → CustomEvent → Room component
 
 **Next Phase:**
 
--   **HeaderController** - extract event handling and business logic from Header.js
--   **ActivityController** - move activity log logic from Activity.js
--   **ConnectionDetailsController** - move connection event logic
+-   **ActivityController** - extract event handling and business logic from Activity.js
+-   **ConnectionDetailsController** - move connection event logic from ConnectionDetails.js
 -   **Test controller integration** - ensure all functionality works through controllers
 -   **Prepare for gunWrapper refactoring** - once all controllers are stable
 

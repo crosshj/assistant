@@ -18,6 +18,7 @@ import { PropsManager } from './services/PropsManager.js';
 
 // Import controllers
 import { RoomController } from './Room/RoomController.js';
+import { HeaderController } from './Header/HeaderController.js';
 
 // Main GunDB Application
 class GunApp {
@@ -78,7 +79,6 @@ class GunApp {
 
 		// Initialize remaining UI components after services are ready
 		this.room = new Room(this.graph, this.connection);
-		this.header = new Header(this.connection, this.auth, this.stateManager);
 		this.connectionDetails = new ConnectionDetails(this.connection);
 		this.propsManager = new PropsManager();
 
@@ -90,6 +90,16 @@ class GunApp {
 			this.stateManager,
 			this.graph
 		);
+
+		// Initialize HeaderController and Header
+		this.headerController = new HeaderController(
+			null, // Will be set after Header creation
+			this.connection,
+			this.auth,
+			this.stateManager
+		);
+		this.header = new Header(this.headerController);
+		this.headerController.header = this.header; // Set the header reference
 
 		// Initialize event coordination
 		this.eventCoordinator = new EventCoordinator(
@@ -339,12 +349,12 @@ class GunApp {
 		// this.visualization.init('cy'); // Moved to showInRoomMode()
 
 		// Setup component event handlers
-		this.header.setupEventHandlers();
+		this.headerController.setInitialValues();
 		// Event handlers are now set up in the Room component
 		// this.room.setupEventHandlers();
 
 		// Set initial values
-		this.header.setInitialValues();
+		this.headerController.setInitialValues();
 
 		// Setup clear log button
 		this.setupClearLogButton();

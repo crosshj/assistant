@@ -428,7 +428,11 @@ export class GunConnection {
 
 		// Reset connection status
 		this.connectionStatus = { connected: 0, total: 0 };
-		this.emit('connectionStatusChanged', { connected: 0, total: 0 });
+		this.emit('connectionStatusChanged', {
+			connected: 0,
+			total: 0,
+			status: 'disconnected', // Explicitly set status to prevent misinterpretation
+		});
 
 		// Don't log connection messages - too noisy
 		// log('✅ Disconnected from all peers');

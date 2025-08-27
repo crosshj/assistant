@@ -396,14 +396,23 @@ export class Room {
 	// Mode management
 	showConnectingMode() {
 		this.currentMode = 'connecting';
-		this.container.left.innerHTML = ''; // Clear left pane
-		this.container.center.innerHTML = ''; // Clear center pane
+
+		// Completely tear down visualization when switching to connecting mode
+		if (this.visualization && this.visualization.isInitialized()) {
+			this.visualization.destroy();
+			this.visualization = null;
+		}
+
+		// Reset visualization state
+		this.isVisualizationReady = false;
+		this.eventQueue = [];
+
+		// Clear left pane - show blank when disconnected, spinner when connecting
+		this.container.left.innerHTML = '';
 	}
 
-	showConnectingMode() {
-		this.currentMode = 'connecting';
-
-		// Show minimal loading state with just a spinner
+	showConnectingSpinner() {
+		// Show loading spinner when actively connecting (user clicked Connect button)
 		this.container.left.innerHTML = html`
 			<div class="left-pane-sub-grid room-selection-layout">
 				<div class="loading-spinner">

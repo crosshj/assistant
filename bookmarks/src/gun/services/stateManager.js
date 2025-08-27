@@ -90,6 +90,9 @@ export class StateManager {
 			// Let the interval-based timeout handle giving up
 			if (wasConnecting) {
 				this.state.network.status = 'connecting';
+			} else if (this.state.network.status === 'connecting') {
+				// Don't override connecting state - let it persist
+				this.state.network.status = 'connecting';
 			} else {
 				this.state.network.status = 'disconnected';
 			}
@@ -133,6 +136,8 @@ export class StateManager {
 		this.state.network.connected = 0;
 		this.state.network.isManuallyDisconnected = true;
 		this._connectionStartTime = Date.now(); // Reset connection timer
+		// Reset auto-join flag when manually disconnecting
+		this._autoJoinTriggered = false;
 		this._updateRoomCanJoin();
 		this._emitStateChange();
 
@@ -143,6 +148,21 @@ export class StateManager {
 		log(message);
 		// Don't log connection messages to activity feed - too noisy
 		// if (this.sidebar) this.sidebar.success(message);
+	}
+
+	isAutoJoining() {
+		return this._autoJoinTriggered;
+	}
+
+	setNetworkConnecting() {
+		this.state.network.status = 'connecting';
+		this.state.network.isManuallyDisconnected = false;
+		this._connectionStartTime = Date.now(); // Start connection timer
+		this._updateRoomCanJoin();
+		this._emitStateChange();
+
+		const message = '🔄 Network: Starting connection attempt';
+		log(message);
 	}
 
 	// ===== ROOM STATE MANAGEMENT =====
@@ -160,6 +180,8 @@ export class StateManager {
 		this.state.room.name = roomName;
 		// Reset manual leave flag when user joins a room (allows auto-join on future refreshes)
 		this._userManuallyLeftRoom = false;
+		// Reset auto-join flag since joining is complete
+		this._autoJoinTriggered = false;
 		log('🔍 DEBUG: User joined room - auto-join re-enabled');
 		this._emitStateChange();
 		log(`✅ Room: Joined ${roomName}`);
@@ -274,13 +296,17 @@ export class StateManager {
 			this.state.room.canJoin &&
 			this.state.room.status === 'not_joined' &&
 			this.state.network.status !== 'connecting' &&
-			!this._userManuallyLeftRoom // Don't auto-join if user manually left
+			!this._userManuallyLeftRoom && // Don't auto-join if user manually left
+			!this._autoJoinTriggered // Don't auto-join if we've already tried
 		) {
 			// Check if there's a hash tag that would indicate auto-join
 			const hasHash =
 				window.location.hash && window.location.hash.length > 1;
 
 			if (hasHash) {
+				// Set auto-join flag to prevent room selection mode from showing
+				this._autoJoinTriggered = true;
+
 				// Add small delay to ensure state is fully stable before room joining
 				setTimeout(() => {
 					// Get the room name from the hash tag

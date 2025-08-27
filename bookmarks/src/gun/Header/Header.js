@@ -2,15 +2,13 @@ import { html } from '../lib/utils.js';
 import './Header.css';
 
 export class Header {
-	constructor(connection, auth, stateManager) {
-		this.connection = connection;
-		this.auth = auth;
-		this.stateManager = stateManager;
+	constructor(controller) {
+		this.controller = controller;
 		this.container = null;
 		this.elements = {};
 
 		this.render();
-		this.bindEvents();
+		this.setupEventListeners();
 	}
 
 	render() {
@@ -231,70 +229,61 @@ export class Header {
 			this.elements.roomInputs.style.display = 'none';
 			this.elements.roomStatus.style.display = 'none';
 		}
-
-		// Check initial auth status and show identity if authenticated
-		if (this.stateManager && this.stateManager.getState()) {
-			const state = this.stateManager.getState();
-			if (
-				state.auth &&
-				state.auth.status &&
-				state.auth.alias &&
-				state.auth.alias !== 'anon'
-			) {
-				this.updateAuthStatus(state.auth);
-			}
-		}
 	}
 
-	bindEvents() {
+	setupEventListeners() {
 		// Connection events
 		if (this.elements.connectBtn) {
 			this.elements.connectBtn.addEventListener('click', () => {
-				this.handleConnect();
+				this.controller.handleConnect();
 			});
 		}
 
 		if (this.elements.disconnectBtn) {
 			this.elements.disconnectBtn.addEventListener('click', () => {
-				this.handleDisconnect();
+				this.controller.handleDisconnect();
 			});
 		}
 
 		if (this.elements.testConnection) {
 			this.elements.testConnection.addEventListener('click', () => {
-				this.handleTestConnection();
+				this.controller.handleTestConnection();
 			});
 		}
 
 		// Room events
 		if (this.elements.join) {
 			this.elements.join.addEventListener('click', () => {
-				this.handleJoinRoom();
+				const roomName = this.elements.room.value.trim();
+				if (roomName) {
+					this.controller.handleJoinRoom(roomName);
+				}
 			});
 		}
 		if (this.elements.leave) {
 			this.elements.leave.addEventListener('click', () => {
-				document.dispatchEvent(new CustomEvent('ui:leaveRoom'));
+				this.controller.handleLeaveRoom();
 			});
 		}
 
 		// Auth events
 		if (this.elements.createPair) {
 			this.elements.createPair.addEventListener('click', () => {
-				this.handleCreateUser();
+				const alias = this.elements.alias.value.trim();
+				if (alias) {
+					this.controller.handleCreateUser(alias);
+				}
 			});
 		}
 
 		if (this.elements.login) {
 			this.elements.login.addEventListener('click', () => {
-				this.handleLogin();
+				const alias = this.elements.alias.value.trim();
+				if (alias) {
+					this.controller.handleLogin(alias);
+				}
 			});
 		}
-
-		// Listen for state changes
-		document.addEventListener('stateChanged', (event) => {
-			this.handleStateChange(event.detail);
-		});
 
 		// Make peer status pill clickable to show connection details
 		if (this.elements.connectionStatus) {
@@ -303,71 +292,13 @@ export class Header {
 				const currentStatus =
 					this.elements.connectionStatus.textContent;
 				if (currentStatus.includes('Peers')) {
-					document.dispatchEvent(
-						new CustomEvent('ui:showConnectionDetails')
-					);
+					this.controller.handleShowConnectionDetails();
 				}
 			});
 		}
 	}
 
-	handleConnect() {
-		// Use default peers since we're hiding the peer input field
-		this.connection.updatePeers(this.connection.getDefaultPeers());
-	}
-
-	handleDisconnect() {
-		this.connection.disconnect();
-	}
-
-	handleTestConnection() {
-		// Test the connection
-		this.connection.testConnection();
-	}
-
-	handleJoinRoom() {
-		const roomName = this.elements.room.value.trim();
-		if (roomName) {
-			document.dispatchEvent(
-				new CustomEvent('ui:joinRoom', { detail: roomName })
-			);
-		}
-	}
-
-	handleCreateUser() {
-		const alias = this.elements.alias.value.trim();
-		if (alias) {
-			document.dispatchEvent(
-				new CustomEvent('ui:createUser', { detail: alias })
-			);
-		}
-	}
-
-	handleLogin() {
-		const alias = this.elements.alias.value.trim();
-		if (alias) {
-			document.dispatchEvent(
-				new CustomEvent('ui:login', { detail: alias })
-			);
-		}
-	}
-
-	handleStateChange(state) {
-		// Update connection status with full network state
-		if (state.network && state.network.status) {
-			this.updateConnectionStatus(state.network.status, state.network);
-		}
-
-		// Update room status with full room state
-		if (state.room && state.room.status) {
-			this.updateRoomStatus(state.room.status, state.room);
-		}
-
-		// Update auth status
-		if (state.auth && state.auth.status) {
-			this.updateAuthStatus(state.auth);
-		}
-	}
+	// ===== PUBLIC UPDATE METHODS FOR CONTROLLER TO CALL =====
 
 	updateConnectionStatus(status, networkState = null) {
 		if (!this.elements.connectionStatus) return;
@@ -405,15 +336,21 @@ export class Header {
 				}
 				break;
 			case 'disconnected':
-				displayText = 'Disconnected';
-				statusClass = 'status-disconnected';
+				// Don't show "Disconnected" pill - just show the connect button
+				displayText = '';
+				statusClass = '';
 				break;
 		}
 
-		this.elements.connectionStatus.textContent = displayText;
-
-		// Update status classes for color coding
-		this.elements.connectionStatus.className = `pill mono ${statusClass}`;
+		// Hide the pill completely when disconnected, show it otherwise
+		if (status === 'disconnected' || !displayText) {
+			this.elements.connectionStatus.style.display = 'none';
+		} else {
+			this.elements.connectionStatus.style.display = 'inline-block';
+			this.elements.connectionStatus.textContent = displayText;
+			// Update status classes for color coding
+			this.elements.connectionStatus.className = `pill mono ${statusClass}`;
+		}
 
 		// Show/hide connection controls based on status
 		if (status === 'connected') {
@@ -428,6 +365,9 @@ export class Header {
 			// Show room section but keep it in loading state
 			this.elements.roomSection.style.visibility = 'visible';
 			this.elements.roomDivider.style.visibility = 'visible';
+
+			// Show the room pane when connected
+			document.dispatchEvent(new CustomEvent('ui:roomPaneConnected'));
 		} else if (status === 'disconnected') {
 			// Show only the buttons, not the peer input
 			this.elements.peers.style.display = 'none';
@@ -439,6 +379,9 @@ export class Header {
 			this.elements.roomSection.style.visibility = 'hidden';
 			this.elements.roomDivider.style.visibility = 'hidden';
 			// Don't hide auth section here - let updateAuthStatus handle it
+
+			// Hide the room pane when disconnected
+			document.dispatchEvent(new CustomEvent('ui:roomPaneDisconnected'));
 		} else if (status === 'connecting') {
 			// Hide all controls when connecting - only show the "Connecting..." pill
 			this.elements.connectionControls.style.display = 'none';
@@ -519,7 +462,8 @@ export class Header {
 		}
 	}
 
-	// Public methods for external updates
+	// ===== PUBLIC METHODS FOR EXTERNAL UPDATES =====
+
 	setConnectionStatus(status) {
 		this.updateConnectionStatus(status);
 	}
@@ -532,43 +476,18 @@ export class Header {
 		this.updateAuthStatus(status);
 	}
 
-	// Setup event handlers (called from main app)
-	setupEventHandlers() {
-		// Event handlers are already set up in bindEvents()
-		// This method exists for compatibility with the main app
-	}
+	// ===== INITIALIZATION =====
 
-	// Set initial values (called from main app)
 	setInitialValues() {
 		// Set initial peer values
-		if (this.elements.peers && this.connection.getDefaultPeers) {
-			this.elements.peers.value = this.connection
+		if (
+			this.elements.peers &&
+			this.controller.connection &&
+			this.controller.connection.getDefaultPeers
+		) {
+			this.elements.peers.value = this.controller.connection
 				.getDefaultPeers()
 				.join(',');
-		}
-
-		// Render initial state if stateManager is available
-		if (this.stateManager) {
-			const state = this.stateManager.getState();
-			this.renderInitialState(state);
-		}
-	}
-
-	// Render initial state
-	renderInitialState(state) {
-		// Update connection status
-		if (state.network) {
-			this.updateConnectionStatus(state.network.status);
-		}
-
-		// Update room status
-		if (state.room) {
-			this.updateRoomStatus(state.room.status);
-		}
-
-		// Update auth status
-		if (state.auth) {
-			this.updateAuthStatus(state.auth);
 		}
 	}
 }

@@ -85,6 +85,12 @@ export class RoomController {
 		});
 		document.addEventListener('room:left', this.handleRoomLeft);
 
+		// Room pane events from Header
+		document.addEventListener('ui:showConnectingSpinner', () => {
+			// Show connecting spinner when user actively clicks Connect
+			this.roomComponent.showConnectingSpinner();
+		});
+
 		// Sync events
 		this.syncService.on('clearGraph', this.handleClearGraph);
 		this.syncService.on('addNode', this.syncAddNode);
@@ -99,6 +105,33 @@ export class RoomController {
 			'graph:clearLocal',
 			this.handleGraphClearLocal
 		);
+
+		// State change events - handle room pane visibility based on network status
+		document.addEventListener('stateChanged', (event) => {
+			const state = event.detail;
+			if (state.network && state.network.status) {
+				if (
+					state.network.status === 'connected' ||
+					state.network.status === 'partial'
+				) {
+					// Don't immediately switch to room selection - let auto-join handle it
+					// Only show room selection if we're explicitly not in a room
+					if (
+						!this.currentRoom &&
+						!this.stateManager.isAutoJoining()
+					) {
+						this.roomComponent.setMode('room-selection');
+					}
+					// If auto-join is happening, stay in connecting mode until it completes
+				} else if (
+					state.network.status === 'disconnected' ||
+					state.network.status === 'connecting'
+				) {
+					// Show connecting mode when disconnected or connecting (blank the room pane)
+					this.roomComponent.setMode('connecting');
+				}
+			}
+		});
 		document.addEventListener('graph:search', this.handleGraphSearch);
 		document.addEventListener(
 			'graph:clearSearch',

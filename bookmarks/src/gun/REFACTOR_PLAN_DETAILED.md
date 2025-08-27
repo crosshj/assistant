@@ -10,14 +10,35 @@
 ✅ **Console cleaned up** - removed verbose logging
 ✅ **Force-directed layout** as default
 
-### **✅ COMPLETED: Phase 1 - Controller Architecture (RoomController)**
+### **✅ COMPLETED: Phase 1 - Controller Architecture Implementation**
 
-✅ **RoomController Created** - Centralized all room-related business logic  
-✅ **Event-Driven Architecture** - All communication now goes through events  
-✅ **Clean Separation** - Room component is now pure UI, RoomController handles logic  
+#### **RoomController (COMPLETED):**
+
+✅ **RoomController Created** - Centralized all room-related event wiring  
+✅ **Event-Driven Architecture** - All external communication now goes through events  
+✅ **Clean Separation** - Room component is now pure UI, RoomController handles coordination  
 ✅ **Direct Dependencies Eliminated** - gun.js no longer directly accesses Room component  
 ✅ **Enhanced Edge Handling** - Improved edge direction management and form clearing  
 ✅ **Form State Management** - Smart form clearing based on selection state
+
+#### **HeaderController (COMPLETED):**
+
+✅ **HeaderController Created** - Centralized all header-related event wiring  
+✅ **Event-Driven Architecture** - Listens to connection service events, coordinates UI updates  
+✅ **Clean Separation** - Header component is now pure UI, HeaderController handles coordination  
+✅ **Optimistic UI Updates** - Connect button immediately shows "Connecting..." state  
+✅ **Event Coordination** - Emits events for room pane visibility management  
+✅ **Service Integration** - Coordinates between Header UI and connection/auth services
+
+**Critical Controller Design Principles (ESTABLISHED):**
+
+-   ✅ **Controllers are event wiring hubs** - Connect DOM events to service calls
+-   ✅ **Minimal business logic** - Controllers coordinate, don't implement complex logic
+-   ✅ **Tight coupling with component** - Controller owns component instance (`this.room`, `this.header`)
+-   ✅ **External events → Controller → Component** via CustomEvents
+-   ✅ **User events → Component → Controller** via direct method calls
+-   ✅ **Controller → Services** via service method calls (intermediate step)
+-   ✅ **Future goal**: Controller → Services via DOM events (when architecture allows)
 
 **Architecture Achieved:**
 
