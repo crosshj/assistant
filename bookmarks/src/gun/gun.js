@@ -35,7 +35,6 @@ class GunApp {
 		this.eventCoordinator = null;
 
 		// UI components
-		this.header = null;
 		this.room = null;
 		this.activity = null;
 		this.connectionDetails = null;
@@ -97,7 +96,6 @@ class GunApp {
 
 		// Get component references from controllers
 		this.room = this.roomController.ui; // TODO: this is BAD, we don't want room UI being accessed directly!!!
-		this.header = this.headerController.ui; // TODO: this is BAD, we don't want header UI being accessed directly!!!
 
 		// ARCHITECTURAL ISSUE TO FIX:
 		// gun.js should NEVER directly access UI components. This violates separation of concerns.
@@ -356,7 +354,7 @@ class GunApp {
 		// this.visualization.init('cy'); // Moved to showInRoomMode()
 
 		// Setup component event handlers
-		this.headerController.setInitialValues();
+		// this.headerController.setInitialValues();
 		// Event handlers are now set up in the Room component
 		// this.room.setupEventHandlers();
 
