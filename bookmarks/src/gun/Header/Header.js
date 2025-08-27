@@ -367,7 +367,7 @@ export class Header {
 			// Hide room section but show auth section if user is authenticated
 			this.elements.roomSection.classList.remove('room-section--visible');
 			this.elements.roomDivider.classList.remove('room-divider--visible');
-			
+
 			// Reset auth status to not authenticated when disconnected
 			this.updateAuthStatus(null);
 
