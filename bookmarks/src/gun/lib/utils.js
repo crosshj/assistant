@@ -15,6 +15,11 @@ export const dispatchEvent = (eventName, detail = null) => {
 	document.dispatchEvent(new CustomEvent(eventName, { detail }));
 };
 
+export const addEventListener = (eventName, callback) => {
+	document.addEventListener(eventName, callback);
+	return () => document.removeEventListener(eventName, callback); // Return cleanup function
+};
+
 export const uuid = () =>
 	crypto.randomUUID
 		? crypto.randomUUID()

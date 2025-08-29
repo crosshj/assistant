@@ -1,15 +1,15 @@
 import { GunDBWrapper } from '../lib/gunWrapper.js';
+import { dispatchEvent } from '../lib/utils.js';
 
 /**
  * Event Coordinator
- * Listens to UI events and coordinates between services and StateManager
+ * Listens to UI events and coordinates between services via events
  */
 export class EventCoordinator {
-	constructor(connection, auth, rooms, stateManager, sync) {
+	constructor(connection, auth, rooms, sync) {
 		this.connection = connection;
 		this.auth = auth;
 		this.rooms = rooms;
-		this.stateManager = stateManager;
 		this.sync = sync;
 		this.gunWrapper = new GunDBWrapper(connection);
 
@@ -57,8 +57,8 @@ export class EventCoordinator {
 	// ===== NETWORK EVENTS =====
 
 	handleConnect() {
-		// Update state to connecting
-		this.stateManager.setNetworkConnecting();
+		// Update state via event instead of direct call
+		dispatchEvent('network:connecting');
 
 		// Call connection service
 		const peers = this.connection.getDefaultPeers();
@@ -69,8 +69,8 @@ export class EventCoordinator {
 		// Call connection service first
 		this.connection.disconnect();
 
-		// Then update state
-		this.stateManager.setNetworkManuallyDisconnected();
+		// Then update state via event instead of direct call
+		dispatchEvent('network:manuallyDisconnected');
 	}
 
 	handleTestConnection() {
@@ -91,17 +91,13 @@ export class EventCoordinator {
 	}
 
 	handleUserAuthenticated(alias) {
-		// Update state to reflect authentication
-		if (this.stateManager) {
-			this.stateManager.setUserAuthenticated(alias);
-		}
+		// Update state via event instead of direct call
+		dispatchEvent('auth:authenticated', { alias });
 	}
 
 	handleUserLoggedOut() {
-		// Update state to reflect logout
-		if (this.stateManager) {
-			this.stateManager.setUserLoggedOut();
-		}
+		// Update state via event instead of direct call
+		dispatchEvent('auth:anonymous');
 	}
 
 	// ===== SERVICE EVENT HANDLERS =====
@@ -128,7 +124,8 @@ export class EventCoordinator {
 
 		// Only proceed if state has actually changed
 		if (stateChanged) {
-			this.stateManager.setNetworkConnected(connected, total);
+			// Update state via event instead of direct call
+			dispatchEvent('network:connected', { connected, total });
 
 			// Don't manage UI mode here - let the Room component handle its own UI
 			// based on state changes. Only handle auto-join logic.
@@ -174,6 +171,7 @@ export class EventCoordinator {
 	}
 
 	onUserAuthenticated(alias) {
-		this.stateManager.setAuthAuthenticated(alias);
+		// Update state via event instead of direct call
+		dispatchEvent('auth:authenticated', { alias });
 	}
 }

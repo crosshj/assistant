@@ -2,7 +2,7 @@
  * Centralized State Manager
  * Single source of truth for all application state
  */
-import { log, dispatchEvent } from '../lib/utils.js';
+import { log, dispatchEvent, addEventListener } from '../lib/utils.js';
 
 export class StateManager {
 	constructor() {
@@ -36,6 +36,33 @@ export class StateManager {
 
 		// Start periodic connection timeout check
 		this._startConnectionTimeoutCheck();
+
+		// Listen for events from other services
+		this._setupEventListeners();
+	}
+
+	_setupEventListeners() {
+		// Listen for auth events from AuthManager
+		this._cleanupListeners = [
+			addEventListener('auth:authenticated', (event) => {
+				this.setAuthAuthenticated(event.detail.alias);
+			}),
+			addEventListener('auth:anonymous', () => {
+				this.setAuthAnonymous();
+			}),
+			addEventListener('network:connecting', () => {
+				this.setNetworkConnecting();
+			}),
+			addEventListener('network:connected', (event) => {
+				this.setNetworkConnected(
+					event.detail.connected,
+					event.detail.total
+				);
+			}),
+			addEventListener('network:manuallyDisconnected', () => {
+				this.setNetworkManuallyDisconnected();
+			}),
+		];
 	}
 
 	// Get current state (immutable copy)
@@ -307,5 +334,18 @@ export class StateManager {
 
 	isInRoom() {
 		return this.state.room.status === 'joined';
+	}
+
+	// ===== CLEANUP =====
+
+	destroy() {
+		// Clean up event listeners
+		if (this._cleanupListeners) {
+			this._cleanupListeners.forEach((cleanup) => cleanup());
+			this._cleanupListeners = [];
+		}
+
+		// Stop connection timeout check
+		this._stopConnectionTimeoutCheck();
 	}
 }

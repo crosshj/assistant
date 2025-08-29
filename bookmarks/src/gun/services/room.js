@@ -2,9 +2,8 @@ import { log } from '../lib/utils.js';
 
 // Room Management
 export class RoomManager {
-	constructor(stateManager) {
+	constructor() {
 		this.gun = null; // Will be set via setConnection()
-		this.stateManager = stateManager;
 		this.currentRoom = null;
 		this.graphRoot = null;
 		this.nodesChain = null;

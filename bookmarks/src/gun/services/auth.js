@@ -1,10 +1,9 @@
-import { log, $, uuid } from '../lib/utils.js';
+import { log, $, uuid, dispatchEvent } from '../lib/utils.js';
 
 // Authentication Management
 export class AuthManager {
-	constructor(stateManager) {
+	constructor() {
 		this.user = null; // Will be set via setConnection()
-		this.stateManager = stateManager;
 	}
 
 	setConnection(user) {
@@ -37,8 +36,8 @@ export class AuthManager {
 			} else {
 				// log('logged in as ' + alias);
 
-				// Update state to reflect authentication
-				this.stateManager.setAuthAuthenticated(alias);
+				// Update state via event instead of direct call
+				dispatchEvent('auth:authenticated', { alias });
 
 				// Save credentials for auto-login
 				localStorage.setItem(
@@ -58,8 +57,8 @@ export class AuthManager {
 				} else {
 					// log('logged in as ' + saved.alias);
 
-					// Update state to reflect authentication
-					this.stateManager.setAuthAuthenticated(saved.alias);
+					// Update state via event instead of direct call
+					dispatchEvent('auth:authenticated', { alias: saved.alias });
 				}
 			});
 		}
@@ -85,7 +84,7 @@ export class AuthManager {
 		this.user.leave();
 		log('logged out');
 
-		// Update state to reflect logout
-		this.stateManager.setAuthAnonymous();
+		// Update state via event instead of direct call
+		dispatchEvent('auth:anonymous');
 	}
 }

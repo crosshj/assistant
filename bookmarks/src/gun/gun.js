@@ -27,8 +27,8 @@ async function startApp() {
 
 	// Initialize services
 	const stateManager = new StateManager();
-	const auth = new AuthManager(stateManager);
-	const rooms = new RoomManager(stateManager);
+	const auth = new AuthManager();
+	const rooms = new RoomManager();
 	const graph = new GraphOperations(rooms, auth);
 	const sync = new Sync(rooms);
 	const propsManager = new PropsManager();
@@ -56,7 +56,6 @@ async function startApp() {
 		connection,
 		auth,
 		rooms,
-		stateManager,
 		sync
 	);
 
