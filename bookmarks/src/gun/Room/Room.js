@@ -507,7 +507,7 @@ export class Room {
 				}
 
 				// Create fresh visualization instance
-				this.visualization = new GraphVisualization(this.connection);
+				this.visualization = new GraphVisualization(this.currentRoom);
 				const result = this.visualization.init('cy');
 
 				// Visualization initialized successfully
@@ -800,8 +800,14 @@ export class Room {
 
 	// Room state management methods called by controller
 	handleRoomJoined(roomName) {
+		this.currentRoom = roomName;
+
+		// Update visualization with current room
+		if (this.visualization) {
+			this.visualization.setCurrentRoom(roomName);
+		}
+
 		if (this.currentMode !== 'room-mode') {
-			this.currentRoom = roomName;
 			this.setMode('room-mode');
 		} else {
 			console.log(

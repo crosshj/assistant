@@ -23,7 +23,7 @@ export class RoomController {
 
 		// TODO: Remove direct gunWrapper usage - should go through App Controller instead
 		// This creates coupling that should be resolved when we have proper event-driven architecture
-		this.gunWrapper = new GunDBWrapper(connection);
+		this.gunWrapper = new GunDBWrapper(connection, null);
 
 		// Current room state
 		this.currentRoom = null;
@@ -64,7 +64,7 @@ export class RoomController {
 
 	setConnection(connection) {
 		this.connection = connection;
-		this.gunWrapper = new GunDBWrapper(connection);
+		this.gunWrapper = new GunDBWrapper(connection, this.currentRoom);
 	}
 
 	setupEventListeners() {
@@ -206,6 +206,13 @@ export class RoomController {
 			this.stateManager.setRoomJoined(roomName);
 			this.updateRoomHash(roomName);
 			this.ui.handleRoomJoined(roomName);
+
+			// Update gunWrapper with current room
+			this.gunWrapper = new GunDBWrapper(
+				this.connection,
+				this.currentRoom
+			);
+
 			if (this.roomService.isInRoom() && this.syncService) {
 				this.syncService.subscribeToRoom();
 			}
@@ -214,6 +221,13 @@ export class RoomController {
 			this.stateManager.setRoomJoined(roomName);
 			this.updateRoomHash(roomName);
 			this.ui.handleRoomJoined(roomName);
+
+			// Update gunWrapper with current room
+			this.gunWrapper = new GunDBWrapper(
+				this.connection,
+				this.currentRoom
+			);
+
 			if (this.roomService.isInRoom() && this.syncService) {
 				this.syncService.subscribeToRoom();
 			}
@@ -222,6 +236,10 @@ export class RoomController {
 			this.stateManager.setRoomLeft();
 			this.updateRoomHash(null);
 			this.ui.handleRoomLeft();
+
+			// Clear gunWrapper references
+			this.visualization = null;
+			this.gunWrapper = new GunDBWrapper(this.connection, null);
 		}
 	}
 

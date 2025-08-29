@@ -3,8 +3,9 @@
  * Automatically cleans data and includes props when reading nodes/edges
  */
 export class GunDBWrapper {
-	constructor(connection) {
+	constructor(connection, currentRoom = null) {
 		this.connection = connection;
+		this.currentRoom = currentRoom;
 
 		// Listen for network discovery events
 		document.addEventListener('networkDiscovery', () => {
@@ -180,22 +181,41 @@ export class GunDBWrapper {
 	}
 
 	/**
-	 * Get props directly from the visualization component's existing data
-	 * This is the most non-interfering approach - no GunDB calls at all
+	 * Get props directly from GunDB - this is the proper approach
+	 * No UI dependencies, pure data service
 	 */
-	async getPropsFromVisualization(elementId, isNode = true) {
+	async getPropsFromGunDB(elementId, isNode = true) {
 		try {
-			if (!window.cy) {
+			if (!this.currentRoom) {
 				return {};
 			}
 
-			const element = window.cy.getElementById(elementId);
-			if (!element || element.length === 0) {
-				return {};
-			}
+			const baseRef = this.connection.gun
+				.get('graphs')
+				.get(this.currentRoom)
+				.get(isNode ? 'nodes' : 'edges')
+				.get(elementId);
 
-			const data = element.data();
-			return data.props || {};
+			const propsRef = baseRef.get('props');
+
+			return new Promise((resolve, reject) => {
+				const timeout = setTimeout(() => {
+					reject(new Error('Props fetch timeout'));
+				}, 2000);
+
+				const listener = (data) => {
+					clearTimeout(timeout);
+					propsRef.off('value', listener);
+					if (data && data !== 'undefined') {
+						const cleanProps = this.cleanPropsData(data);
+						resolve(cleanProps);
+					} else {
+						resolve({});
+					}
+				};
+
+				propsRef.on('value', listener);
+			});
 		} catch (error) {
 			return {};
 		}

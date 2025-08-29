@@ -36,12 +36,13 @@ class GunApp {
 		this.eventCoordinator = null;
 
 		// UI components
-		this.room = null;
 		this.connectionDetails = null;
 		this.propsManager = null;
 
 		// Controllers
 		this.roomController = null;
+		this.headerController = null;
+		this.activityController = null;
 	}
 
 	async start() {
@@ -105,9 +106,6 @@ class GunApp {
 		// Initialize connection details after connection is ready
 		this.connectionDetails = new ConnectionDetails(this.connection);
 
-		// Get component references from controllers
-		this.room = this.roomController.ui; // TODO: this is BAD, we don't want room UI being accessed directly!!!
-
 		// ARCHITECTURAL ISSUE TO FIX:
 		// gun.js should NEVER directly access UI components. This violates separation of concerns.
 		// Instead, gun.js should:
@@ -132,9 +130,6 @@ class GunApp {
 		// Initialize authentication state
 		this.auth.autoLogin();
 
-		// Setup global functions for components to use
-		this.setupGlobalFunctions();
-
 		// Delay starting connection monitoring to allow "Connecting..." to show
 		setTimeout(() => {
 			this.connection.startMonitoring();
@@ -149,25 +144,6 @@ class GunApp {
 
 		this.connection.on('userLoggedIn', (data) => {
 			this.eventCoordinator.onUserAuthenticated(data.alias);
-		});
-	}
-
-	setupGlobalFunctions() {
-		// Only keep globals that are actually used in the codebase
-
-		// Global state - used in cytoscapeWrapper.js
-		Object.defineProperty(window, 'currentRoom', {
-			get: () => this.rooms.getCurrentRoom(),
-			set: () => {}, // Read-only
-		});
-
-		// Make visualization instance globally accessible for props fetching - used in gunWrapper.js
-		Object.defineProperty(window, 'cy', {
-			get: () =>
-				this.room && this.room.visualization
-					? this.room.visualization.cy
-					: null,
-			set: () => {}, // Read-only
 		});
 	}
 }

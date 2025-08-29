@@ -3,7 +3,8 @@ import { log, $ } from './utils.js';
 
 // Cytoscape Visualization Management
 export class GraphVisualization {
-	constructor() {
+	constructor(currentRoom = null) {
+		this.currentRoom = currentRoom;
 		this.cy = null;
 		this.layoutTimeout = null;
 		this.initialized = false;
@@ -250,7 +251,7 @@ export class GraphVisualization {
 							detail: {
 								elementId: d.nid || d.id,
 								elementType: 'node',
-								room: window.currentRoom,
+								room: this.currentRoom,
 							},
 						})
 					);
@@ -281,7 +282,7 @@ export class GraphVisualization {
 						detail: {
 							elementId: d.eid || d.id,
 							elementType: 'edge',
-							room: window.currentRoom,
+							room: this.currentRoom,
 						},
 					})
 				);
@@ -768,5 +769,10 @@ export class GraphVisualization {
 		}
 
 		// log('🗑️ Visualization destroyed and reset');
+	}
+
+	// Update current room when it changes
+	setCurrentRoom(roomName) {
+		this.currentRoom = roomName;
 	}
 }
