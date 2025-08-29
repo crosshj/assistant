@@ -62,6 +62,11 @@ export class RoomController {
 		this.setupResizeHandler();
 	}
 
+	setConnection(connection) {
+		this.connection = connection;
+		this.gunWrapper = new GunDBWrapper(connection);
+	}
+
 	setupEventListeners() {
 		// Room events
 		document.addEventListener('ui:joinRoom', (e) => {

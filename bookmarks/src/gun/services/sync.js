@@ -17,6 +17,11 @@ export class DataSync {
 		// this.pendingRemovals = new Map(); // COMMENTED OUT: Not using grace period logic anymore
 	}
 
+	setConnection(connection) {
+		this.connection = connection;
+		this.gunWrapper = new GunDBWrapper(connection);
+	}
+
 	// Event system for UI components to listen to
 	on(event, callback) {
 		if (!this.eventListeners.has(event)) {

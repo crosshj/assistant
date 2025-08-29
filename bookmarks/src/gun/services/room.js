@@ -12,6 +12,10 @@ export class RoomManager {
 		this.eventListeners = new Map();
 	}
 
+	setConnection(gun) {
+		this.gun = gun;
+	}
+
 	// Event system for UI components to listen to
 	on(event, callback) {
 		if (!this.eventListeners.has(event)) {

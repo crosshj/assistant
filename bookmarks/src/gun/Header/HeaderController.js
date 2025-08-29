@@ -11,6 +11,13 @@ export class HeaderController {
 		this.ui = new Header({ controller: this });
 
 		this.setupEventListeners();
+
+		// Initialize UI with initial values
+		this.initializeUI();
+	}
+
+	setConnection(connection) {
+		this.connection = connection;
 	}
 
 	setupEventListeners() {
@@ -205,9 +212,9 @@ export class HeaderController {
 
 	// ===== INITIALIZATION =====
 
-	setInitialValues() {
+	initializeUI() {
 		// Set initial peer values via component method
-		if (this.connection.getDefaultPeers) {
+		if (this.connection && this.connection.getDefaultPeers) {
 			const defaultPeers = this.connection.getDefaultPeers().join(',');
 			this.ui.setInitialPeers(defaultPeers);
 		}
@@ -234,5 +241,10 @@ export class HeaderController {
 		if (state.auth) {
 			this.updateAuthStatus(state.auth);
 		}
+	}
+
+	setInitialValues() {
+		// Deprecated - use initializeUI() instead
+		this.initializeUI();
 	}
 }

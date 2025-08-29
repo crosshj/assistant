@@ -58,41 +58,50 @@ class GunApp {
 			);
 		});
 
-		// Initialize connection first with default peers (but don't start monitoring yet)
-		this.connection.init(this.connection.getDefaultPeers());
-
-		// Initialize core services that depend on connection and state manager
-		this.auth = new AuthManager(this.connection.user, this.stateManager);
-		this.rooms = new RoomManager(this.connection.gun, this.stateManager);
+		// Initialize core services that depend on state manager (but not connection yet)
+		this.auth = new AuthManager(null, this.stateManager); // Will set connection.user later
+		this.rooms = new RoomManager(null, this.stateManager); // Will set connection.gun later
 		this.graph = new GraphOperations(this.rooms, this.auth);
 		this.sync = new DataSync(
 			this.rooms,
-			this.connection,
+			null, // Will set connection later
 			this.stateManager
 		);
 
-		// Initialize remaining UI components after services are ready
-		this.connectionDetails = new ConnectionDetails(this.connection);
+		// Initialize remaining UI components
 		this.propsManager = new PropsManager();
 
 		// Initialize controllers (they create their own components)
 		this.roomController = new RoomController(
 			this.rooms,
 			this.sync,
-			this.connection,
+			null, // Will set connection later
 			this.stateManager,
 			this.graph
 		);
 
 		// Initialize HeaderController (creates its own Header component)
 		this.headerController = new HeaderController(
-			this.connection,
+			null, // Will set connection later
 			this.auth,
 			this.stateManager
 		);
 
 		// Initialize ActivityController (creates and owns Activity component)
 		this.activityController = new ActivityController();
+
+		// Initialize connection AFTER controllers are ready to listen to events
+		this.connection.init(this.connection.getDefaultPeers());
+
+		// Now update all services and controllers with the connection reference
+		this.auth.setConnection(this.connection.user);
+		this.rooms.setConnection(this.connection.gun);
+		this.sync.setConnection(this.connection);
+		this.roomController.setConnection(this.connection);
+		this.headerController.setConnection(this.connection);
+
+		// Initialize connection details after connection is ready
+		this.connectionDetails = new ConnectionDetails(this.connection);
 
 		// Get component references from controllers
 		this.room = this.roomController.ui; // TODO: this is BAD, we don't want room UI being accessed directly!!!
@@ -126,13 +135,6 @@ class GunApp {
 
 		// Setup global functions for components to use
 		this.setupGlobalFunctions();
-
-		// Wait for DOM and initialize UI - do this BEFORE the delay
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', () => this.initUI());
-		} else {
-			this.initUI();
-		}
 
 		// Delay starting connection monitoring to allow "Connecting..." to show
 		setTimeout(() => {
@@ -341,12 +343,13 @@ class GunApp {
 			set: () => {}, // Read-only
 		});
 	}
-
-	initUI() {
-		this.headerController.setInitialValues();
-	}
 }
 
-// Start the application
+// Start the application when DOM is ready
 const app = new GunApp();
-app.start();
+
+if (document.readyState === 'loading') {
+	document.addEventListener('DOMContentLoaded', () => app.start());
+} else {
+	app.start();
+}

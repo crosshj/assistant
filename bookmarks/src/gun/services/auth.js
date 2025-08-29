@@ -7,6 +7,10 @@ export class AuthManager {
 		this.stateManager = stateManager;
 	}
 
+	setConnection(user) {
+		this.user = user;
+	}
+
 	createIdentity(alias = null) {
 		const userAlias = alias || `u_${uuid().slice(0, 6)}`;
 		const pass = crypto.getRandomValues(new Uint8Array(16)).join('');
