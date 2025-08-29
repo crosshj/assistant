@@ -10,7 +10,6 @@ import { GraphOperations } from './services/graphOperations.js';
 import { Sync } from './services/sync.js';
 
 // Import new UI components
-import { Activity } from './Activity/Activity.js';
 import { ConnectionDetails } from './ConnectionDetails/ConnectionDetails.js';
 import { PropsManager } from './services/PropsManager.js';
 

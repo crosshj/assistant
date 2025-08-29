@@ -39,7 +39,7 @@ Controller → Services (direct calls for now)
 -   No direct service dependencies in controllers
 -   Services emit DOM events, controllers listen to DOM events
 
-**Example of preferred pattern**: `ActivityController` listens to generic `activity:log` events from any service, rather than binding directly to specific service events.
+**Example of preferred pattern**: `ActivityController` listens to generic `activity:log` DOM events from any service, rather than binding directly to specific service events.
 
 ## Implementation Requirements
 
