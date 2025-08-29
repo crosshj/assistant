@@ -1,5 +1,7 @@
 # Gun App Refactor: Detailed Action Plan
 
+> **Note**: Phase 2 details have been moved to a separate document: [`PHASE2_PLAN.md`](./PHASE2_PLAN.md)
+
 ## Current Architecture Analysis
 
 ### **Completed: Initial Cleanup Phase**
@@ -680,5 +682,224 @@ document.dispatchEvent(
 9. **ConnectionDetailsController** - Create `ConnectionDetailsController.js` and move connection events
 10. **Test Integration** - Ensure all controllers work together seamlessly
 11. **Prepare for gunWrapper Refactoring** - Once all controllers are stable
+
+---
+
+## **Phase 2: gunWrapper and Services Refactoring**
+
+### **gunWrapper.js Analysis (1150 lines) - Core Issues**
+
+-   **Class**: `GunDBWrapper` with 30+ methods
+-   **Dependencies**: Requires `connection` object in constructor
+-   **Methods by category**:
+    -   **CRUD**: `getNode`, `getEdge`, `upsertNode`, `upsertEdge`
+    -   **Props**: `getNodeProps`, `getEdgeProps`, `getPropsIsolated`
+    -   **Network**: `runNetworkDiscovery`, `queryPeerEndpoints`, `queryGunCatalogs`
+    -   **Debug**: `testIsolatedInstance`, `debugNodeData`, `testIsolatedPropsFetch`
+    -   **Utility**: `cleanNodeData`, `cleanEdgeData`
+
+### **Service Dependencies (Critical Path)**
+
+```
+gun.js (main app)
+├── StateManager (manages network, room, auth state)
+├── EventCoordinator (coordinates all services)
+├── GunConnection (manages GunDB instance and peers)
+├── AuthManager (handles user authentication)
+├── RoomManager (manages room operations)
+├── GraphOperations (handles node/edge CRUD)
+├── DataSync (manages data synchronization)
+└── GunDBWrapper (wraps GunDB operations)
+```
+
+### **Event Flow Complexity**
+
+-   **DOM events**: `ui:connect`, `ui:disconnect`, `ui:joinRoom`
+-   **Custom events**: `graph:requestProps`, `graph:propsLoaded`
+-   **Service events**: `connectionStatusChanged`, `roomStatusChanged`
+-   **State events**: `stateChanged` broadcast to DOM
+
+### **Phase 2 Strategy: Extract gunWrapper Methods (SAFE)**
+
+**Goal**: Break down 1150-line file into focused utility methods
+
+**Extraction Order** (by dependency level):
+
+1. **Pure utility methods** (no dependencies):
+
+    ```javascript
+    // Move to lib/utils.js
+    -cleanNodeData() - cleanEdgeData() - generateId();
+    ```
+
+2. **Basic CRUD methods** (minimal dependencies):
+
+    ```javascript
+    // Keep in gunWrapper.js initially
+    -getNode(room, nodeId) -
+    	getEdge(room, edgeId) -
+    	upsertNode(room, nodeData) -
+    	upsertEdge(room, edgeData);
+    ```
+
+3. **Props methods** (depend on CRUD):
+
+    ```javascript
+    // Keep in gunWrapper.js initially
+    -getNodeProps(room, nodeId) -
+    	getEdgeProps(room, edgeId) -
+    	getPropsIsolated(room, elementType, elementId);
+    ```
+
+4. **Network methods** (depend on connection):
+    ```javascript
+    // Keep in gunWrapper.js initially
+    -runNetworkDiscovery() - queryPeerEndpoints() - queryGunCatalogs();
+    ```
+
+### **Create ServiceController Skeleton (SAFE)**
+
+**Goal**: Single controller for all backend operations
+
+**Structure**:
+
+```javascript
+// controllers/ServiceController.js
+class ServiceController {
+	constructor(gunWrapper) {
+		this.gunWrapper = gunWrapper;
+		this.currentRoom = null;
+		this.currentUser = null;
+	}
+
+	// CRUD operations
+	async createNode(room, nodeData) {
+		/* call gunWrapper.upsertNode */
+	}
+	async getNode(room, nodeId) {
+		/* call gunWrapper.getNode */
+	}
+	async updateNode(room, nodeId, nodeData) {
+		/* call gunWrapper.upsertNode */
+	}
+	async deleteNode(room, nodeId) {
+		/* call gunWrapper method */
+	}
+
+	// Auth operations
+	async createUser(alias, password) {
+		/* implement auth logic */
+	}
+	async loginUser(alias, password) {
+		/* implement auth logic */
+	}
+	async logoutUser() {
+		/* implement auth logic */
+	}
+
+	// Room operations
+	async joinRoom(roomName) {
+		/* implement room logic */
+	}
+	async leaveRoom() {
+		/* implement room logic */
+	}
+
+	// Network operations
+	async connect(peers) {
+		/* implement connection logic */
+	}
+	async disconnect() {
+		/* implement disconnection logic */
+	}
+}
+```
+
+### **Event System Simplification**
+
+**Current Event Flow**:
+
+```
+UI Event → EventCoordinator → Service → StateManager → DOM Event → UI Update
+```
+
+**New Event Flow**:
+
+```
+UI Event → Controller → ServiceController → Direct UI Update
+```
+
+**Implementation**:
+
+```javascript
+// Remove complex event coordination
+// Use direct method calls and simple events
+
+// Before (complex):
+document.addEventListener('ui:createNode', (e) => {
+	this.eventCoordinator.handleCreateNode(e.detail);
+});
+
+// After (simple):
+document.addEventListener('ui:createNode', async (e) => {
+	const result = await this.serviceController.createNode(room, e.detail);
+	if (result) {
+		// Update UI directly
+		this.updateNodeDisplay(result);
+	}
+});
+```
+
+### **Testing Strategy**
+
+**Test 1: gunWrapper Methods**
+
+```javascript
+// Test in browser console
+const wrapper = new GunDBWrapper(connection);
+const node = await wrapper.getNode('public', 'test-node');
+console.log('Node retrieved:', node);
+```
+
+**Test 2: ServiceController CRUD**
+
+```javascript
+// Test in browser console
+const service = new ServiceController(wrapper);
+const result = await service.createNode('public', { label: 'Test', props: {} });
+console.log('Node created:', result);
+```
+
+### **Rollback Plan**
+
+**If gunWrapper breaks**:
+
+-   Revert to previous version
+-   Test individual methods to identify issue
+-   Fix method in place before continuing
+
+**If ServiceController breaks**:
+
+-   Comment out broken methods
+-   Keep old services running
+-   Fix one method at a time
+
+**If events break**:
+
+-   Revert to old event system
+-   Identify which events are critical
+-   Fix event handling before continuing
+
+### **Phase 2 Success Criteria**
+
+-   ✅ **gunWrapper.js** < 200 lines (utility methods only)
+-   ✅ **ServiceController** handles all CRUD operations
+-   ✅ **Basic functionality** works (create/read nodes, auth, connection)
+-   ✅ **No complex event coordination**
+-   ✅ **Controllers manage own state**
+-   ✅ **Clean architecture** with single ServiceController
+-   ✅ **Simple event flow** between controllers
+-   ✅ **No StateManager** dependency
+-   ✅ **All tests pass**
 
 This detailed plan provides the specific steps needed to safely implement the controller architecture without breaking functionality.

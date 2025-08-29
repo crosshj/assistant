@@ -350,26 +350,8 @@ class GunApp {
 	}
 
 	initUI() {
-		// Initialize visualization only when needed (in room mode)
-		// this.visualization.init('cy'); // Moved to showInRoomMode()
-
-		// Setup component event handlers
-		// this.headerController.setInitialValues();
-		// Event handlers are now set up in the Room component
-		// this.room.setupEventHandlers();
-
-		// Set initial values
 		this.headerController.setInitialValues();
-
-		// Log button setup now handled by ActivityController
-
-		// Setup room list event listeners
-		this.setupRoomListEventListeners();
-
-		// Setup window resize handler for Cytoscape canvas
 		this.setupResizeHandler();
-
-		// Note: Initial header state is set in start() method, not here
 	}
 
 	setupResizeHandler() {
@@ -384,54 +366,6 @@ class GunApp {
 			}
 		});
 	}
-
-	setupRoomListEventListeners() {
-		// Setup event listeners for the static room list
-		const roomCards = document.querySelectorAll('.room-card');
-		roomCards.forEach((card) => {
-			card.addEventListener('click', (e) => {
-				// Don't trigger if clicking on the button specifically
-				if (e.target.classList.contains('join-room-btn')) {
-					return;
-				}
-
-				// Get room name from the card's onclick attribute or data attribute
-				const roomName =
-					card
-						.getAttribute('onclick')
-						?.match(/joinRoom\('([^']+)'\)/)?.[1] ||
-					card.querySelector('h3')?.textContent;
-
-				if (roomName) {
-					window.joinRoom(roomName);
-				}
-			});
-		});
-
-		// Setup event listeners for join room buttons
-		const joinButtons = document.querySelectorAll('.join-room-btn');
-		joinButtons.forEach((button) => {
-			button.addEventListener('click', (e) => {
-				e.stopPropagation(); // Prevent card click event
-				const roomName =
-					button
-						.closest('.room-card')
-						.getAttribute('onclick')
-						?.match(/joinRoom\('([^']+)'\)/)?.[1] ||
-					button.closest('.room-card').querySelector('h3')
-						?.textContent;
-
-				if (roomName) {
-					window.joinRoom(roomName);
-				}
-			});
-		});
-	}
-
-	// Note: Header visibility is now handled by Header component + NetworkUI controller
-	// This method is no longer needed
-
-	// Note: Monitoring is no longer needed since NetworkUI handles all rendering
 }
 
 // Start the application

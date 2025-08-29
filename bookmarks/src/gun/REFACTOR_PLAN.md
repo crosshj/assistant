@@ -1,16 +1,40 @@
-# Gun App Refactor: Phase 1 - Controller Architecture
+# Gun App Refactor: Action Plan
 
-## Current State Analysis
+## Current Architecture Analysis
 
-We have successfully completed the initial cleanup phase:
+### **gunWrapper.js (1150 lines) - Core Issues**
 
-✅ **Components are now DOM creators** - each component creates its own HTML
-✅ **File structure reorganized** - component-based folders instead of `components/` folder  
-✅ **Fresh visualization approach** - Cytoscape starts fresh for each room
-✅ **Console cleaned up** - removed verbose logging
-✅ **Force-directed layout** as default
+-   **Class**: `GunDBWrapper` with 30+ methods
+-   **Dependencies**: Requires `connection` object in constructor
+-   **Methods by category**:
+    -   **CRUD**: `getNode`, `getEdge`, `upsertNode`, `upsertEdge`
+    -   **Props**: `getNodeProps`, `getEdgeProps`, `getPropsIsolated`
+    -   **Network**: `runNetworkDiscovery`, `queryPeerEndpoints`, `queryGunCatalogs`
+    -   **Debug**: `testIsolatedInstance`, `debugNodeData`, `testIsolatedPropsFetch`
+    -   **Utility**: `cleanNodeData`, `cleanEdgeData`
 
-## Phase 1: Controller Architecture Goals
+### **Service Dependencies (Critical Path)**
+
+```
+gun.js (main app)
+├── StateManager (manages network, room, auth state)
+├── EventCoordinator (coordinates all services)
+├── GunConnection (manages GunDB instance and peers)
+├── AuthManager (handles user authentication)
+├── RoomManager (manages room operations)
+├── GraphOperations (handles node/edge CRUD)
+├── DataSync (manages data synchronization)
+└── GunDBWrapper (wraps GunDB operations)
+```
+
+### **Event Flow Complexity**
+
+-   **DOM events**: `ui:connect`, `ui:disconnect`, `ui:joinRoom`
+-   **Custom events**: `graph:requestProps`, `graph:propsLoaded`
+-   **Service events**: `connectionStatusChanged`, `roomStatusChanged`
+-   **State events**: `stateChanged` broadcast to DOM
+
+## Phase 1: Controller Architecture Strategy
 
 ### **CRITICAL PRINCIPLE: Separation of Concerns**
 
@@ -22,247 +46,36 @@ We have successfully completed the initial cleanup phase:
 -   ✅ **Better testability** - controllers can be unit tested independently
 -   ✅ **Easier maintenance** - event handling centralized in one place per component
 -   ✅ **Reusable logic** - controllers can work with different UI components
+-   ✅ **Foundation for gunWrapper refactoring** - clean architecture makes complex refactoring easier
 
-### **1. Create Controllers for Each Component**
+### **Step 1: Create Controller Architecture (CRITICAL)**
 
--   **Current**: Event handlers and business logic scattered throughout components and services
--   **Goal**: Each component has a dedicated controller handling all its logic
--   **Approach**: Extract event handlers, business logic, and service calls into controllers
+**Goal**: Establish clean separation between UI components and business logic
 
-### **2. Move Event Logic Out of Services**
+**Current Problem**:
 
--   **Current**: Services handle both data operations and event coordination
--   **Goal**: Services focus on data operations, controllers handle events
--   **Approach**: Move event handling from EventCoordinator, StateManager, etc. into component controllers
+-   **Event logic scattered** throughout services and components
+-   **Service responsibilities mixed** - data operations + event coordination
+-   **Complex event flow** - UI → Component → Service → EventCoordinator → StateManager
+-   **gunWrapper.js** - 1150 lines with mixed responsibilities
 
-### **3. Simplify Component Responsibilities**
+**Solution**: Create dedicated controllers for each major UI component
 
--   **Current**: Components handle rendering, events, and business logic
--   **Goal**: Components become pure UI renderers
--   **Approach**: Components call controller methods, controllers handle all external communication
+**Implementation Order** (most complex to simplest):
 
-### **4. Centralize Event Handling**
+1. **RoomController** - handles visualization, room state, graph operations
+2. **HeaderController** - handles network, auth, room selection
+3. **ActivityController** - handles activity log updates
+4. **ConnectionDetailsController** - handles peer connection events
 
--   **Current**: Events handled in multiple places (components, services, main app)
--   **Goal**: Single event handling location per component
--   **Approach**: Controllers listen for events and coordinate with services
+**Why This Order**:
 
-## Implementation Steps
+-   **RoomController first** - most complex with visualization logic
+-   **HeaderController second** - network and auth coordination
+-   **ActivityController third** - simpler log management
+-   **ConnectionDetailsController last** - peer-specific events
 
-### **Step 1: Create Controller Structure**
-
-Create the basic controller pattern for each component:
-
-```
-src/gun/
-├── Header/
-│   ├── Header.js (UI rendering only)
-│   ├── Header.css
-│   └── HeaderController.js (event handling + business logic)
-├── Room/
-│   ├── Room.js (UI rendering only)
-│   ├── Room.css
-│   └── RoomController.js (event handling + business logic)
-├── Activity/
-│   ├── Activity.js (UI rendering only)
-│   ├── Activity.css
-│   └── ActivityController.js (event handling + business logic)
-├── ConnectionDetails/
-│   ├── ConnectionDetails.js (UI rendering only)
-│   ├── ConnectionDetails.css
-│   └── ConnectionDetailsController.js (event handling + business logic)
-```
-
-### **Step 2: Extract Event Handlers from Components**
-
--   Move all event listeners from components to controllers
--   Move business logic methods to controllers
--   Components become pure renderers that call controller methods
--   Test that functionality remains identical
-
-### **Step 3: Move Event Logic Out of Services**
-
--   **EventCoordinator**: Move room join/leave logic to RoomController
--   **StateManager**: Move state change handling to appropriate controllers
--   **Sync service**: Keep data operations, move event coordination to controllers
--   **PropsManager**: Move props loading logic to controllers
-
-### **Step 4: Establish Controller-Service Communication**
-
-```javascript
-// Controllers coordinate with services
-class RoomController {
-	constructor(roomService, syncService, visualizationService) {
-		this.roomService = roomService;
-		this.syncService = syncService;
-		this.visualizationService = visualizationService;
-	}
-
-	handleJoinRoom(roomName) {
-		// Coordinate between services
-		this.roomService.joinRoom(roomName);
-		this.syncService.subscribeToRoom(roomName);
-		this.visualizationService.initializeForRoom(roomName);
-	}
-}
-```
-
-### **Step 5: Test Controller Integration**
-
--   Verify all existing functionality works through controllers
--   Test event flow: UI → Component → Controller → Service
--   Ensure no regression in user experience
-
-## Success Criteria for Phase 1
-
--   ✅ **EXACT SAME FUNCTIONALITY** - no changes to user experience
--   ✅ **EXACT SAME APPEARANCE** - no visual changes
--   ✅ **Components are pure UI renderers** (no business logic)
--   ✅ **Controllers handle all events and business logic**
--   ✅ **Services focus on data operations only**
--   ✅ **Event handling centralized** in component controllers
--   ✅ **Clean separation of concerns** between UI and logic
--   ✅ **All existing functionality works** through controller layer
--   ✅ **Architecture ready for gunWrapper refactoring**
-
-## Target File Structure
-
-### **Phase 1: Controller Architecture (Current Target)**
-
-```
-src/gun/
-├── lib/
-│   ├── gunWrapper.js (keep as-is for now)
-│   ├── cytoscapeWrapper.js
-│   └── utils.js
-├── Header/
-│   ├── Header.js (UI rendering only)
-│   ├── Header.css
-│   └── HeaderController.js (event handling + business logic)
-├── Room/
-│   ├── Room.js (UI rendering only)
-│   ├── Room.css
-│   └── RoomController.js (event handling + business logic)
-├── Activity/
-│   ├── Activity.js (UI rendering only)
-│   ├── Activity.css
-│   └── ActivityController.js (event handling + business logic)
-├── ConnectionDetails/
-│   ├── ConnectionDetails.js (UI rendering only)
-│   ├── ConnectionDetails.css
-│   └── ConnectionDetailsController.js (event handling + business logic)
-├── services/ (keep existing services for now)
-│   ├── auth.js
-│   ├── connection.js
-│   ├── eventCoordinator.js
-│   ├── graphOperations.js
-│   ├── PropsManager.js
-│   ├── room.js
-│   ├── stateManager.js
-│   └── sync.js
-├── gun.js
-└── gun.css (global styles only)
-```
-
-### **Controller Responsibilities**
-
-#### **HeaderController**
-
--   **Event wiring** - Connect DOM events to service calls
--   **Minimal business logic** - Mainly coordinate between UI and services
--   **Network connection/disconnection events**
--   **Room selection events**
--   **Authentication state management**
-
-#### **RoomController**
-
--   **Event wiring** - Connect DOM events to service calls
--   **Minimal business logic** - Mainly coordinate between UI and services
--   **Room join/leave events**
--   **Visualization initialization/destruction**
--   **Node/edge CRUD events**
--   **Layout change events**
-
-#### **ActivityController**
-
--   **Event wiring** - Connect DOM events to service calls
--   **Minimal business logic** - Mainly coordinate between UI and services
--   **Activity log updates**
--   **Log clearing/copying**
-
-#### **ConnectionDetailsController**
-
--   **Event wiring** - Connect DOM events to service calls
--   **Minimal business logic** - Mainly coordinate between UI and services
--   **Peer connection events**
--   **Network status updates**
--   **Connection testing events**
-
-### **Phase 2: Future Architecture (Document-Centric)**
-
-```
-src/gun/
-├── lib/
-├── Application/
-├── FileTree/
-├── DocumentEditor/
-├── GraphView/
-├── Header/
-└── ConnectionDetails/
-```
-
-## Phase 2: Migration to New Architecture
-
-**After Phase 1 is complete and working**, migrate to new architecture:
-
--   **2-pane desktop layout** (FileTree | DocumentEditor/GraphView)
--   **Mobile view switching** via menu
--   **Document-centric** with auto-generated graph
--   **Responsive design** with CSS Grid/Flexbox
--   **New component structure** (FileTree, DocumentEditor, GraphView, Header, ConnectionDetails)
-
-**Note**: Phase 2 is about changing the user experience and layout. Phase 1 is about reorganizing the current functionality without changing how it works or looks.
-
-## Why This Order?
-
-1. **Exact replication first** - reorganize without changing functionality
-2. **Cleanup second** - remove architectural debt while maintaining behavior
-3. **Test foundation** - ensure basic operations work exactly the same
-4. **Then migrate** - build new architecture on clean foundation
-5. **Reduce risk** - smaller, testable changes with no user-facing impact
-
-## Testing Approach
-
-**CRITICAL: Exact Replication Testing**
-
--   **Functional regression testing** - every current feature works exactly the same
--   **Visual regression testing** - exact same appearance and layout
--   **Interaction testing** - all current user interactions work identically
--   **Performance testing** - no performance regression
-
-## Next Steps
-
-### **CRITICAL: Complete Before Controllers**
-
-1. **Fix Network Disconnection State**:
-
-    - When disconnecting from network, room pane should go into blank state
-    - Clear visualization and show appropriate "disconnected" message
-    - Prevent room operations when disconnected
-
-2. **Fix Connection Details Modal Buttons**:
-    - Refresh button should trigger network discovery
-    - Network discovery button should work when clicked from modal
-    - Ensure proper event handling for these buttons
-
-### **Then Implement Controller Architecture**:
-
-3. **Start with RoomController** - extract event handling and business logic from Room.js
-4. **Create HeaderController** - move header event logic from Header.js
-5. **Create ActivityController** - move activity log logic from Activity.js
-6. **Create ConnectionDetailsController** - move connection event logic
-7. **Test controller integration** - ensure all functionality works through controllers
-8. **Prepare for gunWrapper refactoring** - once controllers are stable
+**Action**: Implement one controller at a time, test thoroughly before moving to next
 
 ## **✅ PHASE 1 COMPLETED: Controller Architecture Implementation**
 
@@ -328,5 +141,90 @@ User → Room component → Direct calls → RoomController → Service calls �
 -   **ConnectionDetailsController** - move connection event logic from ConnectionDetails.js
 -   **Test controller integration** - ensure all functionality works through controllers
 -   **Prepare for gunWrapper refactoring** - once all controllers are stable
+
+---
+
+## **Phase 2: gunWrapper and Services Refactoring**
+
+**See separate document**: [`PHASE2_PLAN.md`](./PHASE2_PLAN.md)
+
+**Overview**: Break down the monolithic gunWrapper.js (1150 lines) into focused, maintainable service classes while preserving all functionality.
+
+**Key Goals**:
+
+-   Extract gunWrapper methods by dependency level
+-   Create ServiceController for all backend operations
+-   Simplify event system (remove EventCoordinator/StateManager)
+-   Maintain exact functionality during refactoring
+
+---
+
+## **Phase 3: Future Architecture (Document-Centric)**
+
+### **Target Architecture**
+
+**After Phase 2 is complete and working**, migrate to new architecture:
+
+```
+src/gun/
+├── lib/
+├── Application/
+├── FileTree/
+├── DocumentEditor/
+├── GraphView/
+├── Header/
+└── ConnectionDetails/
+```
+
+**Key Changes**:
+
+1. **2-pane desktop layout**: FileTree | DocumentEditor/GraphView
+2. **Mobile view switching** via menu
+3. **Document-centric data model** instead of graph-centric
+4. **App-scoped authentication** instead of user-scoped
+5. **Links-as-nodes approach** for content relationships
+
+**Note**: Phase 2 is about changing the user experience and layout. Phase 1 is about reorganizing the current functionality without changing how it works or looks.
+
+## Why This Order?
+
+1. **Exact replication first** - reorganize without changing functionality
+2. **Cleanup second** - remove architectural debt while maintaining behavior
+3. **Test foundation** - ensure basic operations work exactly the same
+4. **Then migrate** - build new architecture on clean foundation
+5. **Reduce risk** - smaller, testable changes with no user-facing impact
+
+## Testing Approach
+
+**CRITICAL: Exact Replication Testing**
+
+-   **Functional regression testing** - every current feature works exactly the same
+-   **Visual regression testing** - exact same appearance and layout
+-   **Interaction testing** - all current user interactions work identically
+-   **Performance testing** - no performance regression
+
+## Next Steps
+
+### **CRITICAL: Complete Before Controllers**
+
+1. **Fix Network Disconnection State**:
+
+    - When disconnecting from network, room pane should go into blank state
+    - Clear visualization and show appropriate "disconnected" message
+    - Prevent room operations when disconnected
+
+2. **Fix Connection Details Modal Buttons**:
+    - Refresh button should trigger network discovery
+    - Network discovery button should work when clicked from modal
+    - Ensure proper event handling for these buttons
+
+### **Then Implement Controller Architecture**:
+
+3. **Start with RoomController** - extract event handling and business logic from Room.js
+4. **Create HeaderController** - move header event logic from Header.js
+5. **Create ActivityController** - move activity log logic from Activity.js
+6. **Create ConnectionDetailsController** - move connection event logic
+7. **Test controller integration** - ensure all functionality works through controllers
+8. **Prepare for gunWrapper refactoring** - once controllers are stable
 
 This approach ensures the refactor goes smoothly by establishing clean separation of concerns before tackling the complex gunWrapper refactoring.
