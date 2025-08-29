@@ -287,9 +287,13 @@ header .identity-icon {
 }
 
 .room-loading {
-	display: flex;
+	display: none;
 	gap: 0.5rem;
 	align-items: center;
+}
+
+.room-loading.visible {
+	display: flex;
 }
 
 .room-inputs {

@@ -42,6 +42,12 @@
 	min-height: 0; /* Allow body to shrink */
 }
 
+/* Make SVG icons non-interactive so clicks hit the button */
+#copyLog svg,
+#clearLog svg {
+	pointer-events: none;
+}
+
 /* =====================
       LIST STYLES
       ===================== */
@@ -60,6 +66,46 @@
 	border: 1px solid var(--card-border);
 	border-radius: 8px;
 	font-size: 0.85rem;
+}
+
+/* =====================
+      LOG ENTRY STYLES
+      ===================== */
+
+.log-entry {
+	padding: 0.35rem 0.5rem;
+	background: var(--card-bg);
+	border: 1px solid var(--card-border);
+	border-radius: 8px;
+	font-size: 0.85rem;
+}
+
+.log-timestamp {
+	color: #999;
+	font-size: 0.9em;
+	display: block;
+	margin-bottom: 3px;
+	font-family: monospace;
+}
+
+.log-message {
+	color: var(--text-bright);
+}
+
+.log-info .log-message {
+	color: var(--text-bright);
+}
+
+.log-success .log-message {
+	color: #4caf50;
+}
+
+.log-warning .log-message {
+	color: #ff9800;
+}
+
+.log-error .log-message {
+	color: #f44336;
 }
 
 /* =====================

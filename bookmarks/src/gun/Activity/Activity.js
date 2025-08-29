@@ -8,7 +8,7 @@ export class Activity {
 		this.log = [];
 
 		this.render(containerId);
-		this.bindEvents();
+		// Event binding handled by ActivityController via delegation
 	}
 
 	render(containerId) {
@@ -112,27 +112,16 @@ export class Activity {
 		this.logElement = this.container.querySelector('#log');
 	}
 
-	bindEvents() {
-		// Copy log button
-		const copyLogBtn = this.container.querySelector('#copyLog');
-		if (copyLogBtn) {
-			copyLogBtn.addEventListener('click', () => {
-				this.copyLog();
-			});
-		}
-
-		// Clear log button
-		const clearLogBtn = this.container.querySelector('#clearLog');
-		if (clearLogBtn) {
-			clearLogBtn.addEventListener('click', () => {
-				this.clearLog();
-			});
-		}
-	}
-
 	// Public methods for logging
 	logMessage(message, type = 'info') {
-		const timestamp = new Date().toLocaleTimeString();
+		const now = new Date();
+		const timestamp = now.toLocaleTimeString('en-GB', {
+			hour12: false,
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			fractionalSecondDigits: 3,
+		});
 		const logEntry = {
 			message,
 			type,
@@ -159,25 +148,15 @@ export class Activity {
 			.join('');
 	}
 
-	copyLog() {
-		const logText = this.log
-			.map((entry) => `[${entry.timestamp}] ${entry.message}`)
-			.join('\n');
-
-		navigator.clipboard
-			.writeText(logText)
-			.then(() => {
-				this.logMessage('Activity log copied to clipboard', 'success');
-			})
-			.catch(() => {
-				this.logMessage('Failed to copy log to clipboard', 'error');
-			});
+	// Method to get the current log (for external access)
+	getLog() {
+		return [...this.log];
 	}
 
+	// Method for controller to clear log
 	clearLog() {
 		this.log = [];
 		this.renderLog();
-		this.logMessage('Activity log cleared', 'info');
 	}
 
 	// Convenience methods for different log types
@@ -195,10 +174,5 @@ export class Activity {
 
 	error(message) {
 		this.logMessage(message, 'error');
-	}
-
-	// Method to get the current log (for external access)
-	getLog() {
-		return [...this.log];
 	}
 }

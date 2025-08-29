@@ -3,34 +3,12 @@
 export const $ = (id) => document.getElementById(id);
 
 export const log = (msg) => {
-	const li = document.createElement('li');
-	const now = new Date();
-	const timestamp =
-		now.getHours().toString().padStart(2, '0') +
-		':' +
-		now.getMinutes().toString().padStart(2, '0') +
-		':' +
-		now.getSeconds().toString().padStart(2, '0') +
-		'.' +
-		now.getMilliseconds().toString().padStart(3, '0');
-
-	// Create timestamp element with more visible styling
-	const timeSpan = document.createElement('span');
-	timeSpan.textContent = timestamp;
-	timeSpan.style.cssText =
-		'color: #999; font-size: 0.9em; display: block; margin-bottom: 3px; font-family: monospace;';
-
-	// Create message element
-	const msgSpan = document.createElement('span');
-	msgSpan.textContent = msg;
-
-	// Clear the list item and append both elements
-	li.innerHTML = '';
-	li.appendChild(timeSpan);
-	li.appendChild(msgSpan);
-
-	$('log').prepend(li);
-	// console.log(msg);
+	// Fire event for ActivityController to handle instead of direct DOM manipulation
+	document.dispatchEvent(
+		new CustomEvent('activity:log', {
+			detail: { message: msg, type: 'info' },
+		})
+	);
 };
 
 export const uuid = () =>

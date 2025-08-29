@@ -145,7 +145,7 @@ export class GraphVisualization {
 			}, 100);
 
 			this.initialized = true;
-			log('Cytoscape visualization initialized');
+			// log('Cytoscape visualization initialized');
 
 			return this.cy;
 		} catch (error) {
@@ -767,6 +767,6 @@ export class GraphVisualization {
 			this.layoutTimeout = null;
 		}
 
-		log('🗑️ Visualization destroyed and reset');
+		// log('🗑️ Visualization destroyed and reset');
 	}
 }

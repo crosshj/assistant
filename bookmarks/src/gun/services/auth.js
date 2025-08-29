@@ -31,7 +31,7 @@ export class AuthManager {
 			if (err) {
 				log('auth error ' + err);
 			} else {
-				log('logged in as ' + alias);
+				// log('logged in as ' + alias);
 
 				// Update state to reflect authentication
 				this.stateManager.setAuthAuthenticated(alias);
@@ -52,7 +52,7 @@ export class AuthManager {
 				if (err) {
 					log('auth error ' + err);
 				} else {
-					log('logged in as ' + saved.alias);
+					// log('logged in as ' + saved.alias);
 
 					// Update state to reflect authentication
 					this.stateManager.setAuthAuthenticated(saved.alias);

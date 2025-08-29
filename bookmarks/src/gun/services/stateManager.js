@@ -1,11 +1,11 @@
-import { log } from '../lib/utils.js';
-
 /**
  * Centralized State Manager
  * Single source of truth for all application state
  */
+import { log } from '../lib/utils.js';
+
 export class StateManager {
-	constructor(activity = null) {
+	constructor() {
 		this.state = {
 			// Network state
 			network: {
@@ -32,7 +32,6 @@ export class StateManager {
 		this.listeners = new Map();
 		this._connectionStartTime = Date.now(); // Track when we started connecting
 		this._maxConnectionTime = 10000; // 10 seconds max connection time
-		this.activity = activity; // Reference to activity for activity logging
 		this._timeoutInterval = null; // Track the timeout interval
 		this._userManuallyLeftRoom = false; // Track if user manually left vs. page refresh
 
@@ -113,22 +112,15 @@ export class StateManager {
 		if (wasDisconnected && connected > 0) {
 			const message = `✅ Network: Connected to ${connected}/${total} peers`;
 			log(message);
-			// Don't log connection messages to activity feed - too noisy
-			// if (this.sidebar) this.sidebar.success(message);
 		} else if (wasConnecting && connected > 0) {
 			// Log when we first get connections after being in connecting state
 			const message = `🔌 Network: First connections established: ${connected}/${total} peers`;
 			log(message);
-			// Don't log connection messages to activity feed - too noisy
-			// if (this.sidebar) this.sidebar.success(message);
 		} else if (wasConnecting && connected === total) {
 			// Log when we achieve full connection from connecting state
 			const message = `🎯 Network: Full connection achieved: ${connected}/${total} peers`;
 			log(message);
-			// Don't log connection messages to activity feed - too noisy
-			// if (this.sidebar) this.sidebar.success(message);
 		}
-		// Removed duplicate disconnection logging - timeout now handles this directly
 	}
 
 	setNetworkManuallyDisconnected() {
@@ -146,8 +138,6 @@ export class StateManager {
 
 		const message = '✅ Network: Manually disconnected';
 		log(message);
-		// Don't log connection messages to activity feed - too noisy
-		// if (this.sidebar) this.sidebar.success(message);
 	}
 
 	isAutoJoining() {
@@ -182,7 +172,7 @@ export class StateManager {
 		this._userManuallyLeftRoom = false;
 		// Reset auto-join flag since joining is complete
 		this._autoJoinTriggered = false;
-		log('🔍 DEBUG: User joined room - auto-join re-enabled');
+		// log('🔍 DEBUG: User joined room - auto-join re-enabled');
 		this._emitStateChange();
 		log(`✅ Room: Joined ${roomName}`);
 	}
@@ -192,7 +182,7 @@ export class StateManager {
 		this.state.room.name = null;
 		// Mark that user manually left the room (prevents auto-join)
 		this._userManuallyLeftRoom = true;
-		log('🔍 DEBUG: User manually left room - auto-join disabled');
+		// log('🔍 DEBUG: User manually left room - auto-join disabled');
 		this._emitStateChange();
 		log('✅ Room: Left room');
 	}
@@ -261,11 +251,6 @@ export class StateManager {
 					const timeoutMessage =
 						'⏰ Network: Connection timeout - forcing transition to disconnected state';
 					log(timeoutMessage);
-
-					// Don't log timeout messages to activity feed - too noisy
-					// if (this.sidebar) {
-					// 	this.sidebar.warning(timeoutMessage);
-					// }
 
 					// Directly update state to avoid triggering setNetworkConnected logic
 					this.state.network.status = 'disconnected';

@@ -90,7 +90,7 @@ export class RoomManager {
 		this.edgesChain = null;
 
 		this.emit('roomStatusChanged', 'not joined', null);
-		log('left room');
+		// log('left room');
 	}
 
 	// Export room data function

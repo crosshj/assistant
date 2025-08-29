@@ -17,6 +17,7 @@ import { PropsManager } from './services/PropsManager.js';
 // Import controllers
 import { RoomController } from './Room/RoomController.js';
 import { HeaderController } from './Header/HeaderController.js';
+import { ActivityController } from './Activity/ActivityController.js';
 
 // Main GunDB Application
 class GunApp {
@@ -36,7 +37,6 @@ class GunApp {
 
 		// UI components
 		this.room = null;
-		this.activity = null;
 		this.connectionDetails = null;
 		this.propsManager = null;
 
@@ -48,11 +48,8 @@ class GunApp {
 		// Show content once styles are loaded
 		document.body.classList.add('styles-loaded');
 
-		// Initialize activity component first (needed by StateManager)
-		this.activity = new Activity();
-
-		// Initialize state manager with activity component
-		this.stateManager = new StateManager(this.activity);
+		// Initialize state manager (no longer needs activity reference)
+		this.stateManager = new StateManager();
 
 		// Broadcast state changes as DOM events for components that need them
 		this.stateManager.on('stateChanged', (state) => {
@@ -93,6 +90,9 @@ class GunApp {
 			this.auth,
 			this.stateManager
 		);
+
+		// Initialize ActivityController (creates and owns Activity component)
+		this.activityController = new ActivityController();
 
 		// Get component references from controllers
 		this.room = this.roomController.ui; // TODO: this is BAD, we don't want room UI being accessed directly!!!
@@ -361,11 +361,7 @@ class GunApp {
 		// Set initial values
 		this.headerController.setInitialValues();
 
-		// Setup clear log button
-		this.setupClearLogButton();
-
-		// Setup copy log button
-		this.setupCopyLogButton();
+		// Log button setup now handled by ActivityController
 
 		// Setup room list event listeners
 		this.setupRoomListEventListeners();
@@ -387,24 +383,6 @@ class GunApp {
 				this.resizeCytoscapeCanvas();
 			}
 		});
-	}
-
-	setupClearLogButton() {
-		const clearLogBtn = document.getElementById('clearLog');
-		if (clearLogBtn) {
-			clearLogBtn.onclick = () => {
-				window.clearActivityLog();
-			};
-		}
-	}
-
-	setupCopyLogButton() {
-		const copyLogBtn = document.getElementById('copyLog');
-		if (copyLogBtn) {
-			copyLogBtn.onclick = () => {
-				window.copyActivityLog();
-			};
-		}
 	}
 
 	setupRoomListEventListeners() {

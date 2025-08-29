@@ -1,71 +1,87 @@
 # Gun App Architecture
 
-## Current Pattern (Established)
+## Controller Pattern (Implemented)
 
-### Controller-Component Relationship
+### Core Principles
 
--   **Controller creates and owns component**: `this.ui = new Component()`
--   **Component receives controller reference**: `constructor({ controller })`
--   **Controller property naming**: `this.ui` (not `this.component`)
+-   **Controller owns UI completely**: `this.ui = new Component()`
+-   **UI components are pure renderers**: No business logic, no controller knowledge
+-   **Event-driven communication**: All interactions via DOM events
+-   **Centralized event handling**: Controller binds all events in `setupEventListeners()`
 
-### Event Flow (Current)
-
-```
-User Action → Component → Controller → Services (direct calls)
-External Events → Controller → Component (via method calls)
-Controller → Services (direct calls, binding to service events)
-```
-
-### Responsibilities
-
--   **Controller**: Owns UI, handles events, coordinates services, calls UI methods
--   **Component**: Pure UI rendering, calls controller methods, no service dependencies
--   **Services**: Data operations, emit events
-
-### Service Integration (Current)
-
--   Controllers receive services in constructor
--   Controllers bind directly to service events
--   Controllers call services directly
-
-## Future Architecture (Preferred)
-
-### Pure UI Pattern
-
-```
-Controller → Creates UI → Sets up ALL event listeners → Owns UI completely
-UI → Pure rendering → No business logic → No controller knowledge
-```
-
-### Event-Driven Communication
+### Architecture Flow
 
 ```
 User Action → DOM Events → Controller → Services
 External Events → DOM Events → Controller → UI
-Controller → DOM Events → Services
+Controller → Services (direct calls for now)
 ```
 
-### Benefits
+**Note**: Controllers currently bind to services directly (e.g., `StateManager` events), but this is **NOT preferred**. Future goal is all communication via DOM events.
 
--   UI components completely pure (just DOM)
--   No circular dependencies
--   Better separation of concerns
--   Easier testing and reuse
+### Responsibilities
 
-## Implementation Notes
+-   **Controller**: Creates UI, handles all events, coordinates services, calls UI methods
+-   **UI Component**: Pure rendering only, no event binding, no service dependencies
+-   **Services**: Data operations, emit events
 
-### Current Acceptable
+### Service Binding (Current vs. Preferred)
 
--   Direct service calls from controllers
--   Service event binding in controllers
--   Component knowledge of controller
+**Current (Acceptable but not preferred):**
 
-### Future Goals
+-   Controllers bind to service events in constructor
+-   Controllers call services directly
+-   Example: `StateManager` events bound in `HeaderController`
+
+**Preferred (Future goal):**
 
 -   All communication via DOM events
--   Controllers handle all event binding
--   UI components are pure renderers
--   No component-to-controller dependencies
+-   No direct service dependencies in controllers
+-   Services emit DOM events, controllers listen to DOM events
+
+**Example of preferred pattern**: `ActivityController` listens to generic `activity:log` events from any service, rather than binding directly to specific service events.
+
+## Implementation Requirements
+
+### Event Delegation Pattern (CRITICAL)
+
+**UI Event Binding:**
+
+-   **ALL UI events bound in controller**: Use `setupEventListeners()` method
+-   **Event delegation on component DOM**: `this.ui.container.addEventListener('click', (e) => { ... })`
+-   **Target matching**: Use `e.target.matches('#buttonId')` for delegation
+-   **Scoped to component**: Events bound to component's container, not document-wide
+
+**CSS Requirements:**
+
+-   **Use `pointer-events: none` on child elements**: Prevents clicks on SVG icons, text, etc. from interfering with button clicks
+-   **Example**: `#copyLog svg, #clearLog svg { pointer-events: none; }`
+
+### Implementation Template
+
+```javascript
+setupEventListeners() {
+    // Event delegation for UI buttons (scoped to component DOM)
+    this.ui.container.addEventListener('click', (e) => {
+        if (e.target.matches('#buttonId')) {
+            this.handleButtonClick();
+        }
+    });
+
+    // Listen for external events
+    document.addEventListener('external:event', (e) => {
+        this.handleExternalEvent(e.detail);
+    });
+}
+```
+
+### Key Requirements
+
+-   **UI components have ZERO event binding code**
+-   **All event handling centralized in controller**
+-   **No controller references passed to UI components**
+-   **Events scoped to component's DOM container**
+-   **Controller owns UI completely**: `this.ui = new Component()`
 
 ## File Structure
 

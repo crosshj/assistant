@@ -101,9 +101,9 @@ export class DataSync {
 		this.emit('clearGraph');
 
 		// Log network status for debugging
-		log(
-			'🌐 Network: Starting room subscription (may be slow on poor connections)'
-		);
+		// log(
+		// 	'🌐 Network: Starting room subscription (may be slow on poor connections)'
+		// );
 
 		try {
 			// First, establish the subscription structure (but don't start syncing yet)
@@ -166,12 +166,12 @@ export class DataSync {
 					}
 
 					// Debug: Log the raw data structure
-					log(`🔍 Raw node data for ${shortId}:`, data);
-					log(
-						`🔍 Raw node data keys: [${Object.keys(data || {}).join(
-							', '
-						)}]`
-					);
+					// log(`🔍 Raw node data for ${shortId}:`, data);
+					// log(
+					// 	`🔍 Raw node data keys: [${Object.keys(data || {}).join(
+					// 		', '
+					// 	)}]`
+					// );
 
 					// TEMPORARY: Skip data cleaning to debug the issue
 					// const cleanData = this.gunWrapper.cleanNodeData(data);
@@ -184,7 +184,7 @@ export class DataSync {
 					};
 
 					// Debug: Log the cleaned data
-					log(`🧹 Cleaned node data for ${shortId}:`, cleanData);
+					// log(`🧹 Cleaned node data for ${shortId}:`, cleanData);
 
 					// Truncate the ID for display but keep full ID in data
 					const label = cleanData?.label || 'unnamed';
