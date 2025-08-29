@@ -54,12 +54,8 @@ class GunApp {
 		// Initialize state manager (no longer needs activity reference)
 		this.stateManager = new StateManager();
 
-		// Broadcast state changes as DOM events for components that need them
-		this.stateManager.on('stateChanged', (state) => {
-			document.dispatchEvent(
-				new CustomEvent('stateChanged', { detail: state })
-			);
-		});
+		// StateManager now dispatches DOM events directly via utils.dispatchEvent
+		// No need for manual event bridging here
 
 		// Initialize core services that depend on state manager (but not connection yet)
 		this.auth = new AuthManager(null, this.stateManager); // Will set connection.user later

@@ -11,6 +11,10 @@ export const log = (msg) => {
 	);
 };
 
+export const dispatchEvent = (eventName, detail = null) => {
+	document.dispatchEvent(new CustomEvent(eventName, { detail }));
+};
+
 export const uuid = () =>
 	crypto.randomUUID
 		? crypto.randomUUID()

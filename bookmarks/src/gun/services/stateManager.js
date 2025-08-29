@@ -2,7 +2,7 @@
  * Centralized State Manager
  * Single source of truth for all application state
  */
-import { log } from '../lib/utils.js';
+import { log, dispatchEvent } from '../lib/utils.js';
 
 export class StateManager {
 	constructor() {
@@ -29,7 +29,6 @@ export class StateManager {
 			},
 		};
 
-		this.listeners = new Map();
 		this._connectionStartTime = Date.now(); // Track when we started connecting
 		this._maxConnectionTime = 10000; // 10 seconds max connection time
 		this._timeoutInterval = null; // Track the timeout interval
@@ -37,21 +36,6 @@ export class StateManager {
 
 		// Start periodic connection timeout check
 		this._startConnectionTimeoutCheck();
-	}
-
-	// Event system
-	on(event, callback) {
-		if (!this.listeners.has(event)) {
-			this.listeners.set(event, []);
-		}
-		this.listeners.get(event).push(callback);
-	}
-
-	emit(event, data) {
-		const listeners = this.listeners.get(event);
-		if (listeners) {
-			listeners.forEach((callback) => callback(data));
-		}
 	}
 
 	// Get current state (immutable copy)
@@ -273,7 +257,8 @@ export class StateManager {
 	}
 
 	_emitStateChange() {
-		this.emit('stateChanged', this.getState());
+		// Dispatch DOM event for UI components
+		dispatchEvent('stateChanged', this.getState());
 
 		// Auto-join room when network becomes available (but not when connecting)
 		// Only trigger if we haven't already started joining and user didn't manually leave
@@ -297,11 +282,7 @@ export class StateManager {
 					// Get the room name from the hash tag
 					const roomName = window.location.hash.substring(1);
 
-					document.dispatchEvent(
-						new CustomEvent('ui:autoJoinRoom', {
-							detail: roomName,
-						})
-					);
+					dispatchEvent('ui:autoJoinRoom', roomName);
 				}, 50); // 50ms delay to ensure state propagation
 			}
 			// Don't auto-join if there's no hash tag - let user choose
