@@ -20,106 +20,59 @@ import { HeaderController } from './Header/HeaderController.js';
 import { ActivityController } from './Activity/ActivityController.js';
 
 // Main GunDB Application
-class GunApp {
-	constructor() {
-		// State management (single source of truth)
-		this.stateManager = null; // Will be initialized in start() with sidebar access
+async function startApp() {
+	const connection = new GunConnection();
 
-		// Core services
-		this.connection = null;
-		this.auth = null;
-		this.rooms = null;
-		this.graph = null;
-		this.sync = null;
+	// Show content once styles are loaded
+	document.body.classList.add('styles-loaded');
 
-		// Event coordination
-		this.eventCoordinator = null;
+	// Initialize services
+	const stateManager = new StateManager();
+	const auth = new AuthManager(stateManager);
+	const rooms = new RoomManager(stateManager);
+	const graph = new GraphOperations(rooms, auth);
+	const sync = new Sync(rooms);
+	const propsManager = new PropsManager();
 
-		// UI components
-		this.connectionDetails = null;
-		this.propsManager = null;
+	// Initialize controllers
+	const roomController = new RoomController(rooms, sync, stateManager, graph);
+	const headerController = new HeaderController(auth, stateManager);
+	const activityController = new ActivityController();
 
-		// Controllers
-		this.roomController = null;
-		this.headerController = null;
-		this.activityController = null;
-	}
+	// Initialize connection AFTER controllers are ready to listen to events
+	connection.init(connection.getDefaultPeers());
 
-	async start() {
-		this.connection = new GunConnection();
+	// Now update all services and controllers with the connection reference
+	auth.setConnection(connection.user);
+	rooms.setConnection(connection.gun);
+	sync.setConnection(connection);
+	roomController.setConnection(connection);
+	headerController.setConnection(connection);
 
-		// Show content once styles are loaded
-		document.body.classList.add('styles-loaded');
+	// Initialize connection details after connection is ready
+	const connectionDetails = new ConnectionDetails(connection);
 
-		// Initialize state manager (no longer needs activity reference)
-		this.stateManager = new StateManager();
+	// Initialize event coordination
+	const eventCoordinator = new EventCoordinator(
+		connection,
+		auth,
+		rooms,
+		stateManager,
+		sync
+	);
 
-		// StateManager now dispatches DOM events directly via utils.dispatchEvent
-		// No need for manual event bridging here
+	// Initialize authentication state
+	auth.autoLogin();
 
-		// Initialize core services that depend on state manager (but not connection yet)
-		this.auth = new AuthManager(this.stateManager); // Will set connection.user later
-		this.rooms = new RoomManager(this.stateManager); // Will set connection.gun later
-		this.graph = new GraphOperations(this.rooms, this.auth);
-		this.sync = new Sync(this.rooms);
-
-		// Initialize remaining UI components
-		this.propsManager = new PropsManager();
-
-		// Initialize controllers (they create their own components)
-		this.roomController = new RoomController(
-			this.rooms,
-			this.sync,
-			this.stateManager,
-			this.graph
-		);
-
-		// Initialize HeaderController (creates its own Header component)
-		this.headerController = new HeaderController(
-			this.auth,
-			this.stateManager
-		);
-
-		// Initialize ActivityController (creates and owns Activity component)
-		this.activityController = new ActivityController();
-
-		// Initialize connection AFTER controllers are ready to listen to events
-		this.connection.init(this.connection.getDefaultPeers());
-
-		// Now update all services and controllers with the connection reference
-		this.auth.setConnection(this.connection.user);
-		this.rooms.setConnection(this.connection.gun);
-		this.sync.setConnection(this.connection);
-		this.roomController.setConnection(this.connection);
-		this.headerController.setConnection(this.connection);
-
-		// Initialize connection details after connection is ready
-		this.connectionDetails = new ConnectionDetails(this.connection);
-
-		// Initialize event coordination
-		this.eventCoordinator = new EventCoordinator(
-			this.connection,
-			this.auth,
-			this.rooms,
-			this.stateManager,
-			this.sync
-		);
-
-		// Initialize authentication state
-		this.auth.autoLogin();
-
-		// Delay starting connection monitoring to allow "Connecting..." to show
-		setTimeout(() => {
-			this.connection.startMonitoring();
-		}, 2000); // 2 second delay to show "Connecting..." state
-	}
+	// Delay starting connection monitoring to allow "Connecting..." to show
+	setTimeout(() => {
+		connection.startMonitoring();
+	}, 2000); // 2 second delay to show "Connecting..." state
 }
 
 // Start the application when DOM is ready
-const app = new GunApp();
-
 if (document.readyState === 'loading') {
-	document.addEventListener('DOMContentLoaded', () => app.start());
+	document.addEventListener('DOMContentLoaded', startApp);
 } else {
-	app.start();
+	startApp();
 }
