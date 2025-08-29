@@ -26,7 +26,7 @@ class GunApp {
 		this.stateManager = null; // Will be initialized in start() with sidebar access
 
 		// Core services
-		this.connection = new GunConnection();
+		this.connection = null;
 		this.auth = null;
 		this.rooms = null;
 		this.graph = null;
@@ -45,6 +45,8 @@ class GunApp {
 	}
 
 	async start() {
+		this.connection = new GunConnection();
+
 		// Show content once styles are loaded
 		document.body.classList.add('styles-loaded');
 
@@ -140,54 +142,6 @@ class GunApp {
 	}
 
 	wireUpEvents() {
-		// Event mappings: service -> event -> EventCoordinator
-		const events = {
-			rooms: {
-				roomStatusChanged: (status, roomName) => {
-					this.eventCoordinator.onRoomStatusChanged(status, roomName);
-				},
-			},
-			connection: {
-				connectionStatusChanged: (data) => {
-					this.eventCoordinator.onConnectionStatusChanged(data);
-					// Note: Header visibility is handled by state management system
-				},
-			},
-			sync: {
-				clearGraph: () => {
-					// Dispatch event for RoomController to handle
-					document.dispatchEvent(new CustomEvent('sync:clearGraph'));
-				},
-				addNode: (nodeData) => {
-					// Dispatch event for RoomController to handle
-					document.dispatchEvent(
-						new CustomEvent('sync:addNode', { detail: nodeData })
-					);
-				},
-				removeNode: (nodeData) => {
-					// Dispatch event for RoomController to handle
-					document.dispatchEvent(
-						new CustomEvent('sync:removeNode', { detail: nodeData })
-					);
-				},
-				addEdge: (edgeData) => {
-					// Dispatch event for RoomController to handle
-					document.dispatchEvent(
-						new CustomEvent('sync:addEdge', { detail: edgeData })
-					);
-				},
-				removeEdge: (edgeData) => {
-					// Dispatch event for RoomController to handle
-					document.dispatchEvent(
-						new CustomEvent('sync:removeEdge', { detail: edgeData })
-					);
-				},
-			},
-		};
-
-		// Sync events are now handled directly by RoomController
-		// No need to wire them up here
-
 		// Wire up connection service events to EventCoordinator
 		this.connection.on('connectionStatusChanged', (data) => {
 			this.eventCoordinator.onConnectionStatusChanged(data);
