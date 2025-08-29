@@ -21,6 +21,9 @@ export class EventCoordinator {
 
 		// Listen to UI events from Header
 		this.setupUIEventListeners();
+
+		// Listen to service events
+		this.setupServiceEventListeners();
 	}
 
 	setupUIEventListeners() {
@@ -38,6 +41,17 @@ export class EventCoordinator {
 		document.addEventListener('ui:login', (e) =>
 			this.handleLogin(e.detail)
 		);
+	}
+
+	setupServiceEventListeners() {
+		// Listen to connection service events
+		this.connection.on('connectionStatusChanged', (data) => {
+			this.onConnectionStatusChanged(data);
+		});
+
+		this.connection.on('userLoggedIn', (data) => {
+			this.onUserAuthenticated(data.alias);
+		});
 	}
 
 	// ===== NETWORK EVENTS =====

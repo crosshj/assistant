@@ -106,15 +106,6 @@ class GunApp {
 		// Initialize connection details after connection is ready
 		this.connectionDetails = new ConnectionDetails(this.connection);
 
-		// ARCHITECTURAL ISSUE TO FIX:
-		// gun.js should NEVER directly access UI components. This violates separation of concerns.
-		// Instead, gun.js should:
-		// 1. Only interact with controllers
-		// 2. Controllers handle UI updates
-		// 3. UI components are completely encapsulated
-		//
-		// TODO: Remove these direct UI references and ensure all UI updates go through controllers
-
 		// Initialize event coordination
 		this.eventCoordinator = new EventCoordinator(
 			this.connection,
@@ -124,9 +115,6 @@ class GunApp {
 			this.sync
 		);
 
-		// Wire up event system between services and UI
-		this.wireUpEvents();
-
 		// Initialize authentication state
 		this.auth.autoLogin();
 
@@ -134,17 +122,6 @@ class GunApp {
 		setTimeout(() => {
 			this.connection.startMonitoring();
 		}, 2000); // 2 second delay to show "Connecting..." state
-	}
-
-	wireUpEvents() {
-		// Wire up connection service events to EventCoordinator
-		this.connection.on('connectionStatusChanged', (data) => {
-			this.eventCoordinator.onConnectionStatusChanged(data);
-		});
-
-		this.connection.on('userLoggedIn', (data) => {
-			this.eventCoordinator.onUserAuthenticated(data.alias);
-		});
 	}
 }
 
