@@ -127,9 +127,6 @@ class GunApp {
 		// Wire up event system between services and UI
 		this.wireUpEvents();
 
-		// Note: Network state rendering is handled by Header component + NetworkUI controller
-		// The stateManager already starts with 'connecting' status
-
 		// Initialize authentication state
 		this.auth.autoLogin();
 
@@ -202,139 +199,15 @@ class GunApp {
 	}
 
 	setupGlobalFunctions() {
-		// Global function mappings
-		const globals = {
-			joinRoom: (room) => {
-				// Dispatch event for RoomController to handle
-				document.dispatchEvent(
-					new CustomEvent('ui:joinRoom', { detail: room })
-				);
-			},
-			leaveRoom: () => {
-				// Dispatch event for RoomController to handle
-				document.dispatchEvent(new CustomEvent('ui:leaveRoom'));
-			},
-			refreshRoom: () => this.sync.refreshData(),
-			exportRoom: async () => {
-				// Dispatch event for RoomController to handle
-				document.dispatchEvent(
-					new CustomEvent('graph:export', {
-						detail: { room: this.rooms.getCurrentRoom() },
-					})
-				);
-			},
-			importRoomData: (data) => this.rooms.importRoomData(data),
-			updateNodeForm: (data) => {
-				// Dispatch event for RoomController to handle
-				document.dispatchEvent(
-					new CustomEvent('ui:updateNodeForm', { detail: { data } })
-				);
-			},
-			updateEdgeForm: (data) => {
-				// Dispatch event for RoomController to handle
-				document.dispatchEvent(
-					new CustomEvent('ui:updateEdgeForm', { detail: { data } })
-				);
-			},
-			clearActivityLog: () => {
-				// Directly clear the log element
-				const logElement = document.getElementById('log');
-				if (logElement) {
-					logElement.innerHTML = '';
-				}
-			},
-			copyActivityLog: () => {
-				// Copy the activity log contents to clipboard in a clean, terse format
-				const logElement = document.getElementById('log');
-				if (logElement) {
-					const logItems = logElement.querySelectorAll('li');
-					if (logItems.length > 0) {
-						// Format each log item in a clean, terse way
-						const formattedLog = Array.from(logItems)
-							.map((item) => {
-								const text = item.textContent || '';
-								// Extract timestamp if present (format: HH:MM:SS.mmm)
-								const timeMatch = text.match(
-									/(\d{2}:\d{2}:\d{2}\.\d{3})/
-								);
-								const timestamp = timeMatch ? timeMatch[1] : '';
+		// Only keep globals that are actually used in the codebase
 
-								// Remove timestamp and clean up the message
-								let message = text
-									.replace(/\d{2}:\d{2}:\d{2}\.\d{3}/, '')
-									.trim();
-
-								// Clean up common patterns for terseness
-								message = message
-									.replace(/✅ /g, '✓ ')
-									.replace(/❌ /g, '✗ ')
-									.replace(/⚠️ /g, '! ')
-									.replace(/🔄 /g, '→ ')
-									.replace(/🌐 /g, '🌐 ')
-									.replace(/🗑️ /g, '🗑 ')
-									.replace(/🔍 /g, '🔍 ')
-									.replace(/🎯 /g, '🎯 ');
-
-								// Format: [TIME] MESSAGE
-								return timestamp
-									? `[${timestamp}] ${message}`
-									: message;
-							})
-							.join('\n');
-
-						// Add a summary header
-						const summary = `ACTIVITY LOG (${logItems.length} entries):\n${formattedLog}`;
-
-						navigator.clipboard
-							.writeText(summary)
-							.then(() => {
-								// Success - no logging needed
-							})
-							.catch((err) => {
-								console.error(
-									'Failed to copy to clipboard:',
-									err
-								);
-								// Fallback for older browsers
-								const textArea =
-									document.createElement('textarea');
-								textArea.value = summary;
-								document.body.appendChild(textArea);
-								textArea.select();
-								document.execCommand('copy');
-								document.body.removeChild(textArea);
-							});
-					} else {
-						// No content to copy - no logging needed
-					}
-				}
-			},
-		};
-
-		// Set up all global functions
-		Object.entries(globals).forEach(([name, fn]) => {
-			window[name] = fn;
-		});
-
-		// Global state
+		// Global state - used in cytoscapeWrapper.js
 		Object.defineProperty(window, 'currentRoom', {
 			get: () => this.rooms.getCurrentRoom(),
 			set: () => {}, // Read-only
 		});
 
-		// Make PropsManager globally accessible
-		Object.defineProperty(window, 'propsManager', {
-			get: () => this.propsManager,
-			set: () => {}, // Read-only
-		});
-
-		// Make visualization globally accessible for debugging
-		Object.defineProperty(window, 'visualization', {
-			get: () => this.visualization,
-			set: () => {}, // Read-only
-		});
-
-		// Make visualization instance globally accessible for props fetching
+		// Make visualization instance globally accessible for props fetching - used in gunWrapper.js
 		Object.defineProperty(window, 'cy', {
 			get: () =>
 				this.room && this.room.visualization
