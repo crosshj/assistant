@@ -284,6 +284,15 @@ src/gun/
 -   ✅ **Event Coordination** - Emits events for room pane visibility management
 -   ✅ **Service Integration** - Coordinates between Header UI and connection/auth services
 
+### **ActivityController (COMPLETED):**
+
+-   ✅ **ActivityController Created** - Centralized all activity-related event wiring
+-   ✅ **Event-Driven Architecture** - Listens to generic `activity:log` events from any service
+-   ✅ **Clean Separation** - Activity component is now pure UI, ActivityController handles coordination
+-   ✅ **Event Delegation Pattern** - All UI events bound via delegation on component DOM
+-   ✅ **No Service Dependencies** - Follows preferred pattern of listening to DOM events only
+-   ✅ **Pure UI Component** - Activity component has zero controller knowledge or event binding
+
 **Critical Controller Design Principles (ESTABLISHED):**
 
 -   ✅ **Controllers are event wiring hubs** - Connect DOM events to service calls
@@ -315,7 +324,7 @@ User → Room component → Direct calls → RoomController → Service calls �
 
 **Next Phase:**
 
--   **ActivityController** - extract event handling and business logic from Activity.js
+-   ✅ **ActivityController (COMPLETED)** - extract event handling and business logic from Activity.js
 -   **ConnectionDetailsController** - move connection event logic from ConnectionDetails.js
 -   **Test controller integration** - ensure all functionality works through controllers
 -   **Prepare for gunWrapper refactoring** - once all controllers are stable
