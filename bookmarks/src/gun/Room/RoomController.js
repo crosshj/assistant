@@ -8,22 +8,16 @@ import { Room } from './Room.js';
  * Coordinates between UI components and services
  */
 export class RoomController {
-	constructor(
-		roomService,
-		syncService,
-		connection,
-		stateManager,
-		graphOperations
-	) {
+	constructor(roomService, syncService, stateManager, graphOperations) {
 		this.roomService = roomService;
 		this.syncService = syncService;
-		this.connection = connection;
+		this.connection = null; // Will be set via setConnection()
 		this.stateManager = stateManager;
 		this.graphOperations = graphOperations;
 
 		// TODO: Remove direct gunWrapper usage - should go through App Controller instead
 		// This creates coupling that should be resolved when we have proper event-driven architecture
-		this.gunWrapper = new GunDBWrapper(connection, null);
+		this.gunWrapper = null; // Will be initialized in setConnection()
 
 		// Current room state
 		this.currentRoom = null;

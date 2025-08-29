@@ -1,8 +1,8 @@
 import { Header } from './Header.js';
 
 export class HeaderController {
-	constructor(connection, auth, stateManager) {
-		this.connection = connection;
+	constructor(auth, stateManager) {
+		this.connection = null; // Will be set via setConnection()
 		this.auth = auth;
 		this.stateManager = stateManager;
 		this.currentConnectionStatus = 'disconnected'; // Track current state

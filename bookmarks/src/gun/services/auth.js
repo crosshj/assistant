@@ -2,8 +2,8 @@ import { log, $, uuid } from '../lib/utils.js';
 
 // Authentication Management
 export class AuthManager {
-	constructor(user, stateManager) {
-		this.user = user;
+	constructor(stateManager) {
+		this.user = null; // Will be set via setConnection()
 		this.stateManager = stateManager;
 	}
 

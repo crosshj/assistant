@@ -2,12 +2,11 @@ import { log } from '../lib/utils.js';
 import { GunDBWrapper } from '../lib/gunWrapper.js';
 
 // Data Synchronization between GunDB and UI
-export class DataSync {
-	constructor(roomManager, connection, stateManager) {
+export class Sync {
+	constructor(roomManager) {
 		this.roomManager = roomManager;
-		this.connection = connection;
-		this.stateManager = stateManager;
-		this.gunWrapper = new GunDBWrapper(connection); // Use wrapper for data cleaning
+		this.connection = null; // Will be set via setConnection()
+		this.gunWrapper = null; // Will be initialized in setConnection()
 		this.nodesChain = null;
 		this.edgesChain = null;
 		this.isSubscribed = false;

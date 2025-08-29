@@ -7,7 +7,7 @@ import { GunConnection } from './services/connection.js';
 import { AuthManager } from './services/auth.js';
 import { RoomManager } from './services/room.js';
 import { GraphOperations } from './services/graphOperations.js';
-import { DataSync } from './services/sync.js';
+import { Sync } from './services/sync.js';
 
 // Import new UI components
 import { Activity } from './Activity/Activity.js';
@@ -58,14 +58,10 @@ class GunApp {
 		// No need for manual event bridging here
 
 		// Initialize core services that depend on state manager (but not connection yet)
-		this.auth = new AuthManager(null, this.stateManager); // Will set connection.user later
-		this.rooms = new RoomManager(null, this.stateManager); // Will set connection.gun later
+		this.auth = new AuthManager(this.stateManager); // Will set connection.user later
+		this.rooms = new RoomManager(this.stateManager); // Will set connection.gun later
 		this.graph = new GraphOperations(this.rooms, this.auth);
-		this.sync = new DataSync(
-			this.rooms,
-			null, // Will set connection later
-			this.stateManager
-		);
+		this.sync = new Sync(this.rooms);
 
 		// Initialize remaining UI components
 		this.propsManager = new PropsManager();
@@ -74,14 +70,12 @@ class GunApp {
 		this.roomController = new RoomController(
 			this.rooms,
 			this.sync,
-			null, // Will set connection later
 			this.stateManager,
 			this.graph
 		);
 
 		// Initialize HeaderController (creates its own Header component)
 		this.headerController = new HeaderController(
-			null, // Will set connection later
 			this.auth,
 			this.stateManager
 		);
