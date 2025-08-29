@@ -6,9 +6,8 @@ import { dispatchEvent } from '../lib/utils.js';
  * Listens to UI events and coordinates between services via events
  */
 export class EventCoordinator {
-	constructor(connection, auth, rooms, sync) {
+	constructor(connection, rooms, sync) {
 		this.connection = connection;
-		this.auth = auth;
 		this.rooms = rooms;
 		this.sync = sync;
 		this.gunWrapper = new GunDBWrapper(connection);
@@ -79,15 +78,15 @@ export class EventCoordinator {
 
 	// ===== AUTH EVENTS =====
 	handleCreateIdentity(alias) {
-		this.auth.createIdentity(alias);
+		this.connection.createIdentity(alias);
 	}
 
 	handleLogin(credentials) {
-		this.auth.login(credentials.alias, credentials.password);
+		this.connection.login(credentials.alias, credentials.password);
 	}
 
 	handleLogout() {
-		this.auth.logout();
+		this.connection.logout();
 	}
 
 	handleUserAuthenticated(alias) {

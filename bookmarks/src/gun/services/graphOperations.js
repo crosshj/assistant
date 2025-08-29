@@ -2,9 +2,9 @@ import { log, uuid } from '../lib/utils.js';
 
 // Graph Operations - Node and Edge Management
 export class GraphOperations {
-	constructor(roomManager, authManager) {
+	constructor(roomManager, connection) {
 		this.roomManager = roomManager;
-		this.authManager = authManager;
+		this.connection = connection;
 	}
 
 	upsertNode({ id, label, props }, connectionManager) {
@@ -29,7 +29,7 @@ export class GraphOperations {
 			label: label || '',
 			props: props || {},
 			updatedAt: Date.now(),
-			by: this.authManager.getCurrentUser(),
+			by: this.connection.getCurrentUser(),
 		};
 
 		try {
@@ -85,7 +85,7 @@ export class GraphOperations {
 			direction: direction || 'forward',
 			props: props || {},
 			updatedAt: Date.now(),
-			by: this.authManager.getCurrentUser(),
+			by: this.connection.getCurrentUser(),
 		};
 
 		try {

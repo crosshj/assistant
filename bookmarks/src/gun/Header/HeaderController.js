@@ -1,9 +1,7 @@
 import { Header } from './Header.js';
 
 export class HeaderController {
-	constructor(auth, stateManager) {
-		this.connection = null; // Will be set via setConnection()
-		this.auth = auth;
+	constructor(stateManager) {
 		this.stateManager = stateManager;
 		this.currentConnectionStatus = 'disconnected'; // Track current state
 
@@ -32,10 +30,6 @@ export class HeaderController {
 				this.handleConnectionStatusChanged(data);
 			});
 		}
-
-		// Note: HeaderController does NOT listen to events it dispatches
-		// This prevents circular event loops
-		// Other components (RoomController, EventCoordinator) listen to these events
 	}
 
 	// ===== CONNECTION EVENTS =====

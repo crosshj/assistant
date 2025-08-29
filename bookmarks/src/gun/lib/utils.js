@@ -25,7 +25,7 @@ export const uuid = () =>
 		? crypto.randomUUID()
 		: Math.random().toString(16).slice(2) + Date.now().toString(16);
 
-export const tryJSON = (t, d) => {
+export const tryJSONParse = (t, d) => {
 	try {
 		return t ? JSON.parse(t) : d;
 	} catch {

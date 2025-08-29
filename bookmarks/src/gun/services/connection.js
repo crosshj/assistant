@@ -1,7 +1,7 @@
 import Gun from 'gun';
 import 'gun/sea';
 import 'gun/axe';
-import { log } from '../lib/utils.js';
+import { log, uuid, dispatchEvent, tryJSONParse } from '../lib/utils.js';
 
 // GunDB Connection Management
 export class GunConnection {
@@ -13,6 +13,61 @@ export class GunConnection {
 		this.eventListeners = new Map();
 		this.monitoringInterval = null;
 		this.isDisconnected = false; // Flag to track manual disconnection
+	}
+
+	// Authentication methods
+	createIdentity(alias = null) {
+		const userAlias = alias || `u_${uuid().slice(0, 6)}`;
+		const pass = crypto.getRandomValues(new Uint8Array(16)).join('');
+
+		this.user.create(userAlias, pass, (ack) => {
+			if (ack.err) {
+				log('create error ' + ack.err);
+				return;
+			}
+
+			this.login(userAlias, pass);
+		});
+	}
+
+	login(alias, pass) {
+		if (!alias || !pass) {
+			log('set alias or create identity');
+			return;
+		}
+
+		this.user.auth(alias, pass, ({ err }) => {
+			if (err) {
+				log('auth error ' + err);
+			} else {
+				// log('logged in as ' + alias);
+
+				// Update state via event instead of direct call
+				dispatchEvent('auth:authenticated', { alias });
+
+				// Save credentials for auto-login
+				localStorage.setItem(
+					'gun_demo_creds',
+					JSON.stringify({ alias, pass })
+				);
+			}
+		});
+	}
+
+	getCurrentUser() {
+		return this.user.is ? this.user.is.alias : 'anon';
+	}
+
+	isAuthenticated() {
+		return !!this.user.is;
+	}
+
+	logout() {
+		this.user.leave();
+		log('logged out');
+
+		// Update state via event instead of direct call
+		dispatchEvent('auth:anonymous');
 	}
 
 	// Event system for UI components to listen to
@@ -91,15 +146,19 @@ export class GunConnection {
 	}
 
 	autoLogin() {
-		// Note: Auth autoLogin is handled by AuthManager service
-		// This method is kept for backward compatibility but no longer needed
-	}
+		// Handle auth auto-login
+		const saved = tryJSONParse(localStorage.getItem('gun_demo_creds'));
+		if (saved) {
+			this.user.auth(saved.alias, saved.pass, ({ err }) => {
+				if (err) {
+					log('auth error ' + err);
+				} else {
+					// log('logged in as ' + saved.alias);
 
-	tryJSON(t, d) {
-		try {
-			return t ? JSON.parse(t) : d;
-		} catch {
-			return d;
+					// Update state via event instead of direct call
+					dispatchEvent('auth:authenticated', { alias: saved.alias });
+				}
+			});
 		}
 	}
 

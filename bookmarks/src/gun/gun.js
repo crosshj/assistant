@@ -4,7 +4,7 @@ import './gun.css';
 import { StateManager } from './services/stateManager.js';
 import { EventCoordinator } from './services/eventCoordinator.js';
 import { GunConnection } from './services/connection.js';
-import { AuthManager } from './services/auth.js';
+
 import { RoomManager } from './services/room.js';
 import { GraphOperations } from './services/graphOperations.js';
 import { Sync } from './services/sync.js';
@@ -27,22 +27,20 @@ async function startApp() {
 
 	// Initialize services
 	const stateManager = new StateManager();
-	const auth = new AuthManager();
 	const rooms = new RoomManager();
-	const graph = new GraphOperations(rooms, auth);
+	const graph = new GraphOperations(rooms, connection);
 	const sync = new Sync(rooms);
 	const propsManager = new PropsManager();
 
 	// Initialize controllers
 	const roomController = new RoomController(rooms, sync, stateManager, graph);
-	const headerController = new HeaderController(auth, stateManager);
+	const headerController = new HeaderController(stateManager);
 	const activityController = new ActivityController();
 
 	// Initialize connection AFTER controllers are ready to listen to events
 	connection.init(connection.getDefaultPeers());
 
 	// Now update all services and controllers with the connection reference
-	auth.setConnection(connection.user);
 	rooms.setConnection(connection.gun);
 	sync.setConnection(connection);
 	roomController.setConnection(connection);
@@ -52,15 +50,10 @@ async function startApp() {
 	const connectionDetails = new ConnectionDetails(connection);
 
 	// Initialize event coordination
-	const eventCoordinator = new EventCoordinator(
-		connection,
-		auth,
-		rooms,
-		sync
-	);
+	const eventCoordinator = new EventCoordinator(connection, rooms, sync);
 
 	// Initialize authentication state
-	auth.autoLogin();
+	connection.autoLogin();
 
 	// Delay starting connection monitoring to allow "Connecting..." to show
 	setTimeout(() => {
