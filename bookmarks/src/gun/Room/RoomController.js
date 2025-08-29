@@ -57,6 +57,9 @@ export class RoomController {
 
 		// Setup event listeners
 		this.setupEventListeners();
+
+		// Setup resize handler
+		this.setupResizeHandler();
 	}
 
 	setupEventListeners() {
@@ -136,6 +139,22 @@ export class RoomController {
 		);
 
 		this.roomService.on('roomStatusChanged', this.onRoomStatusChanged);
+	}
+
+	setupResizeHandler() {
+		// Store reference to resize handler for cleanup
+		this.resizeHandler = () => {
+			if (
+				this.ui &&
+				this.ui.visualization &&
+				this.ui.visualization.isInitialized()
+			) {
+				this.ui.handleResizeGraph();
+			}
+		};
+
+		// Handle window resize to ensure Cytoscape canvas stays properly sized
+		window.addEventListener('resize', this.resizeHandler);
 	}
 
 	onJoinRoom(roomName) {
@@ -385,6 +404,11 @@ export class RoomController {
 	}
 
 	destroy() {
+		// Remove resize event listener
+		if (this.resizeHandler) {
+			window.removeEventListener('resize', this.resizeHandler);
+		}
+
 		document.removeEventListener('graph:export', this.handleGraphExport);
 		document.removeEventListener('graph:import', this.handleGraphImport);
 		document.removeEventListener(

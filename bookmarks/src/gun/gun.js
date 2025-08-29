@@ -140,13 +140,6 @@ class GunApp {
 		}, 2000); // 2 second delay to show "Connecting..." state
 	}
 
-	// Resize the Cytoscape canvas to take full available height
-	resizeCytoscapeCanvas() {
-		// Dispatch event for RoomController to handle visualization resizing
-		// This eliminates direct coupling between gun.js and Room component
-		document.dispatchEvent(new CustomEvent('ui:resizeVisualization'));
-	}
-
 	wireUpEvents() {
 		// Event mappings: service -> event -> EventCoordinator
 		const events = {
@@ -351,20 +344,6 @@ class GunApp {
 
 	initUI() {
 		this.headerController.setInitialValues();
-		this.setupResizeHandler();
-	}
-
-	setupResizeHandler() {
-		// Handle window resize to ensure Cytoscape canvas stays properly sized
-		window.addEventListener('resize', () => {
-			if (
-				this.room &&
-				this.room.visualization &&
-				this.room.visualization.isInitialized()
-			) {
-				this.resizeCytoscapeCanvas();
-			}
-		});
 	}
 }
 
