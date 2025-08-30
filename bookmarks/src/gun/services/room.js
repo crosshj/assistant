@@ -1,4 +1,4 @@
-import { log, dispatchEvent } from '../lib/utils.js';
+import { log, dispatchEvent, addEventListener } from '../lib/utils.js';
 
 // Room Management
 export class RoomManager {
@@ -19,7 +19,7 @@ export class RoomManager {
 
 	setupUIEventListeners() {
 		// Listen to join room requests from UI
-		document.addEventListener('ui:joinRoom', (event) => {
+		addEventListener('ui:joinRoom', (event) => {
 			const roomName = event.detail;
 			if (roomName) {
 				this.joinRoom(roomName);
@@ -27,12 +27,12 @@ export class RoomManager {
 		});
 
 		// Listen to leave room requests from UI
-		document.addEventListener('ui:leaveRoom', () => {
+		addEventListener('ui:leaveRoom', () => {
 			this.leaveRoom();
 		});
 
 		// Listen to export requests
-		document.addEventListener('room:exportRequested', async (event) => {
+		addEventListener('room:exportRequested', async (event) => {
 			const { room } = event.detail;
 			const data = await this.exportRoom(room);
 			if (data) {
@@ -42,7 +42,7 @@ export class RoomManager {
 		});
 
 		// Listen to import requests
-		document.addEventListener('room:importRequested', (event) => {
+		addEventListener('room:importRequested', (event) => {
 			const { room, data } = event.detail;
 			alert('Feature not implemented yet');
 			dispatchEvent('room:importCompleted', { room, success: false });
@@ -50,6 +50,23 @@ export class RoomManager {
 			// if (result) {
 			// 	dispatchEvent('room:importCompleted', { room, success: true });
 			// }
+		});
+
+		// Listen to graph operation requests
+		addEventListener('room:upsertNode', (event) => {
+			this.upsertNode(event.detail);
+		});
+
+		addEventListener('room:deleteNode', (event) => {
+			this.deleteNode(event.detail.id);
+		});
+
+		addEventListener('room:upsertEdge', (event) => {
+			this.upsertEdge(event.detail);
+		});
+
+		addEventListener('room:deleteEdge', (event) => {
+			this.deleteEdge(event.detail.id);
 		});
 	}
 
@@ -222,5 +239,88 @@ export class RoomManager {
 		return crypto.randomUUID
 			? crypto.randomUUID()
 			: Math.random().toString(16).slice(2) + Date.now().toString(16);
+	}
+
+	// Graph operations - moved from GraphOperations class
+	upsertNode({ id, label, props }) {
+		if (!this.isInRoom()) {
+			log('⚠️ Cannot create node: Not in a room');
+			return false;
+		}
+
+		const nid = id || this.generateId();
+		const node = {
+			id: nid,
+			label: label || '',
+			props: props || {},
+			updatedAt: Date.now(),
+		};
+
+		try {
+			this.graphRoot.get('nodes').get(nid).put(node);
+			log('✅ Node created: ' + nid);
+			return true;
+		} catch (error) {
+			log('❌ Failed to create node: ' + error.message);
+			return false;
+		}
+	}
+
+	deleteNode(id) {
+		if (!this.isInRoom() || !id) return false;
+
+		try {
+			this.graphRoot.get('nodes').get(id).put(null);
+			log('node deleted ' + id);
+			return true;
+		} catch (error) {
+			log('❌ Failed to delete node: ' + error.message);
+			return false;
+		}
+	}
+
+	upsertEdge({ id, from, to, label, direction, props }) {
+		if (!this.isInRoom()) {
+			log('⚠️ Cannot create edge: Not in a room');
+			return false;
+		}
+
+		if (!from || !to) {
+			log('⚠️ Cannot create edge: Missing from/to nodes');
+			return false;
+		}
+
+		const eid = id || this.generateId();
+		const edge = {
+			id: eid,
+			from,
+			to,
+			label: label || '',
+			direction: direction || 'forward',
+			props: props || {},
+			updatedAt: Date.now(),
+		};
+
+		try {
+			this.graphRoot.get('edges').get(eid).put(edge);
+			log('✅ Edge created: ' + eid);
+			return true;
+		} catch (error) {
+			log('❌ Failed to create edge: ' + error.message);
+			return false;
+		}
+	}
+
+	deleteEdge(id) {
+		if (!this.isInRoom() || !id) return false;
+
+		try {
+			this.graphRoot.get('edges').get(id).put(null);
+			log('edge deleted ' + id);
+			return true;
+		} catch (error) {
+			log('❌ Failed to delete edge: ' + error.message);
+			return false;
+		}
 	}
 }

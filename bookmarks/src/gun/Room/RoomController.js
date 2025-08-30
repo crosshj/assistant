@@ -8,10 +8,9 @@ import { Room } from './Room.js';
  * Coordinates between UI components and services
  */
 export class RoomController {
-	constructor(stateManager, graphOperations) {
+	constructor(stateManager) {
 		this.connection = null; // Will be set via setConnection()
 		this.stateManager = stateManager;
-		this.graphOperations = graphOperations;
 
 		// TODO: Remove direct gunWrapper usage - should go through App Controller instead
 		// This creates coupling that should be resolved when we have proper event-driven architecture
@@ -162,19 +161,19 @@ export class RoomController {
 	}
 
 	onNodeCreate(detail) {
-		this.graphOperations.upsertNode(detail.data, this.connection);
+		dispatchEvent('room:upsertNode', detail.data);
 	}
 
 	onNodeDelete(detail) {
-		this.graphOperations.deleteNode(detail.id);
+		dispatchEvent('room:deleteNode', { id: detail.id });
 	}
 
 	onEdgeCreate(detail) {
-		this.graphOperations.upsertEdge(detail.data, this.connection);
+		dispatchEvent('room:upsertEdge', detail.data);
 	}
 
 	onEdgeDelete(detail) {
-		this.graphOperations.deleteEdge(detail.id);
+		dispatchEvent('room:deleteEdge', { id: detail.id });
 	}
 
 	// Room lifecycle event handlers

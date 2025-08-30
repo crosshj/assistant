@@ -6,7 +6,6 @@ import { EventCoordinator } from './services/eventCoordinator.js';
 import { GunConnection } from './services/connection.js';
 
 import { RoomManager } from './services/room.js';
-import { GraphOperations } from './services/graphOperations.js';
 import { Sync } from './services/sync.js';
 
 // Import new UI components
@@ -28,12 +27,11 @@ async function startApp() {
 	// Initialize services
 	const stateManager = new StateManager();
 	const rooms = new RoomManager();
-	const graph = new GraphOperations(rooms, connection);
 	const sync = new Sync();
 	const propsManager = new PropsManager();
 
 	// Initialize controllers
-	const roomController = new RoomController(stateManager, graph);
+	const roomController = new RoomController(stateManager);
 	const headerController = new HeaderController(stateManager);
 	const activityController = new ActivityController();
 
