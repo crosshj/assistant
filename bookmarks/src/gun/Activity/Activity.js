@@ -137,6 +137,8 @@ export class Activity {
 		if (!this.logElement) return;
 
 		this.logElement.innerHTML = this.log
+			.slice()
+			.reverse()
 			.map(
 				(entry) => `
 				<li class="log-entry log-${entry.type}">
