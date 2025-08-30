@@ -1,5 +1,5 @@
 import { GunDBWrapper } from '../lib/gunWrapper.js';
-import { log } from '../lib/utils.js';
+import { log, addEventListener, dispatchEvent } from '../lib/utils.js';
 import { Room } from './Room.js';
 
 /**
@@ -8,9 +8,7 @@ import { Room } from './Room.js';
  * Coordinates between UI components and services
  */
 export class RoomController {
-	constructor(roomService, syncService, stateManager, graphOperations) {
-		this.roomService = roomService;
-		this.syncService = syncService;
+	constructor(stateManager, graphOperations) {
 		this.connection = null; // Will be set via setConnection()
 		this.stateManager = stateManager;
 		this.graphOperations = graphOperations;
@@ -21,15 +19,18 @@ export class RoomController {
 
 		// Current room state
 		this.currentRoom = null;
-		this.visualization = null;
 
 		// Create Room component with controller reference
 		this.ui = new Room({ controller: this });
 
-		// Bind methods to preserve context
+		// Bind room lifecycle methods
+		this.onRoomJoining = this.onRoomJoining.bind(this);
+		this.onRoomJoined = this.onRoomJoined.bind(this);
+		this.onRoomLeaving = this.onRoomLeaving.bind(this);
+		this.onRoomLeft = this.onRoomLeft.bind(this);
+
+		// Bind bridge method for Room component
 		this.onJoinRoom = this.onJoinRoom.bind(this);
-		this.onLeaveRoom = this.onLeaveRoom.bind(this);
-		this.onRoomStatusChanged = this.onRoomStatusChanged.bind(this);
 
 		// Bind room component methods for event listeners
 		this.handleRoomLeft = this.ui.handleRoomLeft.bind(this.ui);
@@ -62,42 +63,41 @@ export class RoomController {
 	}
 
 	setupEventListeners() {
-		// Room events
-		document.addEventListener('ui:joinRoom', (e) => {
-			const roomName = e.detail;
-			if (roomName) {
-				this.onJoinRoom(roomName);
-			}
-		});
-		document.addEventListener('ui:leaveRoom', () => {
-			this.roomService.leaveRoom();
-			this.ui.leaveRoom();
-		});
-		document.addEventListener('room:left', this.handleRoomLeft);
-
 		// Room pane events from Header
-		document.addEventListener('ui:showConnectingSpinner', () => {
+		addEventListener('ui:showConnectingSpinner', () => {
 			// Show connecting spinner when user actively clicks Connect
 			this.ui.showConnectingSpinner();
 		});
 
-		// Sync events
-		this.syncService.on('clearGraph', this.handleClearGraph);
-		this.syncService.on('addNode', this.syncAddNode);
-		this.syncService.on('removeNode', this.syncRemoveNode);
-		this.syncService.on('addEdge', this.syncAddEdge);
-		this.syncService.on('removeEdge', this.syncRemoveEdge);
+		// Sync events - now using DOM events from sync service
+		addEventListener('sync:clearGraph', this.handleClearGraph);
+		addEventListener('sync:addNode', (event) =>
+			this.syncAddNode(event.detail)
+		);
+		addEventListener('sync:removeNode', (event) =>
+			this.syncRemoveNode(event.detail)
+		);
+		addEventListener('sync:addEdge', (event) =>
+			this.syncAddEdge(event.detail)
+		);
+		addEventListener('sync:removeEdge', (event) =>
+			this.syncRemoveEdge(event.detail)
+		);
 
-		// Graph events
-		document.addEventListener('graph:export', this.handleGraphExport);
-		document.addEventListener('graph:import', this.handleGraphImport);
-		document.addEventListener(
-			'graph:clearLocal',
-			this.handleGraphClearLocal
+		// Graph events - these are now handled by direct method calls from Room component
+
+		// Room service response events
+		addEventListener(
+			'room:exportCompleted',
+			this.handleRoomExportCompleted
+		);
+		addEventListener(
+			'room:importCompleted',
+			this.handleRoomImportCompleted
 		);
 
 		// State change events - handle room pane visibility based on network status
-		document.addEventListener('stateChanged', (event) => {
+		addEventListener('stateChanged', (event) => {
 			const state = event.detail;
 			if (state.network && state.network.status) {
 				if (
@@ -122,22 +122,17 @@ export class RoomController {
 				}
 			}
 		});
-		document.addEventListener('graph:search', this.handleGraphSearch);
-		document.addEventListener(
-			'graph:clearSearch',
-			this.handleGraphClearSearch
-		);
-		document.addEventListener(
-			'graph:layoutChange',
-			this.handleGraphLayoutChange
-		);
-		document.addEventListener('graph:fit', this.handleGraphFit);
-		document.addEventListener(
-			'graph:requestProps',
-			this.handleRequestProps
-		);
+		addEventListener('graph:search', this.handleGraphSearch);
+		addEventListener('graph:clearSearch', this.handleGraphClearSearch);
+		addEventListener('graph:layoutChange', this.handleGraphLayoutChange);
+		addEventListener('graph:fit', this.handleGraphFit);
+		addEventListener('graph:requestProps', this.handleRequestProps);
 
-		this.roomService.on('roomStatusChanged', this.onRoomStatusChanged);
+		// Room lifecycle events
+		addEventListener('room:joining', this.onRoomJoining);
+		addEventListener('room:joined', this.onRoomJoined);
+		addEventListener('room:leaving', this.onRoomLeaving);
+		addEventListener('room:left', this.onRoomLeft);
 	}
 
 	setupResizeHandler() {
@@ -156,18 +151,10 @@ export class RoomController {
 		window.addEventListener('resize', this.resizeHandler);
 	}
 
+	// Bridge method for Room component to call - fires UI event
 	onJoinRoom(roomName) {
-		if (!roomName) return;
-		this.stateManager.setRoomJoining(roomName);
-		const result = this.roomService.joinRoom(roomName, this.connection);
-		if (!result) {
-			this.stateManager.setRoomLeft();
-		}
-	}
-
-	onLeaveRoom() {
-		this.roomService.leaveRoom();
-		this.ui.leaveRoom();
+		// Fire UI event for room service to handle
+		dispatchEvent('ui:joinRoom', roomName);
 	}
 
 	onRoomLeft() {
@@ -175,66 +162,56 @@ export class RoomController {
 	}
 
 	onNodeCreate(detail) {
-		console.log('🔍 RoomController.onNodeCreate called with:', detail);
 		this.graphOperations.upsertNode(detail.data, this.connection);
 	}
 
 	onNodeDelete(detail) {
-		console.log('🔍 RoomController.onNodeDelete called with:', detail);
 		this.graphOperations.deleteNode(detail.id);
 	}
 
 	onEdgeCreate(detail) {
-		console.log('🔍 RoomController.onEdgeCreate called with:', detail);
 		this.graphOperations.upsertEdge(detail.data, this.connection);
 	}
 
 	onEdgeDelete(detail) {
-		console.log('🔍 RoomController.onEdgeDelete called with:', detail);
 		this.graphOperations.deleteEdge(detail.id);
 	}
 
-	onRoomStatusChanged(status, roomName) {
-		if (status === roomName && roomName) {
-			this.currentRoom = roomName;
-			this.stateManager.setRoomJoined(roomName);
-			this.updateRoomHash(roomName);
-			this.ui.handleRoomJoined(roomName);
+	// Room lifecycle event handlers
+	onRoomJoining(event) {
+		const { room } = event.detail;
+		// Update UI to show joining state
+		this.ui.setMode('connecting');
+	}
 
-			// Update gunWrapper with current room
-			this.gunWrapper = new GunDBWrapper(
-				this.connection,
-				this.currentRoom
-			);
+	onRoomJoined(event) {
+		const { room } = event.detail;
+		// Full room setup
+		this.currentRoom = room;
+		this.ui.setMode('room-mode');
+		this.stateManager.setRoomJoined(room);
+		this.updateRoomHash(room);
+		this.ui.handleRoomJoined(room);
 
-			if (this.roomService.isInRoom() && this.syncService) {
-				this.syncService.subscribeToRoom();
-			}
-		} else if (status && status.includes('🏠') && roomName) {
-			this.currentRoom = roomName;
-			this.stateManager.setRoomJoined(roomName);
-			this.updateRoomHash(roomName);
-			this.ui.handleRoomJoined(roomName);
+		// Update gunWrapper with current room
+		this.gunWrapper = new GunDBWrapper(this.connection, this.currentRoom);
+	}
 
-			// Update gunWrapper with current room
-			this.gunWrapper = new GunDBWrapper(
-				this.connection,
-				this.currentRoom
-			);
+	onRoomLeaving(event) {
+		this.ui.setMode('connecting');
+	}
 
-			if (this.roomService.isInRoom() && this.syncService) {
-				this.syncService.subscribeToRoom();
-			}
-		} else if (status === 'not joined') {
-			this.currentRoom = null;
-			this.stateManager.setRoomLeft();
-			this.updateRoomHash(null);
-			this.ui.handleRoomLeft();
+	onRoomLeft(event) {
+		// Full room cleanup
+		this.currentRoom = null;
+		this.stateManager.setRoomLeft();
+		this.updateRoomHash(null);
+		// Switch UI back to room selection
+		this.ui.setMode('room-selection');
+		this.ui.handleRoomLeft();
 
-			// Clear gunWrapper references
-			this.visualization = null;
-			this.gunWrapper = new GunDBWrapper(this.connection, null);
-		}
+		// Clear gunWrapper references
+		this.gunWrapper = new GunDBWrapper(this.connection, null);
 	}
 
 	updateRoomHash(roomName) {
@@ -250,23 +227,8 @@ export class RoomController {
 		if (!room) return;
 
 		try {
-			this.roomService.exportRoom(room).then((data) => {
-				if (data) {
-					const blob = new Blob([JSON.stringify(data, null, 2)], {
-						type: 'application/json',
-					});
-					const url = URL.createObjectURL(blob);
-					const a = document.createElement('a');
-					a.href = url;
-					a.download = `${room}-export-${
-						new Date().toISOString().split('T')[0]
-					}.json`;
-					document.body.appendChild(a);
-					a.click();
-					document.body.removeChild(a);
-					URL.revokeObjectURL(url);
-				}
-			});
+			// Dispatch event instead of direct service call
+			dispatchEvent('room:exportRequested', { room });
 		} catch (error) {
 			log('Error exporting graph:', error);
 		}
@@ -277,12 +239,40 @@ export class RoomController {
 		if (!room || !data) return;
 
 		try {
-			const result = this.roomService.importRoomData(data);
-			if (result) {
-				log('Graph data imported successfully');
-			}
+			// Dispatch event instead of direct service call
+			dispatchEvent('room:importRequested', { room, data });
 		} catch (error) {
 			log('Error importing graph:', error);
+		}
+	}
+
+	handleRoomExportCompleted(e) {
+		const { room, data } = e.detail;
+		if (!data) return;
+
+		try {
+			const blob = new Blob([JSON.stringify(data, null, 2)], {
+				type: 'application/json',
+			});
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `${room}-export-${
+				new Date().toISOString().split('T')[0]
+			}.json`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (error) {
+			log('Error handling export completion:', error);
+		}
+	}
+
+	handleRoomImportCompleted(e) {
+		const { room, success } = e.detail;
+		if (success) {
+			log('Graph data imported successfully');
 		}
 	}
 
@@ -303,48 +293,24 @@ export class RoomController {
 		}
 	}
 
-	handleGraphSearch(e) {
-		const { room, query } = e.detail;
+	handleGraphSearch({ room, query }) {
 		if (!room || !query) return;
-
-		document.dispatchEvent(
-			new CustomEvent('graph:searchRequested', {
-				detail: { room, query },
-			})
-		);
+		dispatchEvent('graph:searchRequested', { room, query });
 	}
 
-	handleGraphClearSearch(e) {
-		const { room } = e.detail;
+	handleGraphClearSearch({ room } = {}) {
 		if (!room) return;
-
-		document.dispatchEvent(
-			new CustomEvent('graph:searchCleared', {
-				detail: { room },
-			})
-		);
+		dispatchEvent('graph:searchCleared', { room });
 	}
 
-	handleGraphLayoutChange(e) {
-		const { room, layout } = e.detail;
+	handleGraphLayoutChange({ room, layout } = {}) {
 		if (!room || !layout) return;
-
-		document.dispatchEvent(
-			new CustomEvent('graph:layoutChangeRequested', {
-				detail: { room, layout },
-			})
-		);
+		dispatchEvent('graph:layoutChange', { room, layout });
 	}
 
-	handleGraphFit(e) {
-		const { room } = e.detail;
+	handleGraphFit({ room } = {}) {
 		if (!room) return;
-
-		document.dispatchEvent(
-			new CustomEvent('graph:fitRequested', {
-				detail: { room },
-			})
-		);
+		dispatchEvent('graph:fitRequested', { room });
 	}
 
 	async handleRequestProps(e) {
@@ -353,9 +319,8 @@ export class RoomController {
 			return;
 		}
 
-		if (this.syncService) {
-			this.syncService.setPropsLoadingFlag(true);
-		}
+		// Set props loading flag via event
+		dispatchEvent('sync:setPropsLoadingFlag', { value: true });
 
 		try {
 			let props;
@@ -384,31 +349,22 @@ export class RoomController {
 				}
 			}
 
-			document.dispatchEvent(
-				new CustomEvent('graph:propsLoaded', {
-					detail: {
-						elementId,
-						elementType,
-						props,
-						room,
-					},
-				})
-			);
+			dispatchEvent('graph:propsLoaded', {
+				elementId,
+				elementType,
+				props,
+				room,
+			});
 		} catch (error) {
-			document.dispatchEvent(
-				new CustomEvent('graph:propsLoaded', {
-					detail: {
-						elementId,
-						elementType,
-						props: {},
-						room,
-					},
-				})
-			);
+			dispatchEvent('graph:propsLoaded', {
+				elementId,
+				elementType,
+				props: {},
+				room,
+			});
 		} finally {
-			if (this.syncService) {
-				this.syncService.setPropsLoadingFlag(false);
-			}
+			// Clear props loading flag via event
+			dispatchEvent('sync:setPropsLoadingFlag', { value: false });
 		}
 	}
 
@@ -418,33 +374,5 @@ export class RoomController {
 
 	isInRoom() {
 		return !!this.currentRoom;
-	}
-
-	destroy() {
-		// Remove resize event listener
-		if (this.resizeHandler) {
-			window.removeEventListener('resize', this.resizeHandler);
-		}
-
-		document.removeEventListener('graph:export', this.handleGraphExport);
-		document.removeEventListener('graph:import', this.handleGraphImport);
-		document.removeEventListener(
-			'graph:clearLocal',
-			this.handleGraphClearLocal
-		);
-		document.removeEventListener('graph:search', this.handleGraphSearch);
-		document.removeEventListener(
-			'graph:clearSearch',
-			this.handleGraphClearSearch
-		);
-		document.removeEventListener(
-			'graph:layoutChange',
-			this.handleGraphLayoutChange
-		);
-		document.removeEventListener('graph:fit', this.handleGraphFit);
-		document.removeEventListener(
-			'graph:requestProps',
-			this.handleRequestProps
-		);
 	}
 }

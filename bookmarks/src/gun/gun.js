@@ -29,11 +29,11 @@ async function startApp() {
 	const stateManager = new StateManager();
 	const rooms = new RoomManager();
 	const graph = new GraphOperations(rooms, connection);
-	const sync = new Sync(rooms);
+	const sync = new Sync();
 	const propsManager = new PropsManager();
 
 	// Initialize controllers
-	const roomController = new RoomController(rooms, sync, stateManager, graph);
+	const roomController = new RoomController(stateManager, graph);
 	const headerController = new HeaderController(stateManager);
 	const activityController = new ActivityController();
 

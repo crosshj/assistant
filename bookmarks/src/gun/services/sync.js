@@ -1,19 +1,24 @@
-import { log } from '../lib/utils.js';
+import { log, addEventListener, dispatchEvent } from '../lib/utils.js';
 import { GunDBWrapper } from '../lib/gunWrapper.js';
 
 // Data Synchronization between GunDB and UI
 export class Sync {
-	constructor(roomManager) {
-		this.roomManager = roomManager;
+	constructor() {
 		this.connection = null; // Will be set via setConnection()
 		this.gunWrapper = null; // Will be initialized in setConnection()
 		this.nodesChain = null;
 		this.edgesChain = null;
 		this.isSubscribed = false;
-		this.eventListeners = new Map();
 		this._isPaused = false; // Added for pausing/resuming
 		this._propsLoadingFlag = false; // Added for props loading protection
 		// this.pendingRemovals = new Map(); // COMMENTED OUT: Not using grace period logic anymore
+
+		// Local room state tracking
+		this._isInRoom = false;
+		this._graphRoot = null;
+
+		// Listen to room state changes to auto-subscribe
+		this.setupRoomEventListeners();
 	}
 
 	setConnection(connection) {
@@ -21,20 +26,7 @@ export class Sync {
 		this.gunWrapper = new GunDBWrapper(connection);
 	}
 
-	// Event system for UI components to listen to
-	on(event, callback) {
-		if (!this.eventListeners.has(event)) {
-			this.eventListeners.set(event, []);
-		}
-		this.eventListeners.get(event).push(callback);
-	}
-
-	emit(event, data) {
-		const listeners = this.eventListeners.get(event);
-		if (listeners) {
-			listeners.forEach((callback) => callback(data));
-		}
-	}
+	// Event system now uses DOM events via dispatchEvent
 
 	/**
 	 * Temporarily pause data sync updates without unsubscribing
@@ -80,14 +72,42 @@ export class Sync {
 		return this._propsLoadingFlag;
 	}
 
+	setupRoomEventListeners() {
+		// Listen to room joined events to auto-subscribe
+		addEventListener('room:joined', (event) => {
+			const { room, graphRoot } = event.detail;
+			this._isInRoom = true; // Always true for room:joined events
+			this._graphRoot = graphRoot;
+
+			if (graphRoot) {
+				log('🔄 Room joined, auto-subscribing to sync');
+				this.subscribeToRoom();
+			}
+		});
+
+		// Listen to room left events to auto-unsubscribe
+		addEventListener('room:left', (event) => {
+			this._isInRoom = false;
+			this._graphRoot = null;
+			log('🔄 Room left, auto-unsubscribing from sync');
+			this.unsubscribeFromRoom();
+		});
+
+		// Listen to props loading flag events
+		addEventListener('sync:setPropsLoadingFlag', (event) => {
+			const { value } = event.detail;
+			this.setPropsLoadingFlag(value);
+		});
+	}
+
 	subscribeToRoom() {
-		if (!this.roomManager.isInRoom()) {
+		if (!this._isInRoom) {
 			log('⚠️ Cannot subscribe: Not in a room');
 			return false;
 		}
 
 		// Additional validation: ensure we have a valid graph root
-		const graphRoot = this.roomManager.getGraphRoot();
+		const graphRoot = this._graphRoot;
 
 		if (!graphRoot) {
 			log('⚠️ Cannot subscribe: No graph root available');
@@ -101,8 +121,8 @@ export class Sync {
 		// Clear existing subscriptions
 		this.unsubscribeFromRoom();
 
-		// Emit event for UI to clear graph
-		this.emit('clearGraph');
+		// Dispatch event for UI to clear graph
+		dispatchEvent('sync:clearGraph');
 
 		// Log network status for debugging
 		// log(
@@ -154,8 +174,8 @@ export class Sync {
 						log(
 							`🗑️ Node ${shortId}... received null data - removing from graph`
 						);
-						// Emit removeNode event for proper cleanup
-						this.emit('removeNode', { id });
+						// Dispatch removeNode event for proper cleanup
+						dispatchEvent('sync:removeNode', { id });
 						return;
 					}
 
@@ -164,41 +184,15 @@ export class Sync {
 						log(
 							`🗑️ Node ${shortId}... received empty data object - removing from graph`
 						);
-						// Emit removeNode event for proper cleanup
-						this.emit('removeNode', { id });
+						// Dispatch removeNode event for proper cleanup
+						dispatchEvent('sync:removeNode', { id });
 						return;
 					}
 
-					// Debug: Log the raw data structure
-					// log(`🔍 Raw node data for ${shortId}:`, data);
-					// log(
-					// 	`🔍 Raw node data keys: [${Object.keys(data || {}).join(
-					// 		', '
-					// 	)}]`
-					// );
+					// Use GunDBWrapper to clean the node data (same as old working system)
+					const cleanData = this.gunWrapper.cleanNodeData(data);
 
-					// TEMPORARY: Skip data cleaning to debug the issue
-					// const cleanData = this.gunWrapper.cleanNodeData(data);
-
-					// Create a minimal clean data structure for now
-					const cleanData = {
-						id: id,
-						label: data?.label || 'unnamed',
-						props: data?.props || {},
-					};
-
-					// Debug: Log the cleaned data
-					// log(`🧹 Cleaned node data for ${shortId}:`, cleanData);
-
-					// Truncate the ID for display but keep full ID in data
-					const label = cleanData?.label || 'unnamed';
-					log(
-						`✅ Node synced: ${shortId}... (${label}) - data keys: [${Object.keys(
-							cleanData || {}
-						).join(', ')}]`
-					);
-
-					this.emit('addNode', { data: cleanData, id });
+					dispatchEvent('sync:addNode', { data: cleanData, id });
 				} catch (error) {
 					const shortId = id.slice(0, 8);
 					log(
@@ -223,8 +217,8 @@ export class Sync {
 						log(
 							`🗑️ Edge ${shortId}... received null data - removing from graph`
 						);
-						// Emit removeEdge event for proper cleanup
-						this.emit('removeEdge', { id });
+						// Dispatch removeEdge event for proper cleanup
+						dispatchEvent('sync:removeEdge', { id });
 						return;
 					}
 
@@ -243,8 +237,8 @@ export class Sync {
 						log(
 							`🗑️ Edge ${shortId}... received empty data object - removing from graph`
 						);
-						// Emit removeEdge event for proper cleanup
-						this.emit('removeEdge', { id });
+						// Dispatch removeEdge event for proper cleanup
+						dispatchEvent('sync:removeEdge', { id });
 						return;
 					}
 
@@ -267,7 +261,7 @@ export class Sync {
 						const cleanData = this.gunWrapper.cleanEdgeData(data);
 
 						// Create edge immediately - placeholder nodes will be created if needed
-						this.emit('addEdge', { data: cleanData, id });
+						dispatchEvent('sync:addEdge', { data: cleanData, id });
 					} else {
 						// Edge data is missing source/target info
 						const shortId = id.slice(0, 8);
@@ -314,13 +308,13 @@ export class Sync {
 
 	// Force refresh of all data
 	refreshData() {
-		if (!this.roomManager.isInRoom()) {
+		if (!this._isInRoom) {
 			log('⚠️ Cannot refresh: Not in a room');
 			return false;
 		}
 
-		// Emit event for UI to clear graph
-		this.emit('clearGraph');
+		// Dispatch event for UI to clear graph
+		dispatchEvent('sync:clearGraph');
 
 		// Re-subscribe to get fresh data
 		this.subscribeToRoom();
@@ -335,7 +329,7 @@ export class Sync {
 			isSubscribed: this.isSubscribed,
 			hasNodesChain: !!this.nodesChain,
 			hasEdgesChain: !!this.edgesChain,
-			isInRoom: this.roomManager.isInRoom(),
+			isInRoom: this._isInRoom,
 		};
 	}
 }

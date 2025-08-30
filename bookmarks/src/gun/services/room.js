@@ -1,4 +1,4 @@
-import { log } from '../lib/utils.js';
+import { log, dispatchEvent } from '../lib/utils.js';
 
 // Room Management
 export class RoomManager {
@@ -8,33 +8,61 @@ export class RoomManager {
 		this.graphRoot = null;
 		this.nodesChain = null;
 		this.edgesChain = null;
-		this.eventListeners = new Map();
+
+		// Listen to UI events directly
+		this.setupUIEventListeners();
 	}
 
 	setConnection(gun) {
 		this.gun = gun;
 	}
 
-	// Event system for UI components to listen to
-	on(event, callback) {
-		if (!this.eventListeners.has(event)) {
-			this.eventListeners.set(event, []);
-		}
-		this.eventListeners.get(event).push(callback);
+	setupUIEventListeners() {
+		// Listen to join room requests from UI
+		document.addEventListener('ui:joinRoom', (event) => {
+			const roomName = event.detail;
+			if (roomName) {
+				this.joinRoom(roomName);
+			}
+		});
+
+		// Listen to leave room requests from UI
+		document.addEventListener('ui:leaveRoom', () => {
+			this.leaveRoom();
+		});
+
+		// Listen to export requests
+		document.addEventListener('room:exportRequested', async (event) => {
+			const { room } = event.detail;
+			const data = await this.exportRoom(room);
+			if (data) {
+				// Dispatch result back to UI
+				dispatchEvent('room:exportCompleted', { room, data });
+			}
+		});
+
+		// Listen to import requests
+		document.addEventListener('room:importRequested', (event) => {
+			const { room, data } = event.detail;
+			alert('Feature not implemented yet');
+			dispatchEvent('room:importCompleted', { room, success: false });
+			// const result = this.importRoomData(data);
+			// if (result) {
+			// 	dispatchEvent('room:importCompleted', { room, success: true });
+			// }
+		});
 	}
 
-	emit(event, ...args) {
-		const listeners = this.eventListeners.get(event);
-		if (listeners) {
-			listeners.forEach((callback) => callback(...args));
-		}
-	}
+	// Room events are now dispatched as DOM events
 
-	joinRoom(room, connectionManager) {
+	joinRoom(room) {
 		if (!room) return false;
 
 		// Trust that the StateManager has already verified the connection is ready
 		// The connection check is now handled at the EventCoordinator level
+
+		// 1. START joining - UI can show joining state
+		dispatchEvent('room:joining', { room });
 
 		this.currentRoom = room;
 		this.graphRoot = this.gun.get('graphs').get(room);
@@ -47,10 +75,13 @@ export class RoomManager {
 		this.graphRoot.once((data, ack) => {
 			if (!joinCompleted) {
 				joinCompleted = true;
-				// Room operation completed, now emit the success event
-				const status = `🏠 ${room}`;
-				// Gun.js callback fired, emitting status
-				this.emit('roomStatusChanged', status, room);
+
+				// Room is fully ready - fire joined event
+
+				dispatchEvent('room:joined', {
+					room,
+					graphRoot: this.graphRoot,
+				});
 			}
 		});
 
@@ -59,9 +90,13 @@ export class RoomManager {
 		setTimeout(() => {
 			if (!joinCompleted && this.currentRoom === room && this.graphRoot) {
 				joinCompleted = true;
-				const status = `🏠 ${room}`;
-				// Timeout fallback fired, emitting status
-				this.emit('roomStatusChanged', status, room);
+
+				// Room is fully ready - fire joined event
+
+				dispatchEvent('room:joined', {
+					room,
+					graphRoot: this.graphRoot,
+				});
 			} else if (joinCompleted) {
 				// Timeout fallback skipped - callback already fired
 			}
@@ -84,6 +119,11 @@ export class RoomManager {
 	}
 
 	leaveRoom() {
+		const currentRoom = this.currentRoom;
+
+		// 1. START leaving - UI can show leaving state
+		dispatchEvent('room:leaving', { room: currentRoom });
+
 		if (this.nodesChain) this.nodesChain.off();
 		if (this.edgesChain) this.edgesChain.off();
 
@@ -92,7 +132,11 @@ export class RoomManager {
 		this.nodesChain = null;
 		this.edgesChain = null;
 
-		this.emit('roomStatusChanged', 'not joined', null);
+		// 2. FULLY left - All cleanup complete
+		dispatchEvent('room:left', {
+			room: null,
+			graphRoot: null,
+		});
 		// log('left room');
 	}
 
