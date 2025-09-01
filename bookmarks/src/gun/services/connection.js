@@ -1,7 +1,13 @@
 import Gun from 'gun';
 import 'gun/sea';
 import 'gun/axe';
-import { log, uuid, dispatchEvent, tryJSONParse } from '../lib/utils.js';
+import {
+	log,
+	uuid,
+	dispatchEvent,
+	tryJSONParse,
+	addEventListener,
+} from '../lib/utils.js';
 
 // GunDB Connection Management
 export class GunConnection {
@@ -99,6 +105,7 @@ export class GunConnection {
 
 		this.user = this.gun.user();
 		this.autoLogin();
+		this.setupEventListeners();
 
 		// Don't log connection messages - too noisy
 		// log(
@@ -118,6 +125,21 @@ export class GunConnection {
 		});
 
 		return this.gun;
+	}
+
+	setupEventListeners() {
+		// Listen for network discovery requests
+		addEventListener('networkDiscovery', () => {
+			this.handleNetworkDiscovery();
+		});
+	}
+
+	handleNetworkDiscovery() {
+		// Import gunWrapper dynamically to avoid circular dependency
+		import('../lib/gunWrapper.js').then(({ GunDBWrapper }) => {
+			const gunWrapper = new GunDBWrapper(this);
+			gunWrapper.runNetworkDiscovery();
+		});
 	}
 
 	startMonitoring() {

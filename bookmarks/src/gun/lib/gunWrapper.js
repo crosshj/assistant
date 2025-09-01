@@ -6,11 +6,6 @@ export class GunDBWrapper {
 	constructor(connection, currentRoom = null) {
 		this.connection = connection;
 		this.currentRoom = currentRoom;
-
-		// Listen for network discovery events
-		document.addEventListener('networkDiscovery', () => {
-			this.runNetworkDiscovery();
-		});
 	}
 
 	/**

@@ -2,26 +2,9 @@ import { html } from '../lib/utils.js';
 import './ConnectionDetails.css';
 
 export class ConnectionDetails {
-	constructor(connection) {
-		this.connection = connection;
+	constructor() {
 		this.modal = null;
 		this.isOpen = false;
-
-		this.bindEvents();
-	}
-
-	bindEvents() {
-		// Listen for state changes from the new state system
-		document.addEventListener('stateChanged', (event) => {
-			if (event.detail.network) {
-				this.updateConnectionStatus(event.detail.network);
-			}
-		});
-
-		// Listen for external open requests
-		document.addEventListener('ui:showConnectionDetails', () => {
-			this.open();
-		});
 	}
 
 	open() {
@@ -29,7 +12,6 @@ export class ConnectionDetails {
 
 		this.isOpen = true;
 		this.render();
-		this.bindModalEvents();
 	}
 
 	close() {
@@ -70,10 +52,7 @@ export class ConnectionDetails {
 
 					<!-- Peer Configuration Section -->
 					<div class="peer-config-section collapsed">
-						<div
-							class="collapsible-header"
-							onclick="this.parentElement.classList.toggle('collapsed')"
-						>
+						<div class="collapsible-header">
 							<span class="collapsible-icon">►</span>
 							<span>Peer Configuration</span>
 						</div>
@@ -157,44 +136,16 @@ export class ConnectionDetails {
 		`;
 
 		document.body.appendChild(this.modal);
-		this.updatePeerTable();
-		this.updateConnectionStats();
-		this.updatePeerLists();
-		this.bindActionButtons();
 	}
 
-	bindModalEvents() {
-		// Close button
-		const closeBtn = this.modal.querySelector('.modal-close');
-		if (closeBtn) {
-			closeBtn.addEventListener('click', () => {
-				this.close();
-			});
-		}
-
-		// Click outside to close
-		this.modal.addEventListener('click', (event) => {
-			if (event.target === this.modal) {
-				this.close();
-			}
-		});
-
-		// Escape key to close
-		document.addEventListener('keydown', (event) => {
-			if (event.key === 'Escape' && this.isOpen) {
-				this.close();
-			}
-		});
+	// Get modal element for controller event delegation
+	getModal() {
+		return this.modal;
 	}
 
-	updatePeerTable() {
+	updatePeerTable(detailedPeers) {
 		const tbody = this.modal?.querySelector('#peerTableBody');
 		if (!tbody) return;
-
-		// Get detailed peer information from connection
-		const detailedPeers = this.connection.getDetailedPeerInfo
-			? this.connection.getDetailedPeerInfo()
-			: {};
 
 		const peerEntries = Object.entries(detailedPeers);
 		if (peerEntries.length === 0) {
@@ -238,64 +189,9 @@ export class ConnectionDetails {
 			.join('');
 	}
 
-	bindPeerActionEvents() {
-		// This would handle peer-specific actions like test, disconnect, etc.
-		// For now, we'll just log the actions
-		const actionButtons = this.modal?.querySelectorAll(
-			'button[onclick*="handlePeerAction"]'
-		);
-		if (actionButtons) {
-			actionButtons.forEach((button) => {
-				button.addEventListener('click', (event) => {
-					event.preventDefault();
-					const onclick = button.getAttribute('onclick');
-					const match = onclick.match(
-						/handlePeerAction\('([^']+)', '([^']+)'\)/
-					);
-					if (match) {
-						this.handlePeerAction(match[1], match[2]);
-					}
-				});
-			});
-		}
-	}
-
-	handlePeerAction(peerId, action) {
-		switch (action) {
-			case 'test':
-				this.testPeer(peerId);
-				break;
-			case 'disconnect':
-				this.disconnectPeer(peerId);
-				break;
-			default:
-			// Unknown peer action
-		}
-	}
-
-	testPeer(peerId) {
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('peer:test', {
-				detail: { peerId: peerId },
-			})
-		);
-	}
-
-	disconnectPeer(peerId) {
-		// Dispatch event for external handling
-		document.dispatchEvent(
-			new CustomEvent('peer:disconnect', {
-				detail: { peerId: peerId },
-			})
-		);
-	}
-
 	updateConnectionStatus(networkState) {
-		// Update the peer table when connection status changes
+		// Update the network status when connection status changes
 		if (this.isOpen) {
-			this.updatePeerTable();
-			this.updateConnectionStats();
 			this.updateNetworkStatus(networkState);
 		}
 	}
@@ -334,12 +230,6 @@ export class ConnectionDetails {
 		return this.isOpen;
 	}
 
-	refresh() {
-		if (this.isOpen) {
-			this.updatePeerTable();
-		}
-	}
-
 	// Helper methods for peer information display
 	getReadyStateText(readyState) {
 		switch (readyState) {
@@ -363,11 +253,7 @@ export class ConnectionDetails {
 	}
 
 	// Update connection statistics
-	updateConnectionStats() {
-		const networkInfo = this.connection.getNetworkInfo
-			? this.connection.getNetworkInfo()
-			: {};
-
+	updateConnectionStats(networkInfo) {
 		const connectionRateEl = this.modal?.querySelector('#connectionRate');
 		const stablePeersEl = this.modal?.querySelector('#stablePeers');
 		const manualDisconnectEl =
@@ -396,52 +282,20 @@ export class ConnectionDetails {
 	}
 
 	// Update peer configuration lists
-	updatePeerLists() {
+	updatePeerLists(defaultPeers, currentPeers) {
 		const defaultPeersList = this.modal?.querySelector('#defaultPeersList');
 		const currentPeersList = this.modal?.querySelector('#currentPeersList');
 
 		if (defaultPeersList) {
-			const defaultPeers = this.connection.getDefaultPeers
-				? this.connection.getDefaultPeers()
-				: [];
 			defaultPeersList.innerHTML = defaultPeers
 				.map((peer) => `<li>${peer}</li>`)
 				.join('');
 		}
 
 		if (currentPeersList) {
-			const currentPeers = this.connection.peers || [];
 			currentPeersList.innerHTML = currentPeers
 				.map((peer) => `<li>${peer}</li>`)
 				.join('');
 		}
-	}
-
-	// Bind action button events
-	bindActionButtons() {
-		const refreshBtn = this.modal?.querySelector('#refreshBtn');
-		const networkDiscoveryBtn = this.modal?.querySelector(
-			'#networkDiscoveryBtn'
-		);
-
-		if (refreshBtn) {
-			refreshBtn.addEventListener('click', () => {
-				this.updatePeerTable();
-				this.updateConnectionStats();
-				this.updatePeerLists();
-			});
-		}
-
-		if (networkDiscoveryBtn) {
-			networkDiscoveryBtn.addEventListener('click', () => {
-				// Dispatch event for network discovery
-				document.dispatchEvent(new CustomEvent('ui:networkDiscovery'));
-			});
-		}
-	}
-
-	// Method to get current peer information
-	getPeerInfo() {
-		return this.connection.getPeers ? this.connection.getPeers() : [];
 	}
 }

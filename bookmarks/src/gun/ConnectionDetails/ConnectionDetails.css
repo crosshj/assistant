@@ -194,6 +194,10 @@
 	color: var(--text-bright);
 }
 
+.collapsible-header span {
+	pointer-events: none;
+}
+
 .collapsible-header:hover {
 	background: color-mix(in srgb, var(--card-border) 25%, var(--card-bg));
 }
@@ -202,6 +206,7 @@
 	transition: transform 0.2s ease;
 	font-size: 0.9rem;
 	color: var(--text-subtle);
+	pointer-events: none;
 }
 
 .peer-config-section.collapsed .collapsible-icon {

@@ -9,13 +9,13 @@ import { RoomManager } from './services/room.js';
 import { Sync } from './services/sync.js';
 
 // Import new UI components
-import { ConnectionDetails } from './ConnectionDetails/ConnectionDetails.js';
 import { PropsManager } from './services/PropsManager.js';
 
 // Import controllers
 import { RoomController } from './Room/RoomController.js';
 import { HeaderController } from './Header/HeaderController.js';
 import { ActivityController } from './Activity/ActivityController.js';
+import { ConnectionDetailsController } from './ConnectionDetails/ConnectionDetailsController.js';
 
 // Main GunDB Application
 async function startApp() {
@@ -44,8 +44,10 @@ async function startApp() {
 	roomController.setConnection(connection);
 	headerController.setConnection(connection);
 
-	// Initialize connection details after connection is ready
-	const connectionDetails = new ConnectionDetails(connection);
+	// Initialize connection details controller after connection is ready
+	const connectionDetailsController = new ConnectionDetailsController(
+		connection
+	);
 
 	// Initialize event coordination
 	const eventCoordinator = new EventCoordinator(connection, rooms, sync);
