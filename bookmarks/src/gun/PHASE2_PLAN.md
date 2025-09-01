@@ -42,6 +42,81 @@ gun.js (main app)
 
 ## Phase 2 Strategy
 
+### **Step 0: Create ApplicationController Architecture (CRITICAL)**
+
+**Goal**: Establish single point of GunDB access through event-driven ApplicationController
+
+**Current Problem**:
+
+-   Multiple gunWrapper instances across controllers
+-   Direct GunDB access scattered throughout codebase
+-   Mixed responsibilities between layout and GunDB operations
+
+**Solution**: ApplicationController as single GunDB access point
+
+**Architecture**:
+
+```
+gun.js → ApplicationController → gunWrapper (SINGLE INSTANCE)
+Controllers → Events → ApplicationController → gunWrapper
+```
+
+**Implementation**:
+
+```javascript
+// ApplicationController - single GunDB access point
+class ApplicationController {
+	constructor(connection) {
+		this.gunWrapper = new GunDBWrapper(connection); // SINGLE INSTANCE
+		this.setupGunDBEventListeners();
+	}
+
+	setupGunDBEventListeners() {
+		// All GunDB operations go through events
+		addEventListener('gun:getNode', async (event) => {
+			const { room, nodeId } = event.detail;
+			const node = await this.gunWrapper.getNode(room, nodeId);
+			dispatchEvent('gun:getNodeResponse', { node, room, nodeId });
+		});
+
+		addEventListener('gun:upsertNode', async (event) => {
+			const { room, nodeData } = event.detail;
+			const result = await this.gunWrapper.upsertNode(room, nodeData);
+			dispatchEvent('gun:upsertNodeResponse', { result, room, nodeData });
+		});
+
+		// ... all other GunDB operations
+	}
+}
+
+// Controllers use events instead of direct gunWrapper access
+class RoomController {
+	async getNode(room, nodeId) {
+		// Fire event, wait for response
+		dispatchEvent('gun:getNode', { room, nodeId });
+		return new Promise((resolve) => {
+			addEventListener(
+				'gun:getNodeResponse',
+				(event) => {
+					if (event.detail.nodeId === nodeId) {
+						resolve(event.detail.node);
+					}
+				},
+				{ once: true }
+			);
+		});
+	}
+}
+```
+
+**Benefits**:
+
+-   Single GunDB instance
+-   Centralized GunDB operations
+-   Event-driven architecture
+-   Easier gunWrapper refactoring
+-   Controllers don't need GunDB knowledge
+
 ### **Step 1: Extract gunWrapper Methods (SAFE)**
 
 **Goal**: Break down 1150-line file into focused utility methods
@@ -162,13 +237,13 @@ class ServiceController {
 
 **Migration Order** (least risky to most risky):
 
-1. **GraphOperations** → ServiceController (CRUD operations)
-2. **AuthManager** → ServiceController (authentication)
-3. **RoomManager** → ServiceController (room operations)
-4. **GunConnection** → ServiceController (network operations)
-5. **DataSync** → ServiceController (sync operations)
-6. **StateManager** → Remove (controllers manage own state)
-7. **EventCoordinator** → Remove (direct event handling)
+1. **Create ApplicationController** → Single GunDB access point via events
+2. **Move GunDB operations** → From services to ApplicationController
+3. **Update controllers** → Use events instead of direct gunWrapper access
+4. **Consolidate services** → Move remaining service logic to ApplicationController
+5. **StateManager** → Already removed in Phase 1 (controllers manage own state)
+6. **EventCoordinator** → Already removed in Phase 1 (direct event handling)
+7. **PropsManager** → Already removed in Phase 1 (moved to controllers)
 
 **Action**: Move one service at a time, test after each move
 
@@ -413,7 +488,9 @@ document.dispatchEvent(
 
 -   ✅ **Clean architecture** with single ServiceController
 -   ✅ **Simple event flow** between controllers
--   ✅ **No StateManager** dependency
+-   ✅ **No StateManager** dependency (completed in Phase 1)
+-   ✅ **No EventCoordinator** dependency (completed in Phase 1)
+-   ✅ **No PropsManager** dependency (completed in Phase 1)
 -   ✅ **All tests pass**
 
 ## Next Action

@@ -139,8 +139,12 @@ User → Room component → Direct calls → RoomController → Service calls �
 
 -   ✅ **ActivityController (COMPLETED)** - extract event handling and business logic from Activity.js
 -   **ConnectionDetailsController** - move connection event logic from ConnectionDetails.js
+-   **Eliminate StateManager** - controllers manage their own state instead of centralized state
+-   **Eliminate EventCoordinator** - controllers listen to events directly from services
+-   **Eliminate PropsManager** - move props handling logic to RoomController/UI components
+-   **Simplify gun.js** - remove dependency injection and setConnection calls
+-   **Prepare for ApplicationController** - ensure controllers can work with event-driven GunDB access
 -   **Test controller integration** - ensure all functionality works through controllers
--   **Prepare for gunWrapper refactoring** - once all controllers are stable
 
 ---
 
