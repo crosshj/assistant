@@ -2,7 +2,7 @@ import { log, addEventListener, dispatchEvent } from '../lib/utils.js';
 import { GunDBWrapper } from '../lib/gunWrapper.js';
 
 // Data Synchronization between GunDB and UI
-export class Sync {
+export class SyncService {
 	constructor() {
 		this.connection = null; // Will be set via setConnection()
 		this.gunWrapper = null; // Will be initialized in setConnection()
@@ -18,6 +18,9 @@ export class Sync {
 
 		// Listen to room state changes to auto-subscribe
 		this.setupRoomEventListeners();
+
+		// Listen for props requests from UI/components
+		this.setupPropsEventListeners();
 	}
 
 	setConnection(connection) {
@@ -89,12 +92,73 @@ export class Sync {
 			log('🔄 Room left, auto-unsubscribing from sync');
 			this.unsubscribeFromRoom();
 		});
+	}
 
-		// Listen to props loading flag events
-		addEventListener('sync:setPropsLoadingFlag', (event) => {
-			const { value } = event.detail;
-			this.setPropsLoadingFlag(value);
+	/**
+	 * Props requests: fetch props without involving controllers
+	 */
+	setupPropsEventListeners() {
+		addEventListener('graph:requestProps', async (event) => {
+			const { elementId, elementType, room } = event.detail || {};
+			await this.handleRequestProps({ elementId, elementType, room });
 		});
+	}
+
+	async handleRequestProps({ elementId, elementType, room } = {}) {
+		if (!this.gunWrapper || !elementId || !elementType || !room) {
+			return;
+		}
+
+		// Prevent sync noise during props read
+		this.setPropsLoadingFlag(true);
+		this.pauseDataSync();
+
+		try {
+			let props;
+			try {
+				if (elementType === 'node') {
+					props = await this.gunWrapper.getNodeProps(room, elementId);
+					// warm cache/full data if needed
+					await this.gunWrapper.getNodeFullData(room, elementId);
+				} else if (elementType === 'edge') {
+					props = await this.gunWrapper.getEdgeProps(room, elementId);
+				} else {
+					throw new Error(`Unknown element type: ${elementType}`);
+				}
+			} catch (innerErr) {
+				// Fallback to memory/local
+				if (elementType === 'node') {
+					props = await this.gunWrapper.getPropsFallback(
+						room,
+						elementId,
+						true
+					);
+				} else if (elementType === 'edge') {
+					props = await this.gunWrapper.getPropsFallback(
+						room,
+						elementId,
+						false
+					);
+				}
+			}
+
+			dispatchEvent('graph:propsLoaded', {
+				elementId,
+				elementType,
+				props,
+				room,
+			});
+		} catch (error) {
+			dispatchEvent('graph:propsLoaded', {
+				elementId,
+				elementType,
+				props: {},
+				room,
+			});
+		} finally {
+			this.setPropsLoadingFlag(false);
+			this.resumeDataSync();
+		}
 	}
 
 	subscribeToRoom() {

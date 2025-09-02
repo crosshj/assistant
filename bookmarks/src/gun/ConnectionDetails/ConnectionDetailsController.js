@@ -7,8 +7,8 @@ import { ConnectionDetails } from './ConnectionDetails.js';
  * Coordinates between UI component and connection service
  */
 export class ConnectionDetailsController {
-	constructor(connection) {
-		this.connection = connection;
+	constructor() {
+		this.connection = null;
 
 		// Create ConnectionDetails component (pure UI renderer)
 		this.ui = new ConnectionDetails();
@@ -22,6 +22,10 @@ export class ConnectionDetailsController {
 
 		// Setup event listeners
 		this.setupEventListeners();
+	}
+
+	setConnection(connection) {
+		this.connection = connection;
 	}
 
 	setupEventListeners() {
@@ -41,7 +45,7 @@ export class ConnectionDetailsController {
 			});
 		});
 
-		addEventListener('network:manuallyDisconnected', () => {
+		addEventListener('network:disconnected', () => {
 			this.handleNetworkStateChange({ status: 'disconnected' });
 		});
 

@@ -1,7 +1,7 @@
 import { log, dispatchEvent, addEventListener } from '../lib/utils.js';
 
 // Room Management
-export class RoomManager {
+export class RoomService {
 	constructor() {
 		this.gun = null; // Will be set via setConnection()
 		this.currentRoom = null;

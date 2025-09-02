@@ -10,15 +10,17 @@ import {
 } from '../lib/utils.js';
 
 // GunDB Connection Management
-export class GunConnection {
+export class ConnectionService {
 	constructor() {
 		this.gun = null;
 		this.user = null;
 		this.peers = [];
 		this.connectionStatus = { connected: 0, total: 0 };
-		this.eventListeners = new Map();
 		this.monitoringInterval = null;
 		this.isDisconnected = false; // Flag to track manual disconnection
+
+		// Track previous connection state to detect real changes (moved from EventCoordinator)
+		this.previousConnectionState = null;
 	}
 
 	// Authentication methods
@@ -76,20 +78,7 @@ export class GunConnection {
 		dispatchEvent('auth:anonymous');
 	}
 
-	// Event system for UI components to listen to
-	on(event, callback) {
-		if (!this.eventListeners.has(event)) {
-			this.eventListeners.set(event, []);
-		}
-		this.eventListeners.get(event).push(callback);
-	}
-
-	emit(event, data) {
-		const listeners = this.eventListeners.get(event);
-		if (listeners) {
-			listeners.forEach((callback) => callback(data));
-		}
-	}
+	// Note: DOM events are used for external listeners; no custom bus
 
 	init(peers = []) {
 		this.peers = peers.length ? peers : this.getDefaultPeers();
@@ -114,15 +103,11 @@ export class GunConnection {
 		// 		' peers'
 		// );
 
-		// Emit initial connection status - start in connecting state
-		this.updateConnectionStatus(0, 0);
+		// Emit initial connecting state
+		dispatchEvent('network:connecting');
 
-		// Set initial status to connecting since we're trying to establish connections
-		this.emit('connectionStatusChanged', {
-			connected: 0,
-			total: 3,
-			status: 'connecting',
-		});
+		// Set initial connection status without emitting network:connected event
+		this.connectionStatus = { connected: 0, total: 0 };
 
 		return this.gun;
 	}
@@ -132,6 +117,17 @@ export class GunConnection {
 		addEventListener('networkDiscovery', () => {
 			this.handleNetworkDiscovery();
 		});
+
+		// Listen for UI events that EventCoordinator currently handles
+		addEventListener('ui:connect', () => this.handleConnect());
+		addEventListener('ui:disconnect', () => this.handleDisconnect());
+		addEventListener('ui:testConnection', () =>
+			this.handleTestConnection()
+		);
+		addEventListener('ui:createIdentity', (e) =>
+			this.handleCreateIdentity(e.detail)
+		);
+		addEventListener('ui:login', (e) => this.handleLogin(e.detail));
 	}
 
 	handleNetworkDiscovery() {
@@ -140,6 +136,69 @@ export class GunConnection {
 			const gunWrapper = new GunDBWrapper(this);
 			gunWrapper.runNetworkDiscovery();
 		});
+	}
+
+	// ===== UI EVENT HANDLERS (moved from EventCoordinator) =====
+
+	handleConnect() {
+		// Update state via event instead of direct call
+		dispatchEvent('network:connecting');
+
+		// Call connection service
+		const peers = this.getDefaultPeers();
+		this.updatePeers(peers);
+	}
+
+	handleDisconnect() {
+		// Call connection service first
+		this.disconnect();
+
+		// Then update state via event instead of direct call
+		dispatchEvent('network:disconnected');
+	}
+
+	handleTestConnection() {
+		this.testConnection();
+	}
+
+	handleCreateIdentity(alias) {
+		this.createIdentity(alias);
+	}
+
+	handleLogin(credentials) {
+		// Current UI flow only provides alias, so use createIdentity
+		// This will create a new identity or use existing one
+		this.createIdentity(credentials.alias || credentials);
+	}
+
+	// ===== ROOM AUTO-JOIN LOGIC (moved from EventCoordinator) =====
+
+	// Handle auto-join from hash tag when connection is established
+	handleAutoJoinFromHash() {
+		const hash = window.location.hash;
+		if (hash && hash.length > 1) {
+			const roomName = hash.substring(1); // Remove the # character
+
+			// Small delay to ensure everything is ready
+			setTimeout(() => {
+				if (this.isConnected()) {
+					// Dispatch event for room service to handle
+					dispatchEvent('ui:joinRoom', roomName);
+				}
+			}, 500);
+		}
+	}
+
+	// Check if we should show the room selector (no hash tag)
+	shouldShowRoomSelector() {
+		return !window.location.hash || window.location.hash.length <= 1;
+	}
+
+	// Check if currently in a room (placeholder - will be updated by room service)
+	isInRoom() {
+		// This is a placeholder - the room service should update this
+		// For now, return false to allow auto-join logic to work
+		return false;
 	}
 
 	startMonitoring() {
@@ -291,18 +350,41 @@ export class GunConnection {
 	updateConnectionStatus(connected, total) {
 		this.connectionStatus = { connected, total };
 
-		// Emit status update event for EventCoordinator to consume
-		this.emit('connectionStatusChanged', {
+		// Create current state object for comparison (moved from EventCoordinator)
+		const currentState = {
 			connected,
 			total,
 			status: connected > 0 ? 'connected' : 'connecting',
-		});
-		// Don't log connection status updates - too noisy
-		// console.log('🔌 Connection service status update:', {
-		// 	connected,
-		// 	total,
-		// 	status: connected > 0 ? 'connected' : 'connecting',
-		// });
+			hash: window.location.hash,
+			roomsInRoom: false, // This will be updated by room service if needed
+		};
+
+		// Check if state has actually changed (moved from EventCoordinator)
+		const stateChanged =
+			!this.previousConnectionState ||
+			JSON.stringify(this.previousConnectionState) !==
+				JSON.stringify(currentState);
+
+		// Only proceed if state has actually changed
+		if (stateChanged) {
+			// Update state via event instead of direct call
+			dispatchEvent('network:connected', { connected, total });
+
+			// Handle auto-join logic if connected and not in room
+			if (connected && !this.isInRoom()) {
+				// Check if there's a hash tag that would indicate auto-join
+				if (!this.shouldShowRoomSelector()) {
+					// Auto-join the room specified in the hash
+					this.handleAutoJoinFromHash();
+				} else {
+					// No auto-join, fire room:left event to show room selection
+					dispatchEvent('room:left');
+				}
+			}
+
+			// Update previous state
+			this.previousConnectionState = currentState;
+		}
 	}
 
 	getConnectionStatus() {
@@ -509,13 +591,5 @@ export class GunConnection {
 
 		// Reset connection status
 		this.connectionStatus = { connected: 0, total: 0 };
-		this.emit('connectionStatusChanged', {
-			connected: 0,
-			total: 0,
-			status: 'disconnected', // Explicitly set status to prevent misinterpretation
-		});
-
-		// Don't log connection messages - too noisy
-		// log('✅ Disconnected from all peers');
 	}
 }

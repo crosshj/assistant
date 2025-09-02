@@ -1,4 +1,5 @@
 import { Header } from './Header.js';
+import { dispatchEvent } from '../lib/utils.js';
 
 export class HeaderController {
 	constructor() {
@@ -9,10 +10,6 @@ export class HeaderController {
 
 		// Initialize UI with initial values
 		this.initializeUI();
-	}
-
-	setConnection(connection) {
-		this.connection = connection;
 	}
 
 	setupEventListeners() {
@@ -34,8 +31,8 @@ export class HeaderController {
 			this.handleNetworkConnected(event.detail);
 		});
 
-		document.addEventListener('network:manuallyDisconnected', () => {
-			this.handleNetworkManuallyDisconnected();
+		document.addEventListener('network:disconnected', () => {
+			this.handleNetworkDisconnected();
 		});
 
 		// Listen for room lifecycle events directly from RoomManager
@@ -47,12 +44,7 @@ export class HeaderController {
 			this.handleRoomLeft(event.detail);
 		});
 
-		// Listen for connection status changes directly from connection service
-		if (this.connection && this.connection.on) {
-			this.connection.on('connectionStatusChanged', (data) => {
-				this.handleConnectionStatusChanged(data);
-			});
-		}
+		// No direct service listeners; rely on DOM events only
 	}
 
 	// ===== CONNECTION EVENTS =====
@@ -61,29 +53,18 @@ export class HeaderController {
 		// Immediately show connecting state in UI - be optimistic!
 		this.updateConnectionStatus('connecting');
 
-		// Show connecting spinner in room pane when actively connecting
-		document.dispatchEvent(new CustomEvent('ui:showConnectingSpinner'));
-
-		// Add a longer delay to make "Connecting..." state clearly visible
-		// This prevents the connection service from immediately overriding it
-		setTimeout(() => {
-			// Use default peers since we're hiding the peer input field
-			this.connection.updatePeers(this.connection.getDefaultPeers());
-
-			// Restart connection monitoring after reconnecting
-			if (this.connection.startMonitoring) {
-				this.connection.startMonitoring();
-			}
-		}, 2000); // 2000ms delay to show "Connecting..." state
+		// Dispatch UI event for connection service to handle
+		dispatchEvent('ui:connect');
 	}
 
 	handleDisconnect() {
-		this.connection.disconnect();
+		// Dispatch UI event for connection service to handle
+		dispatchEvent('ui:disconnect');
 	}
 
 	handleTestConnection() {
-		// Test the connection
-		this.connection.testConnection();
+		// Dispatch UI event for connection service to handle
+		dispatchEvent('ui:testConnection');
 	}
 
 	// ===== ROOM EVENTS =====
@@ -91,34 +72,28 @@ export class HeaderController {
 	handleJoinRoom(roomName) {
 		if (roomName) {
 			// Dispatch the same global event for other components to listen to
-			document.dispatchEvent(
-				new CustomEvent('ui:joinRoom', { detail: roomName })
-			);
+			dispatchEvent('ui:joinRoom', roomName);
 		}
 	}
 
 	handleLeaveRoom() {
 		// Dispatch the same global event for other components to listen to
-		document.dispatchEvent(new CustomEvent('ui:leaveRoom'));
+		dispatchEvent('ui:leaveRoom');
 	}
 
 	// ===== AUTH EVENTS =====
 
 	handleCreateUser(alias) {
 		if (alias) {
-			// Dispatch the same global event for other components to listen to
-			document.dispatchEvent(
-				new CustomEvent('ui:createUser', { detail: alias })
-			);
+			// Dispatch UI event for connection service to handle
+			dispatchEvent('ui:createIdentity', alias);
 		}
 	}
 
 	handleLogin(alias) {
 		if (alias) {
 			// Dispatch the same global event for other components to listen to
-			document.dispatchEvent(
-				new CustomEvent('ui:login', { detail: alias })
-			);
+			dispatchEvent('ui:login', alias);
 		}
 	}
 
@@ -126,7 +101,7 @@ export class HeaderController {
 
 	handleShowConnectionDetails() {
 		// Dispatch the same global event for other components to listen to
-		document.dispatchEvent(new CustomEvent('ui:showConnectionDetails'));
+		dispatchEvent('ui:showConnectionDetails');
 	}
 
 	// ===== NETWORK EVENTS =====
@@ -140,7 +115,7 @@ export class HeaderController {
 		this.updateConnectionStatus('connected', { connected, total });
 	}
 
-	handleNetworkManuallyDisconnected() {
+	handleNetworkDisconnected() {
 		this.updateConnectionStatus('disconnected');
 	}
 
@@ -169,19 +144,6 @@ export class HeaderController {
 			name: null,
 			status: 'not_joined',
 		});
-	}
-
-	// ===== STATE MANAGEMENT =====
-	// All state management now handled by direct service event listeners above
-
-	handleConnectionStatusChanged(data) {
-		// Handle connection status changes directly from connection service
-		const status = data.status || 'connected';
-		const connected = data.connected || 0;
-		const total = data.total || 0;
-
-		// Update connection status directly from service
-		this.updateConnectionStatus(status, { connected, total });
 	}
 
 	// ===== DELEGATION METHODS - CONTROLLER SHOULD NOT MANIPULATE UI DIRECTLY =====
@@ -218,11 +180,8 @@ export class HeaderController {
 	// ===== INITIALIZATION =====
 
 	initializeUI() {
-		// Set initial peer values via component method
-		if (this.connection && this.connection.getDefaultPeers) {
-			const defaultPeers = this.connection.getDefaultPeers().join(',');
-			this.ui.setInitialPeers(defaultPeers);
-		}
+		// Provide a safe default for peers (no connection dependency)
+		this.ui.setInitialPeers('');
 
 		// Initial state will be set by service events as they fire
 	}

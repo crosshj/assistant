@@ -1,7 +1,7 @@
 import { $ } from '../lib/utils.js';
 
 // PropsManager Component - Handles loading and displaying props data
-export class PropsManager {
+export class PropsService {
 	constructor() {
 		this.setupEventListeners();
 		this.isLoading = false;

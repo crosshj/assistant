@@ -1,4 +1,3 @@
-import { GunDBWrapper } from '../lib/gunWrapper.js';
 import { log, addEventListener, dispatchEvent } from '../lib/utils.js';
 import { Room } from './Room.js';
 
@@ -9,12 +8,6 @@ import { Room } from './Room.js';
  */
 export class RoomController {
 	constructor() {
-		this.connection = null; // Will be set via setConnection()
-
-		// TODO: Remove direct gunWrapper usage - should go through App Controller instead
-		// This creates coupling that should be resolved when we have proper event-driven architecture
-		this.gunWrapper = null; // Will be initialized in setConnection()
-
 		// Create Room component with controller reference
 		this.ui = new Room({ controller: this });
 
@@ -43,7 +36,6 @@ export class RoomController {
 		this.handleGraphClearSearch = this.handleGraphClearSearch.bind(this);
 		this.handleGraphLayoutChange = this.handleGraphLayoutChange.bind(this);
 		this.handleGraphFit = this.handleGraphFit.bind(this);
-		this.handleRequestProps = this.handleRequestProps.bind(this);
 
 		// Setup event listeners
 		this.setupEventListeners();
@@ -52,16 +44,20 @@ export class RoomController {
 		this.setupResizeHandler();
 	}
 
-	setConnection(connection) {
-		this.connection = connection;
-		this.gunWrapper = new GunDBWrapper(connection, null);
-	}
+	// setConnection removed - controller is decoupled from services
 
 	setupEventListeners() {
-		// Room pane events from Header
-		addEventListener('ui:showConnectingSpinner', () => {
-			// Show connecting spinner when user actively clicks Connect
+		// Network events
+		addEventListener('network:connecting', () => {
+			// Show connecting spinner when connecting begins
 			this.ui.showConnectingSpinner();
+		});
+
+		addEventListener('network:disconnected', () => {
+			// Enter connecting/blank state when user disconnects from network
+			this.ui.setMode('connecting');
+			// Clear any rendered graph to avoid showing stale data
+			this.handleClearGraph();
 		});
 
 		// Sync events - now using DOM events from sync service
@@ -97,7 +93,6 @@ export class RoomController {
 		addEventListener('graph:clearSearch', this.handleGraphClearSearch);
 		addEventListener('graph:layoutChange', this.handleGraphLayoutChange);
 		addEventListener('graph:fit', this.handleGraphFit);
-		addEventListener('graph:requestProps', this.handleRequestProps);
 
 		// Room lifecycle events
 		addEventListener('room:joining', this.onRoomJoining);
@@ -161,9 +156,6 @@ export class RoomController {
 		this.ui.setMode('room-mode');
 		this.updateRoomHash(room);
 		this.ui.handleRoomJoined(room);
-
-		// Update gunWrapper with current room
-		this.gunWrapper = new GunDBWrapper(this.connection, room);
 	}
 
 	onRoomLeaving(event) {
@@ -176,9 +168,6 @@ export class RoomController {
 		// Switch UI back to room selection
 		this.ui.setMode('room-selection');
 		this.ui.handleRoomLeft();
-
-		// Clear gunWrapper references
-		this.gunWrapper = new GunDBWrapper(this.connection, null);
 	}
 
 	updateRoomHash(roomName) {
@@ -280,60 +269,7 @@ export class RoomController {
 		dispatchEvent('graph:fitRequested', { room });
 	}
 
-	async handleRequestProps(e) {
-		const { elementId, elementType, room } = e.detail;
-		if (!elementId || !room || !elementType) {
-			return;
-		}
-
-		// Set props loading flag via event
-		dispatchEvent('sync:setPropsLoadingFlag', { value: true });
-
-		try {
-			let props;
-			try {
-				if (elementType === 'node') {
-					props = await this.gunWrapper.getNodeProps(room, elementId);
-					await this.gunWrapper.getNodeFullData(room, elementId);
-				} else if (elementType === 'edge') {
-					props = await this.gunWrapper.getEdgeProps(room, elementId);
-				} else {
-					throw new Error(`Unknown element type: ${elementType}`);
-				}
-			} catch (error) {
-				if (elementType === 'node') {
-					props = await this.gunWrapper.getPropsFallback(
-						room,
-						elementId,
-						true
-					);
-				} else if (elementType === 'edge') {
-					props = await this.gunWrapper.getPropsFallback(
-						room,
-						elementId,
-						false
-					);
-				}
-			}
-
-			dispatchEvent('graph:propsLoaded', {
-				elementId,
-				elementType,
-				props,
-				room,
-			});
-		} catch (error) {
-			dispatchEvent('graph:propsLoaded', {
-				elementId,
-				elementType,
-				props: {},
-				room,
-			});
-		} finally {
-			// Clear props loading flag via event
-			dispatchEvent('sync:setPropsLoadingFlag', { value: false });
-		}
-	}
+	// Props request handling moved to Sync service
 
 	// Room state is now managed by RoomManager service
 	// Controllers get room state from events, not local tracking
