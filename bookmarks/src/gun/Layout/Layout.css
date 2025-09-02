@@ -1,0 +1,75 @@
+/* Layout-specific styles extracted from gun.css */
+
+/* CSS Variables for responsive column widths */
+:root {
+	--side-column-width: 80px;
+}
+
+/* Grid layout - 12 column system with header spanning full width */
+.grid {
+	display: grid;
+	grid-template-rows: auto 1fr; /* Header auto height, panes take remaining height */
+	gap: var(--card-gap);
+	padding: var(--card-gap);
+	height: 100vh;
+	overflow: hidden;
+}
+
+/* Responsive grid columns based on screen size */
+.grid {
+	grid-template-columns:
+		repeat(3, var(--side-column-width)) repeat(6, 1fr)
+		repeat(3, var(--side-column-width));
+}
+
+@media (max-width: 1200px) {
+	:root {
+		--side-column-width: 65px;
+	}
+}
+
+@media (max-width: 900px) {
+	:root {
+		--side-column-width: 1fr;
+	}
+}
+
+/* Header spans full width (all 12 columns) */
+#header-container {
+	grid-column: 1 / -1; /* Span all 12 columns */
+	height: 60px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 1rem;
+	background: var(--card-bg);
+	border: 1px solid var(--card-border);
+	border-radius: var(--card-radius);
+}
+
+/* Left pane spans 9 columns */
+#left-pane {
+	grid-column: 1 / 10; /* Span first 9 columns */
+	height: 100%;
+	max-height: 100%;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+/* Right pane (activity) spans 3 columns */
+#right-pane {
+	grid-column: 10 / 13; /* Span last 3 columns */
+	height: 100%;
+	max-height: 100%;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+/* Ensure panes don't grow beyond their container */
+#left-pane > *,
+#right-pane > * {
+	max-height: 100%;
+	overflow: hidden;
+}

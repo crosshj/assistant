@@ -2,20 +2,20 @@ import { html } from '../_lib/utils.js';
 import './Activity.css';
 
 export class Activity {
-	constructor(containerId = 'right-pane') {
+	constructor() {
 		this.container = null;
 		this.logElement = null;
 		this.log = [];
 
-		this.render(containerId);
+		this.render();
 		// Event binding handled by ActivityController via delegation
 	}
 
-	render(containerId) {
-		// Find the specified container
-		this.container = document.getElementById(containerId);
+	render() {
+		// Find the right pane container
+		this.container = document.getElementById('right-pane');
 		if (!this.container) {
-			console.error(`Container '${containerId}' not found`);
+			console.error('Right pane container not found');
 			return;
 		}
 

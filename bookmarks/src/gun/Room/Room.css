@@ -1,4 +1,41 @@
 /* =====================
+      ROOM PANE LAYOUT
+      ===================== */
+/* Sub-grid layouts for left pane */
+.left-pane-sub-grid {
+	display: grid;
+	width: 100%;
+	height: 100%;
+}
+
+/* Room selection mode - spans full width */
+.room-selection-layout {
+	grid-template-columns: 1fr;
+	grid-template-rows: 1fr;
+}
+
+/* In-room mode - edit and graph side by side using explicit grid */
+.in-room-layout {
+	display: grid;
+	grid-template-columns: repeat(3, var(--side-column-width)) repeat(6, 1fr);
+	gap: var(--card-gap);
+}
+
+/* Edit panel spans 3 columns of parent grid */
+.edit-panel-container {
+	grid-column: 1 / 4; /* Span first 3 columns of parent grid */
+	height: 100%;
+	overflow: hidden;
+}
+
+/* Graph panel spans remaining 6 columns of parent grid */
+.graph-panel-container {
+	grid-column: 4 / 10; /* Span columns 4-9 of parent grid */
+	height: 100%;
+	overflow: hidden;
+}
+
+/* =====================
       ROOM LIST STYLES
       ===================== */
 .room-list {
@@ -210,8 +247,6 @@
 	background: var(--card-bg);
 	overflow: hidden;
 	/* Ensure the canvas takes full height of its container */
-	display: flex;
-	flex-direction: column;
 	flex: 1; /* Take remaining height */
 	min-height: 0; /* Allow shrinking */
 }

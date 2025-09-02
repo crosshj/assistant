@@ -251,7 +251,12 @@ export class Room {
 							<select id="layoutSelect">
 								<option value="cose">Force-directed</option>
 								<option value="grid">Grid</option>
-								<option value="circle">Circle</option>
+								<option
+									value="circle"
+									selected
+								>
+									Circle
+								</option>
 								<option value="concentric">Concentric</option>
 							</select>
 							<button id="fitGraph">Fit</button>
@@ -516,6 +521,9 @@ export class Room {
 				this.isVisualizationReady = true;
 				this.processEventQueue();
 
+				// Set up ResizeObserver to watch for container size changes
+				this.setupResizeObserver();
+
 				// Apply the currently selected layout only if there are nodes
 				const layoutSelect = document.querySelector('#layoutSelect');
 				if (layoutSelect && this.visualization.isInitialized()) {
@@ -527,12 +535,19 @@ export class Room {
 							this.visualization.cy &&
 							this.visualization.cy.nodes().length > 0
 						) {
-							this.visualization.cy
-								.layout({
-									name: selectedLayout,
-									animate: false,
-								})
-								.run();
+							const layoutOptions = {
+								name: selectedLayout,
+								animate: false,
+							};
+
+							// Add padding for specific layouts
+							if (selectedLayout === 'circle') {
+								layoutOptions.padding = 100;
+							} else if (selectedLayout === 'cose') {
+								layoutOptions.padding = 150;
+							}
+
+							this.visualization.cy.layout(layoutOptions).run();
 						}
 					}, 300);
 				}
@@ -964,8 +979,48 @@ export class Room {
 			setTimeout(() => {
 				if (this.visualization.cy) {
 					this.visualization.cy.resize();
+
+					// Apply layout with appropriate padding after resize
+					setTimeout(() => {
+						const layoutSelect =
+							document.querySelector('#layoutSelect');
+						if (layoutSelect) {
+							const selectedLayout = layoutSelect.value;
+							const layoutOptions = {
+								name: selectedLayout,
+								animate: false,
+							};
+
+							// Add padding for specific layouts
+							if (selectedLayout === 'circle') {
+								layoutOptions.padding = 100;
+							} else if (selectedLayout === 'cose') {
+								layoutOptions.padding = 150;
+							}
+
+							this.visualization.cy.layout(layoutOptions).run();
+						} else {
+							// Fallback to just fitting if no layout selector found
+							this.visualization.cy.fit();
+						}
+					}, 50);
 				}
 			}, 100);
+		}
+	}
+
+	// Set up ResizeObserver to watch for container size changes
+	setupResizeObserver() {
+		if (this.resizeObserver) {
+			this.resizeObserver.disconnect();
+		}
+
+		const graphContainer = document.getElementById('cy');
+		if (graphContainer) {
+			this.resizeObserver = new ResizeObserver(() => {
+				this.handleResizeGraph();
+			});
+			this.resizeObserver.observe(graphContainer);
 		}
 	}
 
@@ -1060,6 +1115,12 @@ export class Room {
 			Object.values(this.graphUpdateTimers).forEach((timer) => {
 				if (timer) clearTimeout(timer);
 			});
+		}
+
+		// Clean up ResizeObserver
+		if (this.resizeObserver) {
+			this.resizeObserver.disconnect();
+			this.resizeObserver = null;
 		}
 
 		// Clean up visualization

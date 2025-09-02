@@ -127,7 +127,7 @@ export class GraphVisualization {
 						},
 					},
 				],
-				layout: { name: 'cose', animate: false },
+				layout: { name: 'circle', animate: false, padding: 100 },
 				// Add default zoom and pan settings
 				minZoom: 0.1,
 				maxZoom: 3,
@@ -201,7 +201,16 @@ export class GraphVisualization {
 		document.addEventListener('graph:layoutChange', (event) => {
 			if (this.cy && this.cy.elements().length > 0) {
 				const layout = event.detail.layout;
-				this.cy.layout({ name: layout, animate: true }).run();
+				const layoutOptions = { name: layout, animate: true };
+
+				// Add padding for specific layouts
+				if (layout === 'circle') {
+					layoutOptions.padding = 100;
+				} else if (layout === 'cose') {
+					layoutOptions.padding = 150;
+				}
+
+				this.cy.layout(layoutOptions).run();
 			}
 		});
 	}
@@ -701,11 +710,13 @@ export class GraphVisualization {
 				return;
 			}
 
-			// Force-directed layout - default and most natural
+			// Circle layout - default and most organized
 			try {
-				this.cy.layout({ name: 'cose', animate: false }).run();
+				this.cy
+					.layout({ name: 'circle', animate: false, padding: 100 })
+					.run();
 			} catch (e) {
-				log('⚠️ Force-directed layout failed: ' + e.message);
+				log('⚠️ Circle layout failed: ' + e.message);
 			}
 		}, 100);
 	}
@@ -722,7 +733,9 @@ export class GraphVisualization {
 		this.layoutTimeout = setTimeout(() => {
 			try {
 				this.isLayoutRunning = true;
-				this.cy.layout({ name: 'cose', animate: false }).run();
+				this.cy
+					.layout({ name: 'circle', animate: false, padding: 100 })
+					.run();
 
 				// Reset layout flag after a delay to allow layout to complete
 				setTimeout(() => {

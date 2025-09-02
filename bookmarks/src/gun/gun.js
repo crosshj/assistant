@@ -7,6 +7,7 @@ import { SyncService } from './services/sync.js';
 import { PropsService } from './services/props.js';
 
 // Import controllers
+import { LayoutController } from './Layout/LayoutController.js';
 import { RoomController } from './Room/RoomController.js';
 import { HeaderController } from './Header/HeaderController.js';
 import { ActivityController } from './Activity/ActivityController.js';
@@ -14,6 +15,7 @@ import { ConnectionDetailsController } from './ConnectionDetails/ConnectionDetai
 
 async function startApp() {
 	// Initialize controllers
+	const layoutController = new LayoutController();
 	const roomController = new RoomController();
 	const headerController = new HeaderController();
 	const activityController = new ActivityController();
