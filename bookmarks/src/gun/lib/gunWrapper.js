@@ -863,20 +863,19 @@ export class GunDBWrapper {
 			try {
 				gun.get(query).once((data) => {
 					if (data && typeof data === 'object') {
-						console.log(data);
-						// const keys = Object.keys(data).filter(
-						// 	(key) => key !== '_' && key !== '#'
-						// );
-						// if (keys.length > 0) {
-						// 	console.log(
-						// 		`  💿 ${query}:`,
-						// 		keys.length,
-						// 		'entries'
-						// 	);
-						// 	if (keys.length < 20) {
-						// 		console.log(`    📋 Keys:`, keys);
-						// 	}
-						// }
+						const keys = Object.keys(data).filter(
+							(key) => key !== '_' && key !== '#'
+						);
+						if (keys.length > 0) {
+							console.log(
+								`  💿 ${query}:`,
+								keys.length,
+								'entries'
+							);
+							if (keys.length < 20) {
+								console.log(`    📋 Keys:`, keys);
+							}
+						}
 					}
 				});
 			} catch (error) {
