@@ -183,8 +183,10 @@
 }
 
 .edit-panel textarea {
-	min-height: 80px;
+	min-height: 120px;
 	resize: vertical;
+	width: 100%;
+	box-sizing: border-box;
 }
 
 .edit-panel hr {

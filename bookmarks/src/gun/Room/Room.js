@@ -75,8 +75,8 @@ export class Room {
 					id="roomList"
 				>
 					<div class="room-list-header">
-						<h2>Select a Room</h2>
-						<p>Choose a room to join and start collaborating</p>
+						<h2>Select a Graph</h2>
+						<p>Choose a graph and start collaborating</p>
 					</div>
 					<div class="room-grid">
 						<div
@@ -85,8 +85,8 @@ export class Room {
 						>
 							<div class="room-icon">🏠</div>
 							<h3>public</h3>
-							<p>Join this room to start working</p>
-							<button class="join-room-btn">Join Room</button>
+							<p>Select this graph to start working</p>
+							<button class="join-room-btn">Select Graph</button>
 						</div>
 						<div
 							class="room-card"
@@ -94,8 +94,8 @@ export class Room {
 						>
 							<div class="room-icon">🏠</div>
 							<h3>super-duper</h3>
-							<p>Join this room to start working</p>
-							<button class="join-room-btn">Join Room</button>
+							<p>Select this graph to start working</p>
+							<button class="join-room-btn">Select Graph</button>
 						</div>
 					</div>
 				</div>
@@ -438,8 +438,8 @@ export class Room {
 					id="roomList"
 				>
 					<div class="room-list-header">
-						<h2>Select a Room</h2>
-						<p>Choose a room to join and start collaborating</p>
+						<h2>Select a Graph</h2>
+						<p>Choose a graph and start collaborating</p>
 					</div>
 					<div class="room-grid">
 						<div
@@ -448,8 +448,8 @@ export class Room {
 						>
 							<div class="room-icon">🏠</div>
 							<h3>public</h3>
-							<p>Join this room to start working</p>
-							<button class="join-room-btn">Join Room</button>
+							<p>Select this graph to start working</p>
+							<button class="join-room-btn">Select Graph</button>
 						</div>
 						<div
 							class="room-card"
@@ -457,8 +457,8 @@ export class Room {
 						>
 							<div class="room-icon">🏠</div>
 							<h3>super-duper</h3>
-							<p>Join this room to start working</p>
-							<button class="join-room-btn">Join Room</button>
+							<p>Select this graph to start working</p>
+							<button class="join-room-btn">Select Graph</button>
 						</div>
 					</div>
 				</div>

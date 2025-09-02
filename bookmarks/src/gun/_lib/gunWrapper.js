@@ -338,7 +338,7 @@ export class GunDBWrapper {
 						nodeId
 					);
 					reject(new Error('Node props timeout'));
-				}, 2000);
+				}, 5000);
 
 				// Use a one-time listener that immediately removes itself
 				nodeRef.once((data) => {
