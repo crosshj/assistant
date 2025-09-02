@@ -13,8 +13,7 @@ export class Sync {
 		this._propsLoadingFlag = false; // Added for props loading protection
 		// this.pendingRemovals = new Map(); // COMMENTED OUT: Not using grace period logic anymore
 
-		// Local room state tracking
-		this._isInRoom = false;
+		// Room state will be provided via events
 		this._graphRoot = null;
 
 		// Listen to room state changes to auto-subscribe
@@ -76,7 +75,6 @@ export class Sync {
 		// Listen to room joined events to auto-subscribe
 		addEventListener('room:joined', (event) => {
 			const { room, graphRoot } = event.detail;
-			this._isInRoom = true; // Always true for room:joined events
 			this._graphRoot = graphRoot;
 
 			if (graphRoot) {
@@ -87,7 +85,6 @@ export class Sync {
 
 		// Listen to room left events to auto-unsubscribe
 		addEventListener('room:left', (event) => {
-			this._isInRoom = false;
 			this._graphRoot = null;
 			log('🔄 Room left, auto-unsubscribing from sync');
 			this.unsubscribeFromRoom();
@@ -101,8 +98,8 @@ export class Sync {
 	}
 
 	subscribeToRoom() {
-		if (!this._isInRoom) {
-			log('⚠️ Cannot subscribe: Not in a room');
+		if (!this._graphRoot) {
+			log('⚠️ Cannot subscribe: No graph root available');
 			return false;
 		}
 
@@ -308,8 +305,8 @@ export class Sync {
 
 	// Force refresh of all data
 	refreshData() {
-		if (!this._isInRoom) {
-			log('⚠️ Cannot refresh: Not in a room');
+		if (!this._graphRoot) {
+			log('⚠️ Cannot refresh: No graph root available');
 			return false;
 		}
 
@@ -329,7 +326,7 @@ export class Sync {
 			isSubscribed: this.isSubscribed,
 			hasNodesChain: !!this.nodesChain,
 			hasEdgesChain: !!this.edgesChain,
-			isInRoom: this._isInRoom,
+			hasGraphRoot: !!this._graphRoot,
 		};
 	}
 }

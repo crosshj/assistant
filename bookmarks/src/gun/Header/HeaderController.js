@@ -1,10 +1,7 @@
 import { Header } from './Header.js';
 
 export class HeaderController {
-	constructor(stateManager) {
-		this.stateManager = stateManager;
-		this.currentConnectionStatus = 'disconnected'; // Track current state
-
+	constructor() {
 		// Create Header component with controller reference
 		this.ui = new Header({ controller: this });
 
@@ -19,9 +16,35 @@ export class HeaderController {
 	}
 
 	setupEventListeners() {
-		// Listen for state changes from services
-		document.addEventListener('stateChanged', (event) => {
-			this.handleStateChange(event.detail);
+		// Listen for auth events directly from Connection service
+		document.addEventListener('auth:authenticated', (event) => {
+			this.handleAuthAuthenticated(event.detail);
+		});
+
+		document.addEventListener('auth:anonymous', () => {
+			this.handleAuthAnonymous();
+		});
+
+		// Listen for network events from EventCoordinator
+		document.addEventListener('network:connecting', () => {
+			this.handleNetworkConnecting();
+		});
+
+		document.addEventListener('network:connected', (event) => {
+			this.handleNetworkConnected(event.detail);
+		});
+
+		document.addEventListener('network:manuallyDisconnected', () => {
+			this.handleNetworkManuallyDisconnected();
+		});
+
+		// Listen for room lifecycle events directly from RoomManager
+		document.addEventListener('room:joined', (event) => {
+			this.handleRoomJoined(event.detail);
+		});
+
+		document.addEventListener('room:left', (event) => {
+			this.handleRoomLeft(event.detail);
 		});
 
 		// Listen for connection status changes directly from connection service
@@ -37,11 +60,6 @@ export class HeaderController {
 	handleConnect() {
 		// Immediately show connecting state in UI - be optimistic!
 		this.updateConnectionStatus('connecting');
-
-		// Tell StateManager we're starting a connection attempt
-		if (this.stateManager && this.stateManager.setNetworkConnecting) {
-			this.stateManager.setNetworkConnecting();
-		}
 
 		// Show connecting spinner in room pane when actively connecting
 		document.dispatchEvent(new CustomEvent('ui:showConnectingSpinner'));
@@ -111,24 +129,50 @@ export class HeaderController {
 		document.dispatchEvent(new CustomEvent('ui:showConnectionDetails'));
 	}
 
-	// ===== STATE MANAGEMENT =====
+	// ===== NETWORK EVENTS =====
 
-	handleStateChange(state) {
-		// Update connection status with full network state
-		if (state.network && state.network.status) {
-			this.updateConnectionStatus(state.network.status, state.network);
-		}
-
-		// Update room status with full room state
-		if (state.room && state.room.status) {
-			this.updateRoomStatus(state.room.status, state.room);
-		}
-
-		// Update auth status
-		if (state.auth && state.auth.status) {
-			this.updateAuthStatus(state.auth);
-		}
+	handleNetworkConnecting() {
+		this.updateConnectionStatus('connecting');
 	}
+
+	handleNetworkConnected(event) {
+		const { connected, total } = event;
+		this.updateConnectionStatus('connected', { connected, total });
+	}
+
+	handleNetworkManuallyDisconnected() {
+		this.updateConnectionStatus('disconnected');
+	}
+
+	// ===== AUTH EVENTS =====
+
+	handleAuthAuthenticated(event) {
+		const { alias } = event;
+		this.updateAuthStatus({ status: 'authenticated', alias });
+	}
+
+	handleAuthAnonymous() {
+		this.updateAuthStatus({ status: 'anonymous', alias: 'anon' });
+	}
+
+	// ===== ROOM EVENTS =====
+
+	handleRoomJoined(event) {
+		const { room } = event;
+		// Update room status to joined
+		this.updateRoomStatus('joined', { name: room, status: 'joined' });
+	}
+
+	handleRoomLeft(event) {
+		// Update room status to not joined
+		this.updateRoomStatus('not_joined', {
+			name: null,
+			status: 'not_joined',
+		});
+	}
+
+	// ===== STATE MANAGEMENT =====
+	// All state management now handled by direct service event listeners above
 
 	handleConnectionStatusChanged(data) {
 		// Handle connection status changes directly from connection service
@@ -136,46 +180,13 @@ export class HeaderController {
 		const connected = data.connected || 0;
 		const total = data.total || 0;
 
-		// BE MORE AGGRESSIVE: Don't let connection service override our optimistic state
-		// If we're showing "Connecting..." and the service says "connecting", keep our state
-		if (
-			status === 'connecting' &&
-			this.currentConnectionStatus === 'connecting'
-		) {
-			return; // Don't update at all
-		}
-
-		// Also prevent immediate transition from "Connecting..." to "Connected"
-		// Give our optimistic state time to be visible
-		if (
-			status === 'connected' &&
-			this.currentConnectionStatus === 'connecting'
-		) {
-			// Add a longer delay to maintain "Connecting..." state
-			setTimeout(() => {
-				this.updateConnectionStatus(status, { connected, total });
-			}, 500); // 500ms delay to maintain connecting state
-			return;
-		}
-
-		// Only update for other meaningful state changes
-		if (status !== 'connecting') {
-			this.updateConnectionStatus(status, { connected, total });
-		}
+		// Update connection status directly from service
+		this.updateConnectionStatus(status, { connected, total });
 	}
 
 	// ===== DELEGATION METHODS - CONTROLLER SHOULD NOT MANIPULATE UI DIRECTLY =====
 
 	updateConnectionStatus(status, networkState = null) {
-		// Track state changes for logging
-		if (this.currentConnectionStatus !== status) {
-			const timestamp = new Date().toISOString().split('T')[1]; // HH:MM:SS.mmm format
-			console.log(
-				`Header [${timestamp}]: ${this.currentConnectionStatus} → ${status}`
-			);
-			this.currentConnectionStatus = status;
-		}
-
 		// Delegate to Header component - controller should not manipulate UI directly
 		this.ui.updateConnectionStatus(status, networkState);
 	}
@@ -213,28 +224,7 @@ export class HeaderController {
 			this.ui.setInitialPeers(defaultPeers);
 		}
 
-		// Render initial state if stateManager is available
-		if (this.stateManager) {
-			const state = this.stateManager.getState();
-			this.renderInitialState(state);
-		}
-	}
-
-	renderInitialState(state) {
-		// Update connection status
-		if (state.network) {
-			this.updateConnectionStatus(state.network.status);
-		}
-
-		// Update room status
-		if (state.room) {
-			this.updateRoomStatus(state.room.status);
-		}
-
-		// Update auth status
-		if (state.auth) {
-			this.updateAuthStatus(state.auth);
-		}
+		// Initial state will be set by service events as they fire
 	}
 
 	setInitialValues() {

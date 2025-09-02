@@ -1,7 +1,6 @@
 import './gun.css';
 
 // Import core services
-import { StateManager } from './services/stateManager.js';
 import { EventCoordinator } from './services/eventCoordinator.js';
 import { GunConnection } from './services/connection.js';
 
@@ -25,14 +24,13 @@ async function startApp() {
 	document.body.classList.add('styles-loaded');
 
 	// Initialize services
-	const stateManager = new StateManager();
 	const rooms = new RoomManager();
 	const sync = new Sync();
 	const propsManager = new PropsManager();
 
 	// Initialize controllers
-	const roomController = new RoomController(stateManager);
-	const headerController = new HeaderController(stateManager);
+	const roomController = new RoomController();
+	const headerController = new HeaderController();
 	const activityController = new ActivityController();
 
 	// Initialize connection AFTER controllers are ready to listen to events

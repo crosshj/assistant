@@ -187,13 +187,9 @@ export class GraphVisualization {
 	 * Listen for room state changes and automatically clear graph when room is left
 	 */
 	setupRoomStateListener() {
-		// Listen for state changes from the state manager
-		document.addEventListener('stateChanged', (e) => {
-			const state = e.detail;
-
-			if (state.room.status === 'not_joined') {
-				this.clearGraph();
-			}
+		// Listen for room lifecycle events directly from RoomManager
+		document.addEventListener('room:left', () => {
+			this.clearGraph();
 		});
 
 		// Also listen for custom room leave events as a backup

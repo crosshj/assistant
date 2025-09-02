@@ -28,11 +28,21 @@ export class ConnectionDetailsController {
 		// External events to show/hide modal
 		addEventListener('ui:showConnectionDetails', this.handleModalOpen);
 
-		// State change events from connection service
-		addEventListener('stateChanged', (event) => {
-			if (event.detail.network) {
-				this.handleNetworkStateChange(event.detail.network);
-			}
+		// Listen for network events from EventCoordinator
+		addEventListener('network:connecting', () => {
+			this.handleNetworkStateChange({ status: 'connecting' });
+		});
+
+		addEventListener('network:connected', (event) => {
+			this.handleNetworkStateChange({
+				status: 'connected',
+				connected: event.detail.connected,
+				total: event.detail.total,
+			});
+		});
+
+		addEventListener('network:manuallyDisconnected', () => {
+			this.handleNetworkStateChange({ status: 'disconnected' });
 		});
 
 		// UI event delegation - bind to component DOM when modal is created

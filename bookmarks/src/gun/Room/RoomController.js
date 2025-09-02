@@ -8,16 +8,12 @@ import { Room } from './Room.js';
  * Coordinates between UI components and services
  */
 export class RoomController {
-	constructor(stateManager) {
+	constructor() {
 		this.connection = null; // Will be set via setConnection()
-		this.stateManager = stateManager;
 
 		// TODO: Remove direct gunWrapper usage - should go through App Controller instead
 		// This creates coupling that should be resolved when we have proper event-driven architecture
 		this.gunWrapper = null; // Will be initialized in setConnection()
-
-		// Current room state
-		this.currentRoom = null;
 
 		// Create Room component with controller reference
 		this.ui = new Room({ controller: this });
@@ -58,7 +54,7 @@ export class RoomController {
 
 	setConnection(connection) {
 		this.connection = connection;
-		this.gunWrapper = new GunDBWrapper(connection, this.currentRoom);
+		this.gunWrapper = new GunDBWrapper(connection, null);
 	}
 
 	setupEventListeners() {
@@ -95,32 +91,8 @@ export class RoomController {
 			this.handleRoomImportCompleted
 		);
 
-		// State change events - handle room pane visibility based on network status
-		addEventListener('stateChanged', (event) => {
-			const state = event.detail;
-			if (state.network && state.network.status) {
-				if (
-					state.network.status === 'connected' ||
-					state.network.status === 'partial'
-				) {
-					// Don't immediately switch to room selection - let auto-join handle it
-					// Only show room selection if we're explicitly not in a room
-					if (
-						!this.currentRoom &&
-						!this.stateManager.isAutoJoining()
-					) {
-						this.ui.setMode('room-selection');
-					}
-					// If auto-join is happening, stay in connecting mode until it completes
-				} else if (
-					state.network.status === 'disconnected' ||
-					state.network.status === 'connecting'
-				) {
-					// Show connecting mode when disconnected or connecting (blank the room pane)
-					this.ui.setMode('connecting');
-				}
-			}
-		});
+		// Network status changes are now handled by direct network events from EventCoordinator
+		// Room pane visibility is managed by room lifecycle events
 		addEventListener('graph:search', this.handleGraphSearch);
 		addEventListener('graph:clearSearch', this.handleGraphClearSearch);
 		addEventListener('graph:layoutChange', this.handleGraphLayoutChange);
@@ -186,14 +158,12 @@ export class RoomController {
 	onRoomJoined(event) {
 		const { room } = event.detail;
 		// Full room setup
-		this.currentRoom = room;
 		this.ui.setMode('room-mode');
-		this.stateManager.setRoomJoined(room);
 		this.updateRoomHash(room);
 		this.ui.handleRoomJoined(room);
 
 		// Update gunWrapper with current room
-		this.gunWrapper = new GunDBWrapper(this.connection, this.currentRoom);
+		this.gunWrapper = new GunDBWrapper(this.connection, room);
 	}
 
 	onRoomLeaving(event) {
@@ -202,8 +172,6 @@ export class RoomController {
 
 	onRoomLeft(event) {
 		// Full room cleanup
-		this.currentRoom = null;
-		this.stateManager.setRoomLeft();
 		this.updateRoomHash(null);
 		// Switch UI back to room selection
 		this.ui.setMode('room-selection');
@@ -367,11 +335,6 @@ export class RoomController {
 		}
 	}
 
-	getCurrentRoom() {
-		return this.currentRoom;
-	}
-
-	isInRoom() {
-		return !!this.currentRoom;
-	}
+	// Room state is now managed by RoomManager service
+	// Controllers get room state from events, not local tracking
 }
