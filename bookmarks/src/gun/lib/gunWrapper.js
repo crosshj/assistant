@@ -654,8 +654,7 @@ export class GunDBWrapper {
 	 * Logs results to console for debugging and exploration
 	 */
 	async runNetworkDiscovery() {
-		console.log('🔍 === NETWORK DISCOVERY STARTED ===');
-		console.log('⏰ Timestamp:', new Date().toISOString());
+		console.log('🔍 === NETWORK DISCOVERY ===');
 
 		// 1. Query each peer for common discovery endpoints
 		// await this.queryPeerEndpoints();
@@ -664,7 +663,7 @@ export class GunDBWrapper {
 		await this.queryGunCatalogs();
 
 		// 3. Query for active rooms/graphs
-		await this.queryActiveRooms();
+		// await this.queryActiveRooms();
 
 		// 4. Query for users and persistence
 		await this.queryUsers();
@@ -676,9 +675,7 @@ export class GunDBWrapper {
 		await this.queryNamespaces();
 
 		// 7. Network statistics
-		this.logNetworkStats();
-
-		console.log('✅ === NETWORK DISCOVERY COMPLETED ===');
+		// this.logNetworkStats();
 	}
 
 	async queryPeerEndpoints() {
@@ -866,19 +863,20 @@ export class GunDBWrapper {
 			try {
 				gun.get(query).once((data) => {
 					if (data && typeof data === 'object') {
-						const keys = Object.keys(data).filter(
-							(key) => key !== '_' && key !== '#'
-						);
-						if (keys.length > 0) {
-							console.log(
-								`  💿 ${query}:`,
-								keys.length,
-								'entries'
-							);
-							if (keys.length < 20) {
-								console.log(`    📋 Keys:`, keys);
-							}
-						}
+						console.log(data);
+						// const keys = Object.keys(data).filter(
+						// 	(key) => key !== '_' && key !== '#'
+						// );
+						// if (keys.length > 0) {
+						// 	console.log(
+						// 		`  💿 ${query}:`,
+						// 		keys.length,
+						// 		'entries'
+						// 	);
+						// 	if (keys.length < 20) {
+						// 		console.log(`    📋 Keys:`, keys);
+						// 	}
+						// }
 					}
 				});
 			} catch (error) {

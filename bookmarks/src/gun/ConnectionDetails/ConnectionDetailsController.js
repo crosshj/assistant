@@ -49,14 +49,17 @@ export class ConnectionDetailsController {
 			this.handleNetworkStateChange({ status: 'disconnected' });
 		});
 
-		// UI event delegation - bind to component DOM when modal is created
-		this.setupUIEventDelegation();
+		// Note: UI event delegation will be set up when modal is opened
 	}
 
 	setupUIEventDelegation() {
 		// Get the modal container from the UI component
 		const modal = this.ui.getModal();
 		if (!modal) return;
+
+		// Prevent duplicate event listeners
+		if (this.uiEventListenersSetup) return;
+		this.uiEventListenersSetup = true;
 
 		// Event delegation for modal interactions (scoped to component DOM)
 		modal.addEventListener('click', (event) => {
@@ -103,6 +106,8 @@ export class ConnectionDetailsController {
 	handleModalClose() {
 		// Clean up escape key listener before closing
 		document.removeEventListener('keydown', this.handleEscapeKey);
+		// Reset event listeners flag for next open
+		this.uiEventListenersSetup = false;
 		this.ui.close();
 	}
 
