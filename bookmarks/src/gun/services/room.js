@@ -1,4 +1,4 @@
-import { log, dispatchEvent, addEventListener } from '../lib/utils.js';
+import { log, dispatchEvent, addEventListener } from '../_lib/utils.js';
 
 // Room Management
 export class RoomService {

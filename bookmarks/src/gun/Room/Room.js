@@ -1,5 +1,5 @@
-import { html } from '../lib/utils.js';
-import { GraphVisualization } from '../lib/cytoscapeWrapper.js';
+import { html } from '../_lib/utils.js';
+import { GraphVisualization } from '../_lib/cytoscapeWrapper.js';
 import './Room.css';
 
 export class Room {

@@ -6,6 +6,8 @@
 
 **Why This Phase**: gunWrapper.js has grown to 30+ methods with mixed responsibilities, making it difficult to maintain, test, and extend.
 
+**Current Status**: Phase 1 (Controller Architecture) is complete. Ready to start Phase 2 refactoring.
+
 ## Current State Analysis
 
 ### **gunWrapper.js (1150 lines) - Core Issues**
@@ -42,7 +44,7 @@ gun.js (main app)
 
 ## Phase 2 Strategy
 
-### **Step 0: Create ApplicationController Architecture (CRITICAL)**
+### **Step 0: Create ApplicationController Architecture (CURRENT PRIORITY)**
 
 **Goal**: Establish single point of GunDB access through event-driven ApplicationController
 
@@ -51,6 +53,7 @@ gun.js (main app)
 -   Multiple gunWrapper instances across controllers
 -   Direct GunDB access scattered throughout codebase
 -   Mixed responsibilities between layout and GunDB operations
+-   gunWrapper.js is 1150 lines with mixed responsibilities
 
 **Solution**: ApplicationController as single GunDB access point
 
@@ -117,105 +120,120 @@ class RoomController {
 -   Easier gunWrapper refactoring
 -   Controllers don't need GunDB knowledge
 
-### **Step 1: Extract gunWrapper Methods (SAFE)**
+### **Step 1: Clean Up gunWrapper Methods (SAFE)**
 
-**Goal**: Break down 1150-line file into focused utility methods
+**Goal**: Remove debug/test methods and extract utilities from 1150-line file
 
-**Extraction Order** (by dependency level):
+**Cleanup Order** (by priority):
 
-1. **Pure utility methods** (no dependencies):
-
-    ```javascript
-    // Move to lib/utils.js
-    -cleanNodeData() - cleanEdgeData() - generateId();
-    ```
-
-2. **Basic CRUD methods** (minimal dependencies):
+1. **Remove debug/test methods** (immediate cleanup):
 
     ```javascript
-    // Keep in gunWrapper.js initially
-    -getNode(room, nodeId) -
-    	getEdge(room, edgeId) -
-    	upsertNode(room, nodeData) -
-    	upsertEdge(room, edgeData);
+    // REMOVE these methods entirely
+    -testIsolatedInstance() -
+    	debugNodeData() -
+    	testIsolatedPropsFetch() -
+    	getPropsFromMemory() -
+    	getPropsFromVisualization() -
+    	getPropsCarefully() -
+    	getPropsFallback() -
+    	cleanupIsolatedInstance();
     ```
 
-3. **Props methods** (depend on CRUD):
+2. **Extract pure utility methods** (no dependencies):
 
     ```javascript
-    // Keep in gunWrapper.js initially
-    -getNodeProps(room, nodeId) -
-    	getEdgeProps(room, edgeId) -
-    	getPropsIsolated(room, elementType, elementId);
+    // Move to _lib/utils.js
+    -cleanNodeData() -
+    	cleanEdgeData() -
+    	extractCleanProps() -
+    	isGunDBMetadata() -
+    	textToId() -
+    	generateId();
     ```
 
-4. **Network methods** (depend on connection):
+3. **Keep core methods** (essential functionality):
+
     ```javascript
-    // Keep in gunWrapper.js initially
-    -runNetworkDiscovery() - queryPeerEndpoints() - queryGunCatalogs();
+    // Keep in gunWrapper.js (will be moved to ServiceController later)
+    -getNode() -
+    	getEdge() -
+    	upsertNode() -
+    	upsertEdge() -
+    	getNodeProps() -
+    	getEdgeProps() -
+    	getPropsIsolated() -
+    	runNetworkDiscovery() -
+    	queryPeerEndpoints() -
+    	queryGunCatalogs();
     ```
 
-**Action**: Create method categories, don't move anything yet
+**Action**: Start with removing debug methods, then extract utilities
 
-### **Step 2: Create ServiceController Skeleton (SAFE)**
+### **Step 2: Create ServiceController (SAFE)**
 
-**Goal**: Single controller for all backend operations
+**Goal**: Single controller for all backend operations, consolidating existing services
 
 **Structure**:
 
 ```javascript
 // controllers/ServiceController.js
 class ServiceController {
-	constructor(gunWrapper) {
-		this.gunWrapper = gunWrapper;
+	constructor(connection) {
+		this.connection = connection;
+		this.gunWrapper = new GunDBWrapper(connection); // Single instance
 		this.currentRoom = null;
 		this.currentUser = null;
 	}
 
-	// CRUD operations
+	// CRUD operations (from gunWrapper)
 	async createNode(room, nodeData) {
-		/* call gunWrapper.upsertNode */
+		return await this.gunWrapper.upsertNode(room, nodeData);
 	}
 	async getNode(room, nodeId) {
-		/* call gunWrapper.getNode */
+		return await this.gunWrapper.getNode(room, nodeId);
 	}
 	async updateNode(room, nodeId, nodeData) {
-		/* call gunWrapper.upsertNode */
+		return await this.gunWrapper.upsertNode(room, {
+			...nodeData,
+			id: nodeId,
+		});
 	}
 	async deleteNode(room, nodeId) {
-		/* call gunWrapper method */
+		// Implement delete logic
+		return await this.gunWrapper.deleteNode(room, nodeId);
 	}
 
-	// Auth operations
+	// Auth operations (from AuthManager)
 	async createUser(alias, password) {
-		/* implement auth logic */
+		// Move logic from AuthManager
 	}
 	async loginUser(alias, password) {
-		/* implement auth logic */
+		// Move logic from AuthManager
 	}
 	async logoutUser() {
-		/* implement auth logic */
+		// Move logic from AuthManager
 	}
 
-	// Room operations
+	// Room operations (from RoomManager)
 	async joinRoom(roomName) {
-		/* implement room logic */
+		// Move logic from RoomManager
 	}
 	async leaveRoom() {
-		/* implement room logic */
+		// Move logic from RoomManager
 	}
 
-	// Network operations
+	// Network operations (from connection service)
 	async connect(peers) {
-		/* implement connection logic */
+		// Move logic from connection service
 	}
 	async disconnect() {
-		/* implement disconnection logic */
+		// Move logic from connection service
 	}
 }
 ```
 
-**Action**: Create file, implement basic structure, don't wire up yet
+**Action**: Create file, implement basic structure, start with CRUD operations
 
 ### **Step 3: Test Basic Operations (CRITICAL)**
 
@@ -246,6 +264,30 @@ class ServiceController {
 7. **PropsManager** → Already removed in Phase 1 (moved to controllers)
 
 **Action**: Move one service at a time, test after each move
+
+### **Step 5: Final Cleanup (SAFE)**
+
+**Goal**: Remove old service files and clean up gunWrapper.js
+
+**Cleanup Actions**:
+
+1. **Remove old service files**:
+
+    - `services/auth.js` (moved to ServiceController)
+    - `services/room.js` (moved to ServiceController)
+    - `services/graphOperations.js` (moved to ServiceController)
+    - `services/sync.js` (moved to ServiceController)
+
+2. **Simplify gunWrapper.js**:
+
+    - Keep only essential GunDB wrapper methods
+    - Remove all debug/test methods
+    - Target: <200 lines total
+
+3. **Update imports**:
+    - Update all controllers to use ServiceController
+    - Remove old service imports
+    - Update gun.js to use ApplicationController
 
 ## Implementation Details
 
@@ -495,6 +537,20 @@ document.dispatchEvent(
 
 ## Next Action
 
-**Start with Step 1**: Analyze gunWrapper.js methods and categorize them by dependency level. Don't move anything yet - just understand what exists and what depends on what.
+**Start with Step 0**: Create ApplicationController as single GunDB access point via events. This is the foundation for all other refactoring.
+
+**Immediate Priority**:
+
+1. Create ApplicationController with event-driven GunDB access
+2. Remove debug/test methods from gunWrapper.js
+3. Extract utility methods to \_lib/utils.js
+4. Test that all functionality still works
+
+**Success Metrics**:
+
+-   gunWrapper.js reduced from 1150 lines to <200 lines
+-   Single GunDB instance through ApplicationController
+-   All controllers use events instead of direct gunWrapper access
+-   All existing functionality preserved
 
 This detailed plan provides the specific steps needed to safely refactor the gunWrapper and services without breaking functionality.

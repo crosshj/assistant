@@ -1,5 +1,5 @@
 import { Header } from './Header.js';
-import { dispatchEvent } from '../lib/utils.js';
+import { dispatchEvent } from '../_lib/utils.js';
 
 export class HeaderController {
 	constructor() {

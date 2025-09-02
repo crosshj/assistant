@@ -1,5 +1,5 @@
-import { log, addEventListener, dispatchEvent } from '../lib/utils.js';
-import { GunDBWrapper } from '../lib/gunWrapper.js';
+import { log, addEventListener, dispatchEvent } from '../_lib/utils.js';
+import { GunDBWrapper } from '../_lib/gunWrapper.js';
 
 // Data Synchronization between GunDB and UI
 export class SyncService {

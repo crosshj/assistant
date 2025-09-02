@@ -1,4 +1,4 @@
-import { html } from '../lib/utils.js';
+import { html } from '../_lib/utils.js';
 import './Activity.css';
 
 export class Activity {

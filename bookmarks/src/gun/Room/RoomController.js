@@ -1,4 +1,4 @@
-import { log, addEventListener, dispatchEvent } from '../lib/utils.js';
+import { log, addEventListener, dispatchEvent } from '../_lib/utils.js';
 import { Room } from './Room.js';
 
 /**

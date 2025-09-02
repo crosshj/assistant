@@ -137,6 +137,8 @@ User → Room component → Direct calls → RoomController → Service calls �
 
 **Next Phase:**
 
+-   ✅ **RoomController (COMPLETED)** - extract event handling and business logic from Room.js
+-   ✅ **HeaderController (COMPLETED)** - move header event logic from Header.js
 -   ✅ **ActivityController (COMPLETED)** - extract event handling and business logic from Activity.js
 -   **ConnectionDetailsController** - move connection event logic from ConnectionDetails.js
 -   **Eliminate StateManager** - controllers manage their own state instead of centralized state
@@ -145,6 +147,17 @@ User → Room component → Direct calls → RoomController → Service calls �
 -   **Simplify gun.js** - remove dependency injection and setConnection calls
 -   **Prepare for ApplicationController** - ensure controllers can work with event-driven GunDB access
 -   **Test controller integration** - ensure all functionality works through controllers
+
+## **Current Status: Ready for Phase 2**
+
+**Phase 1 is complete** with solid controller architecture established. The foundation is ready for the next phase of refactoring.
+
+**Immediate Next Steps:**
+
+1. **Create ApplicationController** - Single GunDB access point via events
+2. **Break down gunWrapper.js** - Remove debug methods, extract utilities
+3. **Consolidate services** - Move to single ServiceController
+4. **Test and validate** - Ensure all functionality works through new architecture
 
 ---
 
@@ -171,7 +184,7 @@ User → Room component → Direct calls → RoomController → Service calls �
 
 ```
 src/gun/
-├── lib/
+├── _lib/
 ├── Application/
 ├── FileTree/
 ├── DocumentEditor/
@@ -209,26 +222,40 @@ src/gun/
 
 ## Next Steps
 
-### **CRITICAL: Complete Before Controllers**
+### **Phase 2: gunWrapper and Services Refactoring (CURRENT FOCUS)**
 
-1. **Fix Network Disconnection State**:
+**Status**: Phase 1 complete, ready to start Phase 2
 
-    - When disconnecting from network, room pane should go into blank state
-    - Clear visualization and show appropriate "disconnected" message
-    - Prevent room operations when disconnected
+**Immediate Actions**:
 
-2. **Fix Connection Details Modal Buttons**:
-    - Refresh button should trigger network discovery
-    - Network discovery button should work when clicked from modal
-    - Ensure proper event handling for these buttons
+1. **Create ApplicationController** - Single GunDB access point via events
 
-### **Then Implement Controller Architecture**:
+    - Centralize all GunDB operations through event-driven architecture
+    - Controllers use events instead of direct gunWrapper access
+    - Foundation for gunWrapper refactoring
 
-3. **Start with RoomController** - extract event handling and business logic from Room.js
-4. **Create HeaderController** - move header event logic from Header.js
-5. **Create ActivityController** - move activity log logic from Activity.js
-6. **Create ConnectionDetailsController** - move connection event logic
-7. **Test controller integration** - ensure all functionality works through controllers
-8. **Prepare for gunWrapper refactoring** - once controllers are stable
+2. **Break down gunWrapper.js** (1150 lines → <200 lines):
+
+    - **Remove**: Debug/test methods (testIsolatedInstance, debugNodeData, etc.)
+    - **Extract**: Pure utility methods to \_lib/utils.js
+    - **Keep**: Core CRUD, Props Management, Network Operations
+
+3. **Consolidate Services** - Move to single ServiceController:
+
+    - CRUD operations
+    - Auth operations
+    - Room management
+    - Network operations
+
+4. **Test and Validate** - Ensure all functionality works through new architecture
+
+### **Future: Phase 3 - App-Scoped Migration**
+
+**After Phase 2 is stable**:
+
+-   Remove room-based architecture
+-   Implement links-as-nodes approach with [[wiki links]]
+-   Separate namespaces: `gun.user().get('nodes')` and `gun.user().get('edges')`
+-   Content-based relationship discovery
 
 This approach ensures the refactor goes smoothly by establishing clean separation of concerns before tackling the complex gunWrapper refactoring.

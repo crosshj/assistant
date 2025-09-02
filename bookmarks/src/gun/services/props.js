@@ -1,4 +1,4 @@
-import { $ } from '../lib/utils.js';
+import { $ } from '../_lib/utils.js';
 
 // PropsManager Component - Handles loading and displaying props data
 export class PropsService {

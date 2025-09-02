@@ -7,7 +7,7 @@ import {
 	dispatchEvent,
 	tryJSONParse,
 	addEventListener,
-} from '../lib/utils.js';
+} from '../_lib/utils.js';
 
 // GunDB Connection Management
 export class ConnectionService {
@@ -132,7 +132,7 @@ export class ConnectionService {
 
 	handleNetworkDiscovery() {
 		// Import gunWrapper dynamically to avoid circular dependency
-		import('../lib/gunWrapper.js').then(({ GunDBWrapper }) => {
+		import('../_lib/gunWrapper.js').then(({ GunDBWrapper }) => {
 			const gunWrapper = new GunDBWrapper(this);
 			gunWrapper.runNetworkDiscovery();
 		});

@@ -8,25 +8,38 @@ A real-time collaborative graph visualization tool built with GunDB and Cytoscap
 gun/
 ├── gun.js                 # Main application orchestrator
 ├── gun.css                # Styles
-├── components/            # UI components
-│   ├── header/           # Network status, auth, room management
-│   ├── forms/            # Node/edge creation forms
-│   ├── graph/            # Graph view controls
-│   ├── visualization/    # Cytoscape graph rendering
-│   ├── sidebar/          # Activity logging
-│   ├── PropsManager.js   # Properties display
-│   └── RoomList.js       # Room selection
-├── services/              # Business logic & GunDB operations
-│   ├── eventCoordinator.js # Event coordination
-│   ├── stateManager.js   # Application state
-│   ├── gunWrapper.js     # Clean GunDB API
+├── _lib/                  # Core libraries
+│   ├── gunWrapper.js     # GunDB operations wrapper
+│   ├── cytoscapeWrapper.js # Cytoscape.js integration
+│   └── utils.js          # Shared utilities
+├── services/              # Business logic & data operations
 │   ├── connection.js     # Peer connections
-│   ├── auth.js          # User authentication
-│   ├── room.js          # Room management
-│   ├── graphOperations.js # CRUD operations
-│   └── sync.js          # Data synchronization
-├── controllers/           # UI state controllers
-└── utils/                # Shared utilities
+│   ├── props.js          # Properties management
+│   ├── room.js           # Room management
+│   └── sync.js           # Data synchronization
+├── Header/                # Header component with controller
+│   ├── Header.js         # Pure UI component
+│   ├── Header.css        # Component styles
+│   └── HeaderController.js # Event handling & coordination
+├── Room/                  # Room component with controller
+│   ├── Room.js           # Pure UI component
+│   ├── Room.css          # Component styles
+│   └── RoomController.js # Event handling & coordination
+├── Activity/              # Activity component with controller
+│   ├── Activity.js       # Pure UI component
+│   ├── Activity.css      # Component styles
+│   └── ActivityController.js # Event handling & coordination
+├── ConnectionDetails/     # Connection details component with controller
+│   ├── ConnectionDetails.js # Pure UI component
+│   ├── ConnectionDetails.css # Component styles
+│   └── ConnectionDetailsController.js # Event handling & coordination
+├── _plan/                 # Planning & documentation
+│   ├── ARCHITECTURE.md   # Controller pattern documentation
+│   ├── REFACTOR_PLAN.md  # Main refactoring plan
+│   ├── PHASE2_PLAN.md    # Phase 2 detailed plan
+│   ├── MIGRATION_TO_APP_SCOPED.md # Future app-scoped migration
+│   └── *.md              # Other planning documents
+└── README.md             # This file
 ```
 
 ## Key Features
@@ -40,17 +53,26 @@ gun/
 
 ## Development
 
--   **UI Changes**: Modify files in `components/`
+-   **UI Components**: Modify files in component folders (e.g., `Header/Header.js`)
+-   **Event Handling**: Update controller files (e.g., `Header/HeaderController.js`)
 -   **Business Logic**: Update files in `services/`
--   **State Management**: Modify `stateManager.js`
--   **Event Flow**: Update `eventCoordinator.js`
--   **Styling**: Edit `gun.css`
+-   **GunDB Operations**: Modify `_lib/gunWrapper.js`
+-   **Styling**: Edit component CSS files or `gun.css`
 -   **Entry Point**: `gun.html` → `gun.js`
 
 ## Event System
 
-The application uses custom DOM events for communication:
+The application uses a controller-based architecture with custom DOM events:
 
--   `selectionChanged` → `graph:requestProps` → `graph:propsLoaded`
--   `ui:connect`, `ui:joinRoom`, `ui:leaveRoom`
--   `stateChanged` for state updates
+-   **Controllers handle all event wiring** - Each component has a dedicated controller
+-   **Pure UI components** - Components only render, no business logic
+-   **Event-driven communication** - Controllers coordinate between UI and services
+-   **Custom DOM events** - `ui:connect`, `ui:joinRoom`, `activity:log`, etc.
+
+### Controller Pattern
+
+Each major UI component follows this pattern:
+
+-   `Component.js` - Pure UI rendering
+-   `Component.css` - Component-specific styles
+-   `ComponentController.js` - Event handling and coordination
