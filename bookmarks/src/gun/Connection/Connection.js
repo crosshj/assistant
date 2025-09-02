@@ -1,7 +1,7 @@
 import { html } from '../_lib/utils.js';
-import './ConnectionDetails.css';
+import './Connection.css';
 
-export class ConnectionDetails {
+export class Connection {
 	constructor() {
 		this.modal = null;
 		this.isOpen = false;

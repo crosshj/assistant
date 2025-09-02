@@ -66,14 +66,14 @@ gun.js (main app)
 1. **RoomController** - handles visualization, room state, graph operations
 2. **HeaderController** - handles network, auth, room selection
 3. **ActivityController** - handles activity log updates
-4. **ConnectionDetailsController** - handles peer connection events
+4. **ConnectionController** - handles peer connection events
 
 **Why This Order**:
 
 -   **RoomController first** - most complex with visualization logic
 -   **HeaderController second** - network and auth coordination
 -   **ActivityController third** - simpler log management
--   **ConnectionDetailsController last** - peer-specific events
+-   **ConnectionController last** - peer-specific events
 
 **Action**: Implement one controller at a time, test thoroughly before moving to next
 
@@ -140,7 +140,7 @@ User → Room component → Direct calls → RoomController → Service calls �
 -   ✅ **RoomController (COMPLETED)** - extract event handling and business logic from Room.js
 -   ✅ **HeaderController (COMPLETED)** - move header event logic from Header.js
 -   ✅ **ActivityController (COMPLETED)** - extract event handling and business logic from Activity.js
--   **ConnectionDetailsController** - move connection event logic from ConnectionDetails.js
+-   **ConnectionController** - move connection event logic from Connection.js
 -   **Eliminate StateManager** - controllers manage their own state instead of centralized state
 -   **Eliminate EventCoordinator** - controllers listen to events directly from services
 -   **Eliminate PropsManager** - move props handling logic to RoomController/UI components
@@ -190,7 +190,7 @@ src/gun/
 ├── DocumentEditor/
 ├── GraphView/
 ├── Header/
-└── ConnectionDetails/
+└── Connection/
 ```
 
 **Key Changes**:

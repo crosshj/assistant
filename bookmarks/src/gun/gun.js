@@ -11,7 +11,7 @@ import { LayoutController } from './Layout/LayoutController.js';
 import { RoomController } from './Room/RoomController.js';
 import { HeaderController } from './Header/HeaderController.js';
 import { ActivityController } from './Activity/ActivityController.js';
-import { ConnectionDetailsController } from './ConnectionDetails/ConnectionDetailsController.js';
+import { ConnectionController } from './Connection/ConnectionController.js';
 
 async function startApp() {
 	// Initialize controllers
@@ -19,7 +19,7 @@ async function startApp() {
 	const roomController = new RoomController();
 	const headerController = new HeaderController();
 	const activityController = new ActivityController();
-	const connectionDetailsController = new ConnectionDetailsController();
+	const connectionController = new ConnectionController();
 
 	// Show content once styles are loaded
 	document.body.classList.add('styles-loaded');
@@ -33,7 +33,7 @@ async function startApp() {
 	connectionService.init();
 	roomService.setConnection(connectionService.gun);
 	syncService.setConnection(connectionService);
-	connectionDetailsController.setConnection(connectionService);
+	connectionController.setConnection(connectionService);
 
 	// Initialize authentication state
 	connectionService.autoLogin();

@@ -139,10 +139,10 @@
     │   ├── Activity.js (UI rendering only)
     │   ├── Activity.css
     │   └── ActivityController.js (event handling + business logic)
-    ├── ConnectionDetails/
-    │   ├── ConnectionDetails.js (UI rendering only)
-    │   ├── ConnectionDetails.css
-    │   └── ConnectionDetailsController.js (event handling + business logic)
+    ├── Connection/
+    │   ├── Connection.js (UI rendering only)
+    │   ├── Connection.css
+    │   └── ConnectionController.js (event handling + business logic)
     └── services/ (keep existing services for now)
         ├── auth.js
         ├── connection.js
@@ -288,7 +288,7 @@
 
 3. **Network operations**:
     - Connection changes → HeaderController → connectionService
-    - Peer updates → ConnectionDetailsController → connectionService
+    - Peer updates → ConnectionController → connectionService
 
 **Action**: Test each component's functionality through its controller before moving to next component
 
@@ -334,7 +334,7 @@
 2. **Mobile view switching**: via menu
 3. **Document-centric**: with auto-generated graph
 4. **Responsive design**: with CSS Grid/Flexbox
-5. **New component structure**: FileTree, DocumentEditor, GraphView, Header, ConnectionDetails
+5. **New component structure**: FileTree, DocumentEditor, GraphView, Header, Connection
 
 **Why This Order**:
 
@@ -354,14 +354,14 @@
 1. ✅ **RoomController** - handles visualization, room state, graph operations
 2. ✅ **HeaderController** - handles network, auth, room selection
 3. ✅ **ActivityController** - handles activity log updates
-4. **ConnectionDetailsController** - handles peer connection events (pending)
+4. **ConnectionController** - handles peer connection events (completed)
 
 **✅ Why This Order Worked**:
 
 -   ✅ **RoomController first** - most complex with visualization logic
 -   ✅ **HeaderController second** - network and auth coordination
 -   ✅ **ActivityController third** - simpler log management
--   **ConnectionDetailsController last** - peer-specific events
+-   **ConnectionController last** - peer-specific events
 
 **✅ Result**: All major controllers implemented successfully, clean architecture established
 
@@ -680,7 +680,7 @@ document.dispatchEvent(
 
 7. **HeaderController** - Create `HeaderController.js` and move header event logic
 8. ✅ **ActivityController (COMPLETED)** - Create `ActivityController.js` and move activity log logic
-9. **ConnectionDetailsController** - Create `ConnectionDetailsController.js` and move connection events
+9. **ConnectionController** - Create `ConnectionController.js` and move connection events
 10. **Test Integration** - Ensure all controllers work together seamlessly
 11. **Prepare for gunWrapper Refactoring** - Once all controllers are stable
 

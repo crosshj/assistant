@@ -1,17 +1,17 @@
 import { log, addEventListener, dispatchEvent } from '../_lib/utils.js';
-import { ConnectionDetails } from './ConnectionDetails.js';
+import { Connection } from './Connection.js';
 
 /**
- * ConnectionDetailsController
- * Handles all connection details modal events and business logic
+ * ConnectionController
+ * Handles all connection modal events and business logic
  * Coordinates between UI component and connection service
  */
-export class ConnectionDetailsController {
+export class ConnectionController {
 	constructor() {
 		this.connection = null;
 
-		// Create ConnectionDetails component (pure UI renderer)
-		this.ui = new ConnectionDetails();
+		// Create Connection component (pure UI renderer)
+		this.ui = new Connection();
 
 		// Bind controller methods
 		this.handleRefresh = this.handleRefresh.bind(this);

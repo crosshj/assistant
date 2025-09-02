@@ -29,10 +29,10 @@ gun/
 │   ├── Activity.js       # Pure UI component
 │   ├── Activity.css      # Component styles
 │   └── ActivityController.js # Event handling & coordination
-├── ConnectionDetails/     # Connection details component with controller
-│   ├── ConnectionDetails.js # Pure UI component
-│   ├── ConnectionDetails.css # Component styles
-│   └── ConnectionDetailsController.js # Event handling & coordination
+├── Connection/     # Connection component with controller
+│   ├── Connection.js # Pure UI component
+│   ├── Connection.css # Component styles
+│   └── ConnectionController.js # Event handling & coordination
 ├── _plan/                 # Planning & documentation
 │   ├── ARCHITECTURE.md   # Controller pattern documentation
 │   ├── REFACTOR_PLAN.md  # Main refactoring plan
