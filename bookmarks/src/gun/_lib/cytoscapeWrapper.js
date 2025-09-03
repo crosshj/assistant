@@ -252,7 +252,7 @@ export class GraphVisualization {
 
 					// Emit selection changed event for auto-loading props
 					document.dispatchEvent(
-						new CustomEvent('selectionChanged', {
+						new CustomEvent('graph:select', {
 							detail: {
 								elementId: d.nid || d.id,
 								elementType: 'node',
@@ -283,7 +283,7 @@ export class GraphVisualization {
 
 				// Emit selection changed event for auto-loading props
 				document.dispatchEvent(
-					new CustomEvent('selectionChanged', {
+					new CustomEvent('graph:select', {
 						detail: {
 							elementId: d.eid || d.id,
 							elementType: 'edge',

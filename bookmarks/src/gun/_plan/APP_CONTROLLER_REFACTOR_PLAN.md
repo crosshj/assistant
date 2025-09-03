@@ -15,51 +15,6 @@ This plan outlines the step-by-step refactor to move service logic into AppContr
 -   **Direct Gun provides**: Raw GunDB API, requires manual data handling
 -   **Migration strategy**: Test thoroughly when moving from direct Gun to GunDBWrapper
 
-## Phase 0: Remove Dependencies (PREREQUISITE)
-
-### Goal
-
-Remove ConnectionController dependency on connection service before moving any service code.
-
-### Steps
-
-1. **Replace ConnectionController methods with single event dispatch**
-
-    - Replace `getDetailedPeerInfo()`, `getNetworkInfo()`, `getDefaultPeers()`, `getCurrentPeers()`
-    - All call `dispatchEvent('network:infoRequest')`
-    - **Note**: Consolidate into single request/response pattern
-
-2. **Add response handler in ConnectionController**
-
-    - Listen for `network:infoResponse` event
-    - Update UI with consolidated network data
-    - **Response format**:
-        ```javascript
-        {
-          detailedPeerInfo: {...},
-          networkInfo: {...},
-          defaultPeers: [...],
-          currentPeers: [...]
-        }
-        ```
-
-3. **Update AppController's `info` handler**
-
-    - Process `network:infoRequest`
-    - Gather all network info from `appController.gun` (GunDBWrapper)
-    - Dispatch `network:infoResponse` with consolidated data
-    - **⚠️ WARNING**: Test GunDBWrapper vs direct Gun API differences
-
-4. **Remove `setConnection()` method and update `gun.js`**
-    - Remove `connectionController.setConnection(connectionService)`
-    - Remove `setConnection()` method from ConnectionController
-
-### Success Criteria
-
--   ConnectionController no longer has direct connection service dependency
--   All network info requests go through event system
--   App functionality remains intact
-
 ## Phase 1: Room Graph Operations
 
 ### Goal
@@ -102,7 +57,7 @@ Move graph CRUD operations to AppController handlers.
 5. Test all graph operations
 6. Remove service methods after confirmation
 
-## Phase 3: Connection Info (Simplified)
+## Phase 3: Connection Info
 
 ### Goal
 
@@ -132,7 +87,6 @@ Move complex operations involving state management and async operations.
 ### Target Methods
 
 -   Connection auth: `handlersConnection.login`, `handlersConnection.identityCreate`
--   Graph sync: `handlersGraph.select`
 -   **Why last**: Most complex, involves state management and async operations
 -   **Complexity**: High - authentication, sync, error handling
 -   **Dependencies**: Multiple services, state management
@@ -140,10 +94,9 @@ Move complex operations involving state management and async operations.
 ### Steps
 
 1. Move authentication logic to connection handlers
-2. Move graph sync logic to graph handlers
-3. **⚠️ CRITICAL**: Test GunDBWrapper vs direct Gun API differences
-4. Test all complex operations thoroughly
-5. Remove service methods after confirmation
+2. **⚠️ CRITICAL**: Test GunDBWrapper vs direct Gun API differences
+3. Test all complex operations thoroughly
+4. Remove service methods after confirmation
 
 ## Testing Strategy
 
@@ -179,12 +132,11 @@ Move complex operations involving state management and async operations.
 ## Current State
 
 -   AppController is stubbed with handlers
--   ConnectionController still has direct connection service dependency
+-   ConnectionController uses event system (no direct service dependencies)
+-   PropsService removed - functionality moved to RoomController/Room.js and SyncService
 -   Services are still active and handling events
 -   GunDBWrapper is instantiated in AppController but not yet used
 
 ## Next Steps
 
-1. Begin Phase 0: Remove ConnectionController dependencies
-2. Test network info flow through events
-3. Proceed to Phase 1: Room operations
+1. **Begin Phase 1: Room operations**

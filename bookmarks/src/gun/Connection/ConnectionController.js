@@ -24,10 +24,6 @@ export class ConnectionController {
 		this.setupEventListeners();
 	}
 
-	setConnection(connection) {
-		this.connection = connection;
-	}
-
 	setupEventListeners() {
 		// External events to show/hide modal
 		addEventListener('ui:showConnectionDetails', this.handleModalOpen);
@@ -47,6 +43,11 @@ export class ConnectionController {
 
 		addEventListener('network:disconnected', () => {
 			this.handleNetworkStateChange({ status: 'disconnected' });
+		});
+
+		// Listen for network info response
+		addEventListener('network:infoResponse', (event) => {
+			this.handleNetworkInfoResponse(event.detail);
 		});
 
 		// Note: UI event delegation will be set up when modal is opened
@@ -122,14 +123,8 @@ export class ConnectionController {
 	updateModalData() {
 		if (!this.ui.isModalOpen()) return;
 
-		const detailedPeers = this.getDetailedPeerInfo();
-		const networkInfo = this.getNetworkInfo();
-		const defaultPeers = this.getDefaultPeers();
-		const currentPeers = this.getCurrentPeers();
-
-		this.ui.updatePeerTable(detailedPeers);
-		this.ui.updateConnectionStats(networkInfo);
-		this.ui.updatePeerLists(defaultPeers, currentPeers);
+		// Request network info via event system
+		this.requestNetworkInfo();
 	}
 
 	// Action button handlers
@@ -144,27 +139,21 @@ export class ConnectionController {
 		dispatchEvent('networkDiscovery');
 	}
 
-	// Data access methods for controller internal use
-	getDetailedPeerInfo() {
-		return this.connection.getDetailedPeerInfo
-			? this.connection.getDetailedPeerInfo()
-			: {};
+	// Request network info via event system
+	requestNetworkInfo() {
+		dispatchEvent('network:infoRequest');
 	}
 
-	getNetworkInfo() {
-		return this.connection.getNetworkInfo
-			? this.connection.getNetworkInfo()
-			: {};
-	}
+	// Handle network info response from AppController
+	handleNetworkInfoResponse(networkData) {
+		if (!this.ui.isModalOpen()) return;
 
-	getDefaultPeers() {
-		return this.connection.getDefaultPeers
-			? this.connection.getDefaultPeers()
-			: [];
-	}
+		const { detailedPeerInfo, networkInfo, defaultPeers, currentPeers } =
+			networkData;
 
-	getCurrentPeers() {
-		return this.connection.peers || [];
+		this.ui.updatePeerTable(detailedPeerInfo);
+		this.ui.updateConnectionStats(networkInfo);
+		this.ui.updatePeerLists(defaultPeers, currentPeers);
 	}
 
 	// Public methods for external access

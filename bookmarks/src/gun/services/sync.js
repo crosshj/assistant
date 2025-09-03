@@ -16,11 +16,8 @@ export class SyncService {
 		// Room state will be provided via events
 		this._graphRoot = null;
 
-		// Listen to room state changes to auto-subscribe
-		this.setupRoomEventListeners();
-
-		// Listen for props requests from UI/components
-		this.setupPropsEventListeners();
+		// Set up all event listeners
+		this.setupEventListeners();
 	}
 
 	setConnection(connection) {
@@ -74,8 +71,8 @@ export class SyncService {
 		return this._propsLoadingFlag;
 	}
 
-	setupRoomEventListeners() {
-		// Listen to room joined events to auto-subscribe
+	setupEventListeners() {
+		// Room events
 		addEventListener('room:joined', (event) => {
 			const { room, graphRoot } = event.detail;
 			this._graphRoot = graphRoot;
@@ -86,26 +83,41 @@ export class SyncService {
 			}
 		});
 
-		// Listen to room left events to auto-unsubscribe
 		addEventListener('room:left', (event) => {
 			this._graphRoot = null;
 			log('🔄 Room left, auto-unsubscribing from sync');
 			this.unsubscribeFromRoom();
 		});
-	}
 
-	/**
-	 * Props requests: fetch props without involving controllers
-	 */
-	setupPropsEventListeners() {
-		addEventListener('graph:requestProps', async (event) => {
+		// Props events - listen directly to selection changes
+		addEventListener('graph:select', async (event) => {
 			const { elementId, elementType, room } = event.detail || {};
+
+			// Validate required parameters
+			if (!elementId || !elementType || !room) {
+				dispatchEvent('graph:propsLoaded', {
+					elementId,
+					elementType,
+					room,
+					props: null,
+					error: 'Invalid selection data',
+				});
+				return;
+			}
+
 			await this.handleRequestProps({ elementId, elementType, room });
 		});
 	}
 
 	async handleRequestProps({ elementId, elementType, room } = {}) {
-		if (!this.gunWrapper || !elementId || !elementType || !room) {
+		if (!this.gunWrapper) {
+			dispatchEvent('graph:propsLoaded', {
+				elementId,
+				elementType,
+				room,
+				props: null,
+				error: 'Service not initialized',
+			});
 			return;
 		}
 
@@ -126,20 +138,13 @@ export class SyncService {
 					throw new Error(`Unknown element type: ${elementType}`);
 				}
 			} catch (innerErr) {
-				// Fallback to memory/local
-				if (elementType === 'node') {
-					props = await this.gunWrapper.getPropsFallback(
-						room,
-						elementId,
-						true
-					);
-				} else if (elementType === 'edge') {
-					props = await this.gunWrapper.getPropsFallback(
-						room,
-						elementId,
-						false
-					);
-				}
+				dispatchEvent('graph:propsLoaded', {
+					elementId,
+					elementType,
+					props: { error: 'Error fetching props' },
+					error: 'Error fetching props',
+				});
+				return;
 			}
 
 			dispatchEvent('graph:propsLoaded', {

@@ -53,19 +53,19 @@ export class RoomService {
 		});
 
 		// Listen to graph operation requests
-		addEventListener('room:upsertNode', (event) => {
+		addEventListener('graph:nodeUpsert', (event) => {
 			this.upsertNode(event.detail);
 		});
 
-		addEventListener('room:deleteNode', (event) => {
+		addEventListener('graph:nodeDelete', (event) => {
 			this.deleteNode(event.detail.id);
 		});
 
-		addEventListener('room:upsertEdge', (event) => {
+		addEventListener('graph:edgeUpsert', (event) => {
 			this.upsertEdge(event.detail);
 		});
 
-		addEventListener('room:deleteEdge', (event) => {
+		addEventListener('graph:edgeDelete', (event) => {
 			this.deleteEdge(event.detail.id);
 		});
 	}

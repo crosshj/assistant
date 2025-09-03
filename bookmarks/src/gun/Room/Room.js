@@ -1104,4 +1104,83 @@ export class Room {
 		this.isVisualizationReady = false;
 		this.eventQueue = [];
 	}
+
+	clearPropsField(elementType) {
+		if (elementType === 'node') {
+			const nodePropsField = document.getElementById('nodeProps');
+			if (nodePropsField) {
+				nodePropsField.value = '';
+			}
+		} else if (elementType === 'edge') {
+			const edgePropsField = document.getElementById('edgeProps');
+			if (edgePropsField) {
+				edgePropsField.value = '';
+			}
+		}
+	}
+
+	showLoading(show) {
+		// Update the "New node" section
+		const nodePropsField = document.getElementById('nodeProps');
+		if (nodePropsField) {
+			if (show) {
+				nodePropsField.placeholder = 'Loading props...';
+				nodePropsField.disabled = true;
+			} else {
+				nodePropsField.placeholder = 'Props (JSON object)';
+				nodePropsField.disabled = false;
+			}
+		}
+
+		// Update the "New edge" section
+		const edgePropsField = document.getElementById('edgeProps');
+		if (edgePropsField) {
+			if (show) {
+				edgePropsField.placeholder = 'Loading props...';
+				edgePropsField.disabled = true;
+			} else {
+				edgePropsField.placeholder = 'Props (JSON object)';
+				edgePropsField.disabled = false;
+			}
+		}
+	}
+
+	startPropsLoading(elementType) {
+		// Clear the props field immediately to show loading state
+		this.clearPropsField(elementType);
+
+		// Show loading spinner
+		this.showLoading(true);
+	}
+
+	updatePropsField(elementType, props) {
+		try {
+			const safeProps = this.extractSafeProps(props);
+			const propsJson = JSON.stringify(safeProps, null, 2);
+
+			if (elementType === 'node') {
+				const nodePropsField = document.getElementById('nodeProps');
+				if (nodePropsField) {
+					nodePropsField.value = propsJson;
+				}
+			} else if (elementType === 'edge') {
+				const edgePropsField = document.getElementById('edgeProps');
+				if (edgePropsField) {
+					edgePropsField.value = propsJson;
+				}
+			}
+
+			// Hide loading spinner after updating props
+			this.showLoading(false);
+		} catch (error) {
+			console.error('❌ Room: Error updating props field:', error);
+			// Hide loading spinner even on error
+			this.showLoading(false);
+		}
+	}
+
+	extractSafeProps(gunObj) {
+		// EventCoordinator now sends clean props, so just return them
+		return gunObj || {};
+	}
 }

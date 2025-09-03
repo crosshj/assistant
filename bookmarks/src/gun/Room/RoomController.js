@@ -99,6 +99,14 @@ export class RoomController {
 		addEventListener('room:joined', this.onRoomJoined);
 		addEventListener('room:leaving', this.onRoomLeaving);
 		addEventListener('room:left', this.onRoomLeft);
+
+		// Props UI events
+		addEventListener('graph:select', (e) => {
+			this.handleSelectionChanged(e.detail);
+		});
+		addEventListener('graph:propsLoaded', (e) => {
+			this.handlePropsLoaded(e.detail);
+		});
 	}
 
 	setupResizeHandler() {
@@ -128,19 +136,19 @@ export class RoomController {
 	}
 
 	onNodeCreate(detail) {
-		dispatchEvent('room:upsertNode', detail.data);
+		dispatchEvent('graph:nodeUpsert', detail.data);
 	}
 
 	onNodeDelete(detail) {
-		dispatchEvent('room:deleteNode', { id: detail.id });
+		dispatchEvent('graph:nodeDelete', { id: detail.id });
 	}
 
 	onEdgeCreate(detail) {
-		dispatchEvent('room:upsertEdge', detail.data);
+		dispatchEvent('graph:edgeUpsert', detail.data);
 	}
 
 	onEdgeDelete(detail) {
-		dispatchEvent('room:deleteEdge', { id: detail.id });
+		dispatchEvent('graph:edgeDelete', { id: detail.id });
 	}
 
 	// Room lifecycle event handlers
@@ -269,8 +277,17 @@ export class RoomController {
 		dispatchEvent('graph:fitRequested', { room });
 	}
 
-	// Props request handling moved to Sync service
+	// Props UI handling methods (delegated to Room UI component)
+	handleSelectionChanged(detail) {
+		const { elementType } = detail;
+		this.ui.startPropsLoading(elementType);
+	}
 
-	// Room state is now managed by RoomManager service
-	// Controllers get room state from events, not local tracking
+	handlePropsLoaded(detail) {
+		const { elementId, elementType, props, room } = detail;
+		if (!elementId || !elementType || !props) {
+			return;
+		}
+		this.ui.updatePropsField(elementType, props);
+	}
 }

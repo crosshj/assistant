@@ -33,6 +33,13 @@ export class AppController {
 	}
 
 	setupEventListeners() {
+		// App initialization event
+		addEventListener('app:init', () => {
+			console.log('TODO: app init here instead');
+			// TODO: Initialize AppController
+			// this.init();
+		});
+
 		// Connection events
 		const connection = getConnectionHandlers(this);
 		addEventListener('networkDiscovery', connection.discovery);
@@ -52,11 +59,10 @@ export class AppController {
 
 		// Graph events
 		const graph = getGraphHandlers(this);
-		addEventListener('selectionChanged', graph.select);
-		addEventListener('graph:requestProps', graph.select); // Current app state - details via requestProps
-		addEventListener('room:upsertNode', graph.nodeUpsert);
-		addEventListener('room:deleteNode', graph.nodeDelete);
-		addEventListener('room:upsertEdge', graph.edgeUpsert);
-		addEventListener('room:deleteEdge', graph.edgeDelete);
+		addEventListener('graph:select', graph.select);
+		addEventListener('graph:nodeUpsert', graph.nodeUpsert);
+		addEventListener('graph:nodeDelete', graph.nodeDelete);
+		addEventListener('graph:edgeUpsert', graph.edgeUpsert);
+		addEventListener('graph:edgeDelete', graph.edgeDelete);
 	}
 }

@@ -1,10 +1,10 @@
 import './gun.css';
+import { dispatchEvent } from './_lib/utils.js';
 
 // Import core services
 import { ConnectionService } from './services/connection.js';
 import { RoomService } from './services/room.js';
 import { SyncService } from './services/sync.js';
-import { PropsService } from './services/props.js';
 
 // Import controllers
 import { LayoutController } from './Layout/LayoutController.js';
@@ -28,7 +28,6 @@ async function startApp() {
 	const connectionService = new ConnectionService();
 	const roomService = new RoomService();
 	const syncService = new SyncService();
-	const propsService = new PropsService();
 
 	// Show content once styles are loaded
 	document.body.classList.add('styles-loaded');
@@ -37,9 +36,8 @@ async function startApp() {
 	connectionService.init();
 	roomService.setConnection(connectionService.gun);
 	syncService.setConnection(connectionService);
-	connectionController.setConnection(connectionService);
 
-	// appController.init();
+	dispatchEvent('app:init');
 
 	// Initialize authentication state
 	connectionService.autoLogin();

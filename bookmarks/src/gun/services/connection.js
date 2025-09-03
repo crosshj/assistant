@@ -118,6 +118,11 @@ export class ConnectionService {
 			this.handleNetworkDiscovery();
 		});
 
+		// Listen for network info requests from ConnectionController
+		addEventListener('network:infoRequest', () => {
+			this.handleNetworkInfoRequest();
+		});
+
 		// Listen for UI events that EventCoordinator currently handles
 		addEventListener('ui:connect', () => this.handleConnect());
 		addEventListener('ui:disconnect', () => this.handleDisconnect());
@@ -135,6 +140,22 @@ export class ConnectionService {
 		import('../_lib/gunWrapper.js').then(({ GunDBWrapper }) => {
 			const gunWrapper = new GunDBWrapper(this);
 			gunWrapper.runNetworkDiscovery();
+		});
+	}
+
+	handleNetworkInfoRequest() {
+		// Gather all network info and dispatch consolidated response
+		const detailedPeerInfo = this.getDetailedPeerInfo();
+		const networkInfo = this.getNetworkInfo();
+		const defaultPeers = this.getDefaultPeers();
+		const currentPeers = this.peers || [];
+
+		// Dispatch consolidated response
+		dispatchEvent('network:infoResponse', {
+			detailedPeerInfo,
+			networkInfo,
+			defaultPeers,
+			currentPeers,
 		});
 	}
 
