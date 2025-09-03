@@ -7,11 +7,10 @@ import { log, dispatchEvent, generateId } from '../_lib/utils.js';
  */
 export function getHandlers(appController) {
 	// Room state kept in closure
-	let nodesChain = null;
-	let edgesChain = null;
+	// Note: nodesChain and edgesChain are now managed by AppController
 
 	return {
-		join(event) {
+		async join(event, onRoomReady) {
 			const room = event.detail;
 			if (!room) return false;
 
@@ -24,68 +23,82 @@ export function getHandlers(appController) {
 				.get('graphs')
 				.get(room);
 
-			// Flag to track if join has completed
-			let joinCompleted = false;
+			// Return a promise that resolves when room is ready
+			return new Promise((resolve) => {
+				let joinCompleted = false;
 
-			// Gun.js operations are asynchronous, so we need to wait for the operation to complete
-			// before marking the room as joined
-			appController.graphRoot.once((data, ack) => {
-				if (!joinCompleted) {
-					joinCompleted = true;
+				// Gun.js operations are asynchronous, so we need to wait for the operation to complete
+				// before marking the room as joined
+				appController.graphRoot.once((data, ack) => {
+					if (!joinCompleted) {
+						joinCompleted = true;
 
-					// Room is fully ready - fire joined event
-					dispatchEvent('room:joined', {
-						room,
-						graphRoot: appController.graphRoot,
-					});
-				}
+						// Room is fully ready - fire joined event for UI components
+						dispatchEvent('room:joined', {
+							room,
+							graphRoot: appController.graphRoot,
+						});
+
+						// Call the callback if provided (e.g., sync subscription)
+						if (onRoomReady) {
+							onRoomReady(event);
+						}
+
+						resolve(true);
+					}
+				});
+
+				// Fallback: If Gun.js callback doesn't fire within 1 second, assume the room is accessible
+				// This handles cases where the room might be empty or the callback doesn't fire
+				setTimeout(() => {
+					if (
+						!joinCompleted &&
+						appController.currentRoom === room &&
+						appController.graphRoot
+					) {
+						joinCompleted = true;
+
+						// Room is fully ready - fire joined event for UI components
+						dispatchEvent('room:joined', {
+							room,
+							graphRoot: appController.graphRoot,
+						});
+
+						// Call the callback if provided (e.g., sync subscription)
+						if (onRoomReady) {
+							onRoomReady(event);
+						}
+
+						resolve(true);
+					} else if (joinCompleted) {
+						// Timeout fallback skipped - callback already fired
+					}
+				}, 1000);
 			});
-
-			// Fallback: If Gun.js callback doesn't fire within 1 second, assume the room is accessible
-			// This handles cases where the room might be empty or the callback doesn't fire
-			setTimeout(() => {
-				if (
-					!joinCompleted &&
-					appController.currentRoom === room &&
-					appController.graphRoot
-				) {
-					joinCompleted = true;
-
-					// Room is fully ready - fire joined event
-					dispatchEvent('room:joined', {
-						room,
-						graphRoot: appController.graphRoot,
-					});
-				} else if (joinCompleted) {
-					// Timeout fallback skipped - callback already fired
-				}
-			}, 1000);
-
-			// Return true to indicate the join process has started
-			return true;
 		},
 
-		leave(event) {
+		async leave(event, onBeforeLeave) {
 			const roomToLeave = appController.currentRoom;
 
 			// 1. START leaving - UI can show leaving state
 			dispatchEvent('room:leaving', { room: roomToLeave });
 
-			// Clean up chains if they exist
-			if (nodesChain) nodesChain.off();
-			if (edgesChain) edgesChain.off();
+			// Call the callback if provided (e.g., sync unsubscription)
+			if (onBeforeLeave) {
+				onBeforeLeave(event);
+			}
 
-			// Clear room state
+			// Clear room state (sync cleanup is handled by the callback)
 			appController.currentRoom = null;
 			appController.graphRoot = null;
-			nodesChain = null;
-			edgesChain = null;
 
-			// 2. FULLY left - All cleanup complete
+			// 2. FULLY left - All cleanup complete - fire left event for UI components
 			dispatchEvent('room:left', {
 				room: null,
 				graphRoot: null,
 			});
+
+			return true;
 		},
 
 		export(event) {

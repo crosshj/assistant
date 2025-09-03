@@ -1,7 +1,8 @@
 import { addEventListener } from '../_lib/utils.js';
 import { getHandlers as getConnectionHandlers } from './handlersConnection.js';
 import { getHandlers as getRoomHandlers } from './handlersRoom.js';
-import { getHandlers as getGraphHandlers } from './handlersGraph.js';
+import { getHandlers as getGraphWriteHandlers } from './handlersGraphWrite.js';
+import { getHandlers as getGraphReadHandlers } from './handlersGraphRead.js';
 import { GunDBWrapper } from '../_lib/gunWrapper.js';
 
 /**
@@ -17,6 +18,13 @@ export class AppController {
 		// Shared room state for handlers
 		this.currentRoom = null;
 		this.graphRoot = null;
+
+		// Sync state
+		this.nodesChain = null;
+		this.edgesChain = null;
+		this.isSubscribed = false;
+		this._isPaused = false;
+		this._propsLoadingFlag = false;
 
 		// Set up application-level event listeners
 		this.setupEventListeners();
@@ -45,6 +53,19 @@ export class AppController {
 	}
 
 	setupEventListeners() {
+		// Get all handlers at the top
+		const connection = getConnectionHandlers(this);
+		const room = getRoomHandlers(this);
+		const graphWrite = getGraphWriteHandlers(this);
+		const graphRead = getGraphReadHandlers(this);
+
+		const roomJoin = (event) => {
+			room.join(event, graphRead.subscribe);
+		};
+
+		const roomLeave = (event) => {
+			room.leave(event, graphRead.unsubscribe);
+		};
 		// App initialization event
 		addEventListener('app:init', () => {
 			console.log('TODO: app init here instead');
@@ -53,7 +74,6 @@ export class AppController {
 		});
 
 		// Connection events
-		const connection = getConnectionHandlers(this);
 		addEventListener('networkDiscovery', connection.discovery);
 		addEventListener('ui:connect', connection.connect);
 		addEventListener('ui:disconnect', connection.disconnect);
@@ -63,18 +83,35 @@ export class AppController {
 		addEventListener('network:infoRequest', connection.info);
 
 		// Room events
-		const room = getRoomHandlers(this);
-		addEventListener('ui:joinRoom', room.join);
-		addEventListener('ui:leaveRoom', room.leave);
+		addEventListener('ui:joinRoom', roomJoin);
+		addEventListener('ui:leaveRoom', roomLeave);
 		addEventListener('room:exportRequested', room.export);
 		addEventListener('room:importRequested', room.import);
 
-		// Graph events
-		const graph = getGraphHandlers(this);
-		addEventListener('graph:select', graph.select);
-		addEventListener('graph:nodeUpsert', graph.nodeUpsert);
-		addEventListener('graph:nodeDelete', graph.nodeDelete);
-		addEventListener('graph:edgeUpsert', graph.edgeUpsert);
-		addEventListener('graph:edgeDelete', graph.edgeDelete);
+		// Graph write events
+		addEventListener('graph:nodeUpsert', graphWrite.nodeUpsert);
+		addEventListener('graph:nodeDelete', graphWrite.nodeDelete);
+		addEventListener('graph:edgeUpsert', graphWrite.edgeUpsert);
+		addEventListener('graph:edgeDelete', graphWrite.edgeDelete);
+
+		// Graph read events
+		addEventListener('graph:select', graphRead.select);
+		addEventListener('ui:joinRoom', (e) =>
+			roomJoin(e, graphRead.subscribe)
+		);
+		addEventListener('ui:leaveRoom', (e) =>
+			roomLeave(e, graphRead.unsubscribe)
+		);
+		addEventListener('room:exportRequested', room.export);
+		addEventListener('room:importRequested', room.import);
+
+		// Graph write events
+		addEventListener('graph:nodeUpsert', graphWrite.nodeUpsert);
+		addEventListener('graph:nodeDelete', graphWrite.nodeDelete);
+		addEventListener('graph:edgeUpsert', graphWrite.edgeUpsert);
+		addEventListener('graph:edgeDelete', graphWrite.edgeDelete);
+
+		// Graph read events
+		addEventListener('graph:select', graphRead.select);
 	}
 }

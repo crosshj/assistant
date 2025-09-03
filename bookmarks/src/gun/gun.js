@@ -3,7 +3,6 @@ import { dispatchEvent } from './_lib/utils.js';
 
 // Import core services
 import { ConnectionService } from './services/connection.js';
-import { SyncService } from './services/sync.js';
 
 // Import controllers
 import { LayoutController } from './Layout/LayoutController.js';
@@ -25,14 +24,12 @@ async function startApp() {
 	const appController = new AppController();
 
 	const connectionService = new ConnectionService();
-	const syncService = new SyncService();
 
 	// Show content once styles are loaded
 	document.body.classList.add('styles-loaded');
 
 	// Initialize connection AFTER ready to listen to events
 	connectionService.init();
-	syncService.setConnection(connectionService);
 
 	// TEMPORARY: used to inject GunDB instance into AppController
 	appController.stupidDumbRemoveMe(connectionService);

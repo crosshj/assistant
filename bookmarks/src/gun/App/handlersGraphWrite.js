@@ -1,16 +1,12 @@
 import { log, generateId } from '../_lib/utils.js';
 
 /**
- * Graph handlers - handles all graph-related events
+ * Graph write handlers - handles all graph write operations (user-initiated modifications)
  * Only dispatches events and interacts with appController.gun
  * Returns bound methods for AppController to use
  */
 export function getHandlers(appController) {
 	return {
-		select(event) {
-			// TODO: Move from services/sync.js handleRequestProps()
-		},
-
 		nodeUpsert(event) {
 			const { id, label, props } = event.detail;
 

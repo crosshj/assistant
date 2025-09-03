@@ -6,6 +6,47 @@ import { dispatchEvent } from '../_lib/utils.js';
  * Returns bound methods for AppController to use
  */
 export function getHandlers(appController) {
+	// Internal methods (not exported as events)
+	function getDefaultPeers() {
+		// TODO: Move from services/connection.js getDefaultPeers()
+	}
+
+	function createIsolatedInstance() {
+		// TODO: Move from services/connection.js createIsolatedInstance()
+	}
+
+	function monitorConnections() {
+		// TODO: Move from services/connection.js monitorConnections()
+	}
+
+	function updateConnectionStatusFromPeers() {
+		// TODO: Move from services/connection.js updateConnectionStatusFromPeers()
+	}
+
+	function updateConnectionStatus(connected, total) {
+		// TODO: Move from services/connection.js updateConnectionStatus()
+	}
+
+	function getDetailedPeerInfo() {
+		// TODO: Move from services/connection.js getDetailedPeerInfo()
+	}
+
+	function getNetworkInfo() {
+		// TODO: Move from services/connection.js getNetworkInfo()
+	}
+
+	function isConnected() {
+		// TODO: Move from services/connection.js isConnected()
+	}
+
+	function autoLogin() {
+		// TODO: Move from services/connection.js autoLogin()
+	}
+
+	function startMonitoring() {
+		// TODO: Move from services/connection.js startMonitoring()
+	}
+
 	return {
 		discovery(event) {
 			// TODO: Move from services/connection.js handleNetworkDiscovery()
