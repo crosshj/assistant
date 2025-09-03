@@ -3,7 +3,6 @@ import { dispatchEvent } from './_lib/utils.js';
 
 // Import core services
 import { ConnectionService } from './services/connection.js';
-import { RoomService } from './services/room.js';
 import { SyncService } from './services/sync.js';
 
 // Import controllers
@@ -26,7 +25,6 @@ async function startApp() {
 	const appController = new AppController();
 
 	const connectionService = new ConnectionService();
-	const roomService = new RoomService();
 	const syncService = new SyncService();
 
 	// Show content once styles are loaded
@@ -34,8 +32,10 @@ async function startApp() {
 
 	// Initialize connection AFTER ready to listen to events
 	connectionService.init();
-	roomService.setConnection(connectionService.gun);
 	syncService.setConnection(connectionService);
+
+	// TEMPORARY: used to inject GunDB instance into AppController
+	appController.stupidDumbRemoveMe(connectionService);
 
 	dispatchEvent('app:init');
 

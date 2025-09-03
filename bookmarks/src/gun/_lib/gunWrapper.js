@@ -6,6 +6,7 @@ export class GunDBWrapper {
 	constructor(connection, currentRoom = null) {
 		this.connection = connection;
 		this.currentRoom = currentRoom;
+		this._rawGun = connection.gun;
 	}
 
 	/**

@@ -25,6 +25,8 @@ export const uuid = () =>
 		? crypto.randomUUID()
 		: Math.random().toString(16).slice(2) + Date.now().toString(16);
 
+export const generateId = uuid; // Alias for consistency with handler naming
+
 export const tryJSONParse = (t, d) => {
 	try {
 		return t ? JSON.parse(t) : d;

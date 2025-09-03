@@ -12,10 +12,22 @@ import { GunDBWrapper } from '../_lib/gunWrapper.js';
 export class AppController {
 	constructor() {
 		// Initialize Gun wrapper
-		this.gun = new GunDBWrapper();
+		// this.gun = new GunDBWrapper();
+
+		// Shared room state for handlers
+		this.currentRoom = null;
+		this.graphRoot = null;
 
 		// Set up application-level event listeners
 		this.setupEventListeners();
+	}
+
+	/**
+	 * TEMPORARY: Inject GunDB instance from ConnectionService
+	 * TODO: Remove this method once AppController properly manages its own GunDB instance
+	 */
+	stupidDumbRemoveMe(connection) {
+		this.gun = new GunDBWrapper(connection);
 	}
 
 	init() {
