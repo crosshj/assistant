@@ -681,51 +681,19 @@ export class GraphVisualization {
 			return;
 		}
 
-		// Add a small delay to ensure container is fully ready
-		setTimeout(() => {
-			// Re-check container dimensions after delay
-			const delayedContainer = this.cy.container();
-			const delayedWidth =
-				delayedContainer.offsetWidth ||
-				delayedContainer.clientWidth ||
-				delayedContainer.getBoundingClientRect?.()?.width;
-			const delayedHeight =
-				delayedContainer.offsetHeight ||
-				delayedContainer.clientHeight ||
-				delayedContainer.getBoundingClientRect?.()?.height;
-
-			if (
-				!delayedWidth ||
-				!delayedHeight ||
-				delayedWidth === 0 ||
-				delayedHeight === 0
-			) {
-				// Queue another retry instead of giving up
-				if (this._layoutRetryTimer) {
-					clearTimeout(this._layoutRetryTimer);
-				}
-				this._layoutRetryTimer = setTimeout(() => {
-					this.updateLayout();
-				}, 200);
-				return;
-			}
-
-			// Circle layout - default and most organized
-			try {
-				this.cy
-					.layout({ name: 'circle', animate: false, padding: 100 })
-					.run();
-			} catch (e) {
-				log('⚠️ Circle layout failed: ' + e.message);
-			}
-		}, 100);
+		// Circle layout - default and most organized
+		try {
+			this.cy
+				.layout({ name: 'circle', animate: false, padding: 100 })
+				.run();
+		} catch (e) {
+			log('⚠️ Circle layout failed: ' + e.message);
+		}
 	}
 
 	debounceLayout() {
 		// Prevent multiple layouts from running simultaneously
 		if (this.isLayoutRunning) {
-			clearTimeout(this.layoutTimeout);
-			this.layoutTimeout = setTimeout(() => this.debounceLayout(), 200);
 			return;
 		}
 
@@ -736,16 +704,22 @@ export class GraphVisualization {
 				this.cy
 					.layout({ name: 'circle', animate: false, padding: 100 })
 					.run();
-
-				// Reset layout flag after a delay to allow layout to complete
-				setTimeout(() => {
-					this.isLayoutRunning = false;
-				}, 500);
+				this.isLayoutRunning = false;
 			} catch (e) {
 				log('⚠️ Layout error: ' + e.message);
 				this.isLayoutRunning = false;
 			}
 		}, 100);
+	}
+
+	resize() {
+		if (!this.cy) return;
+
+		try {
+			this.cy.resize();
+		} catch (error) {
+			log('⚠️ Resize error: ' + error.message);
+		}
 	}
 
 	getCytoscape() {

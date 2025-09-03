@@ -976,36 +976,7 @@ export class Room {
 
 	handleResizeGraph() {
 		if (this.visualization && this.visualization.isInitialized()) {
-			setTimeout(() => {
-				if (this.visualization.cy) {
-					this.visualization.cy.resize();
-
-					// Apply layout with appropriate padding after resize
-					setTimeout(() => {
-						const layoutSelect =
-							document.querySelector('#layoutSelect');
-						if (layoutSelect) {
-							const selectedLayout = layoutSelect.value;
-							const layoutOptions = {
-								name: selectedLayout,
-								animate: false,
-							};
-
-							// Add padding for specific layouts
-							if (selectedLayout === 'circle') {
-								layoutOptions.padding = 100;
-							} else if (selectedLayout === 'cose') {
-								layoutOptions.padding = 150;
-							}
-
-							this.visualization.cy.layout(layoutOptions).run();
-						} else {
-							// Fallback to just fitting if no layout selector found
-							this.visualization.cy.fit();
-						}
-					}, 50);
-				}
-			}, 100);
+			this.visualization.resize();
 		}
 	}
 
