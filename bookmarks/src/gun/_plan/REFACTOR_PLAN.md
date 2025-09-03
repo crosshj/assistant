@@ -13,26 +13,24 @@
     -   **Debug**: `testIsolatedInstance`, `debugNodeData`, `testIsolatedPropsFetch`
     -   **Utility**: `cleanNodeData`, `cleanEdgeData`
 
-### **Service Dependencies (Critical Path)**
+### **Current Architecture (Simplified)**
 
 ```
 gun.js (main app)
-├── StateManager (manages network, room, auth state)
-├── EventCoordinator (coordinates all services)
-├── GunConnection (manages GunDB instance and peers)
-├── AuthManager (handles user authentication)
-├── RoomManager (manages room operations)
-├── GraphOperations (handles node/edge CRUD)
-├── DataSync (manages data synchronization)
+├── AppController (manages Gun instances and coordinates operations)
+├── handlersConnection.js (handles connection logic)
+├── RoomController (handles room operations)
+├── HeaderController (handles header operations)
+├── ActivityController (handles activity log)
 └── GunDBWrapper (wraps GunDB operations)
 ```
 
-### **Event Flow Complexity**
+### **Event Flow (Simplified)**
 
 -   **DOM events**: `ui:connect`, `ui:disconnect`, `ui:joinRoom`
 -   **Custom events**: `graph:requestProps`, `graph:propsLoaded`
--   **Service events**: `connectionStatusChanged`, `roomStatusChanged`
--   **State events**: `stateChanged` broadcast to DOM
+-   **App events**: `app:init`, `network:infoRequest`
+-   **Direct controller communication** via events
 
 ## Phase 1: Controller Architecture Strategy
 
@@ -54,28 +52,19 @@ gun.js (main app)
 
 **Current Problem**:
 
--   **Event logic scattered** throughout services and components
--   **Service responsibilities mixed** - data operations + event coordination
--   **Complex event flow** - UI → Component → Service → EventCoordinator → StateManager
 -   **gunWrapper.js** - 1150 lines with mixed responsibilities
+-   **Debug/test methods** cluttering the codebase
+-   **Utility methods** mixed with core functionality
 
-**Solution**: Create dedicated controllers for each major UI component
+**Solution**: Clean up gunWrapper.js by removing debug methods and extracting utilities
 
-**Implementation Order** (most complex to simplest):
+**Implementation Order**:
 
-1. **RoomController** - handles visualization, room state, graph operations
-2. **HeaderController** - handles network, auth, room selection
-3. **ActivityController** - handles activity log updates
-4. **ConnectionController** - handles peer connection events
+1. **Remove debug/test methods** - Clean up the codebase
+2. **Extract utility methods** - Move to `_lib/utils.js`
+3. **Test functionality** - Ensure everything still works
 
-**Why This Order**:
-
--   **RoomController first** - most complex with visualization logic
--   **HeaderController second** - network and auth coordination
--   **ActivityController third** - simpler log management
--   **ConnectionController last** - peer-specific events
-
-**Action**: Implement one controller at a time, test thoroughly before moving to next
+**Action**: Start with removing debug methods, then extract utilities
 
 ## **✅ PHASE 1 COMPLETED: Controller Architecture Implementation**
 
@@ -106,6 +95,14 @@ gun.js (main app)
 -   ✅ **No Service Dependencies** - Follows preferred pattern of listening to DOM events only
 -   ✅ **Pure UI Component** - Activity component has zero controller knowledge or event binding
 
+### **✅ COMPLETED: AppController Architecture**
+
+-   ✅ **AppController Created** - Single point of GunDB access through event-driven architecture
+-   ✅ **ConnectionService Eliminated** - All connection logic moved to `handlersConnection.js`
+-   ✅ **Single GunDB Instance** - AppController owns `rawGun` and `gunDBWrapper` instances
+-   ✅ **Event-Driven GunDB Access** - All GunDB operations go through events
+-   ✅ **Clean Separation** - AppController coordinates, handlersConnection manages connection logic
+
 **Critical Controller Design Principles (ESTABLISHED):**
 
 -   ✅ **Controllers are event wiring hubs** - Connect DOM events to service calls
@@ -134,45 +131,35 @@ User → Room component → Direct calls → RoomController → Service calls �
 -   ❌ `this.room.updateNodeForm()` direct calls
 -   ❌ `this.room.updateEdgeForm()` direct calls
 -   ❌ Sync service direct visualization manipulation
-
-**Next Phase:**
-
--   ✅ **RoomController (COMPLETED)** - extract event handling and business logic from Room.js
--   ✅ **HeaderController (COMPLETED)** - move header event logic from Header.js
--   ✅ **ActivityController (COMPLETED)** - extract event handling and business logic from Activity.js
--   **ConnectionController** - move connection event logic from Connection.js
--   **Eliminate StateManager** - controllers manage their own state instead of centralized state
--   **Eliminate EventCoordinator** - controllers listen to events directly from services
--   **Eliminate PropsManager** - move props handling logic to RoomController/UI components
--   **Simplify gun.js** - remove dependency injection and setConnection calls
--   **Prepare for ApplicationController** - ensure controllers can work with event-driven GunDB access
--   **Test controller integration** - ensure all functionality works through controllers
+-   ❌ ConnectionService dependency
+-   ❌ Multiple GunDB instances
+-   ❌ StateManager dependency
+-   ❌ EventCoordinator dependency
+-   ❌ PropsManager dependency
 
 ## **Current Status: Ready for Phase 2**
 
-**Phase 1 is complete** with solid controller architecture established. The foundation is ready for the next phase of refactoring.
+**Phase 1 is complete** with solid controller architecture and AppController established. The foundation is ready for the next phase of refactoring.
 
 **Immediate Next Steps:**
 
-1. **Create ApplicationController** - Single GunDB access point via events
-2. **Break down gunWrapper.js** - Remove debug methods, extract utilities
-3. **Consolidate services** - Move to single ServiceController
-4. **Test and validate** - Ensure all functionality works through new architecture
+1. **Break down gunWrapper.js** - Remove debug methods, extract utilities
+2. **Test and validate** - Ensure all functionality works after cleanup
 
 ---
 
-## **Phase 2: gunWrapper and Services Refactoring**
+## **Phase 2: gunWrapper Cleanup**
 
 **See separate document**: [`PHASE2_PLAN.md`](./PHASE2_PLAN.md)
 
-**Overview**: Break down the monolithic gunWrapper.js (1150 lines) into focused, maintainable service classes while preserving all functionality.
+**Overview**: Clean up the monolithic gunWrapper.js (1150 lines) by removing debug methods and extracting utilities.
 
 **Key Goals**:
 
--   Extract gunWrapper methods by dependency level
--   Create ServiceController for all backend operations
--   Simplify event system (remove EventCoordinator/StateManager)
--   Maintain exact functionality during refactoring
+-   Remove debug/test methods from gunWrapper.js
+-   Extract utility methods to `_lib/utils.js`
+-   Reduce gunWrapper.js from 1150 lines to <200 lines
+-   Maintain exact functionality during cleanup
 
 ---
 
@@ -201,12 +188,12 @@ src/gun/
 4. **App-scoped authentication** instead of user-scoped
 5. **Links-as-nodes approach** for content relationships
 
-**Note**: Phase 2 is about changing the user experience and layout. Phase 1 is about reorganizing the current functionality without changing how it works or looks.
+**Note**: Phase 3 is about changing the user experience and layout. Phase 1 is about reorganizing the current functionality without changing how it works or looks.
 
 ## Why This Order?
 
-1. **Exact replication first** - reorganize without changing functionality
-2. **Cleanup second** - remove architectural debt while maintaining behavior
+1. **Controller architecture first** - establish clean separation of concerns
+2. **gunWrapper cleanup second** - remove debug methods and extract utilities
 3. **Test foundation** - ensure basic operations work exactly the same
 4. **Then migrate** - build new architecture on clean foundation
 5. **Reduce risk** - smaller, testable changes with no user-facing impact
@@ -220,36 +207,77 @@ src/gun/
 -   **Interaction testing** - all current user interactions work identically
 -   **Performance testing** - no performance regression
 
+## **PRIORITY: Prevent Duplicate Operations**
+
+**CRITICAL ISSUE**: The current system shows duplicate operations in activity logs:
+
+```
+[17:49:04.829] ✅ Unsubscribed from room data
+[17:49:04.830] ✅ Subscribed to room data
+[17:49:04.830] 🔄 Setting up data handlers for room data sync
+[17:49:04.836] 🗑️ Node ee2dcd99... received null data - removing from graph
+[17:49:04.836] 🗑️ Node eec47a85... received null data - removing from graph
+[17:49:04.837] 🗑️ Edge 1dc29527... received null data - removing from graph
+[17:49:04.837] 🗑️ Edge 881dcfae... received null data - removing from graph
+[17:49:04.837] 📊 Edge synced: 8bb830ea... (39b90a74... → 5ef017ea...) [unnamed]
+[17:49:04.838] 📊 Edge synced: b5172566... (39b90a74... → 5ef017ea...) [unnamed]
+[17:49:04.838] 📊 Edge synced: d662eb67... (5ef017ea... → 39b90a74...) [unnamed]
+[17:49:04.840] ✅ Data handlers set up successfully
+[17:49:07.391] ✅ Unsubscribed from room data  ← DUPLICATE
+[17:49:07.392] ✅ Subscribed to room data      ← DUPLICATE
+[17:49:07.392] 🔄 Setting up data handlers...  ← DUPLICATE
+[17:49:07.398] 🗑️ Node ee2dcd99... received... ← DUPLICATE
+[17:49:07.399] 🗑️ Node eec47a85... received... ← DUPLICATE
+[17:49:07.399] 🗑️ Edge 1dc29527... received... ← DUPLICATE
+[17:49:07.399] 🗑️ Edge 881dcfae... received... ← DUPLICATE
+[17:49:07.400] 📊 Edge synced: 8bb830ea...     ← DUPLICATE
+[17:49:07.400] 📊 Edge synced: b5172566...     ← DUPLICATE
+[17:49:07.401] 📊 Edge synced: d662eb67...     ← DUPLICATE
+[17:49:07.402] ✅ Data handlers set up...      ← DUPLICATE
+```
+
+**Root Cause**: Multiple event listeners or handlers are triggering the same data sync operations.
+
+**Priority Actions**:
+
+1. **Audit event listeners** - Ensure room data sync only happens once per room change
+2. **Add operation deduplication** - Prevent duplicate subscriptions/unsubscriptions
+3. **Implement state tracking** - Track if data handlers are already set up for a room
+4. **Add operation guards** - Check if operation is already in progress before starting
+
+**Success Criteria**:
+
+-   ✅ Each room change triggers data sync operations exactly once
+-   ✅ No duplicate subscriptions/unsubscriptions in activity log
+-   ✅ No duplicate node/edge sync operations
+-   ✅ Clean, non-repetitive activity logs
+
 ## Next Steps
 
-### **Phase 2: gunWrapper and Services Refactoring (CURRENT FOCUS)**
+### **Phase 2: gunWrapper Cleanup (CURRENT FOCUS)**
 
 **Status**: Phase 1 complete, ready to start Phase 2
 
 **Immediate Actions**:
 
-1. **Create ApplicationController** - Single GunDB access point via events
+1. **Remove debug/test methods** from gunWrapper.js:
 
-    - Centralize all GunDB operations through event-driven architecture
-    - Controllers use events instead of direct gunWrapper access
-    - Foundation for gunWrapper refactoring
+    - Remove testIsolatedInstance, debugNodeData, testIsolatedPropsFetch, etc.
+    - Clean up the codebase by removing development-only code
 
-2. **Break down gunWrapper.js** (1150 lines → <200 lines):
+2. **Extract utility methods** to \_lib/utils.js:
 
-    - **Remove**: Debug/test methods (testIsolatedInstance, debugNodeData, etc.)
-    - **Extract**: Pure utility methods to \_lib/utils.js
-    - **Keep**: Core CRUD, Props Management, Network Operations
+    - Move cleanNodeData, cleanEdgeData, extractCleanProps, etc.
+    - Keep gunWrapper.js focused on core GunDB operations
 
-3. **Consolidate Services** - Move to single ServiceController:
+3. **Test and Validate** - Ensure all functionality works after cleanup:
 
-    - CRUD operations
-    - Auth operations
-    - Room management
-    - Network operations
+    - Test node creation/retrieval
+    - Test auth functionality
+    - Test room operations
+    - Test network connections
 
-4. **Test and Validate** - Ensure all functionality works through new architecture
-
-### **Future: Phase 3 - App-Scoped Migration**
+### **Future: Phase 3 - Document-Centric Migration**
 
 **After Phase 2 is stable**:
 
@@ -258,4 +286,4 @@ src/gun/
 -   Separate namespaces: `gun.user().get('nodes')` and `gun.user().get('edges')`
 -   Content-based relationship discovery
 
-This approach ensures the refactor goes smoothly by establishing clean separation of concerns before tackling the complex gunWrapper refactoring.
+This approach ensures the refactor goes smoothly by establishing clean separation of concerns before tackling the complex gunWrapper cleanup.

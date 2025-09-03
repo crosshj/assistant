@@ -41,6 +41,14 @@
 ✅ **No Service Dependencies** - Follows preferred pattern of listening to DOM events only  
 ✅ **Pure UI Component** - Activity component has zero controller knowledge or event binding
 
+#### **✅ COMPLETED: AppController Architecture**
+
+✅ **AppController Created** - Single point of GunDB access through event-driven architecture  
+✅ **ConnectionService Eliminated** - All connection logic moved to `handlersConnection.js`  
+✅ **Single GunDB Instance** - AppController owns `rawGun` and `gunDBWrapper` instances  
+✅ **Event-Driven GunDB Access** - All GunDB operations go through events  
+✅ **Clean Separation** - AppController coordinates, handlersConnection manages connection logic
+
 **Critical Controller Design Principles (ESTABLISHED):**
 
 -   ✅ **Controllers are event wiring hubs** - Connect DOM events to service calls
@@ -62,6 +70,8 @@
 -   ❌ `this.room.updateNodeForm()` direct calls
 -   ❌ `this.room.updateEdgeForm()` direct calls
 -   ❌ Sync service direct visualization manipulation
+-   ❌ ConnectionService dependency
+-   ❌ Multiple GunDB instances
 
 ### **✅ RESOLVED: Architecture Issues (Phase 1 Complete)**
 
@@ -76,6 +86,13 @@
 -   ✅ **Services focus on data operations** - Controllers handle coordination
 -   ✅ **Components are pure renderers** - No business logic
 -   ✅ **Event flow simplified**: UI → Controller → Service → UI
+
+#### **✅ AppController Architecture Established**
+
+-   ✅ **Single GunDB access point** - AppController owns all Gun instances
+-   ✅ **Event-driven GunDB operations** - All GunDB access through events
+-   ✅ **ConnectionService eliminated** - Connection logic moved to handlersConnection
+-   ✅ **Clean separation of concerns** - AppController coordinates, handlers manage logic
 
 #### **🎯 NEXT TARGET: gunWrapper.js (1150 lines) - Phase 2 Refactoring**
 
@@ -414,28 +431,26 @@
 	getPropsFromVisualization();
 ```
 
-### **ServiceController Implementation**
+### **AppController Enhancement Implementation**
 
-#### **Phase 1: Basic CRUD**
+#### **Phase 1: Add Basic CRUD Operations**
 
 ```javascript
-class ServiceController {
-	constructor(gunWrapper) {
-		this.gunWrapper = gunWrapper;
-		this.currentRoom = null;
-	}
+// Add to existing AppController
+class AppController {
+	// ... existing code ...
 
-	// Basic CRUD - call gunWrapper methods
+	// Basic CRUD - delegate to gunWrapper
 	async createNode(room, nodeData) {
-		return await this.gunWrapper.upsertNode(room, nodeData);
+		return await this.gun.upsertNode(room, nodeData);
 	}
 
 	async getNode(room, nodeId) {
-		return await this.gunWrapper.getNode(room, nodeId);
+		return await this.gun.getNode(room, nodeId);
 	}
 
 	async updateNode(room, nodeId, nodeData) {
-		return await this.gunWrapper.upsertNode(room, {
+		return await this.gun.upsertNode(room, {
 			...nodeData,
 			id: nodeId,
 		});
@@ -443,28 +458,22 @@ class ServiceController {
 
 	async deleteNode(room, nodeId) {
 		// Implement delete logic
-		return await this.gunWrapper.deleteNode(room, nodeId);
+		return await this.gun.deleteNode(room, nodeId);
 	}
 }
 ```
 
-#### **Phase 2: Add Auth**
+#### **Phase 2: Add Auth Operations**
 
 ```javascript
-class ServiceController {
+// Add to existing AppController
+class AppController {
 	// ... existing code ...
 
-	constructor(gunWrapper, connection) {
-		this.gunWrapper = gunWrapper;
-		this.connection = connection;
-		this.currentRoom = null;
-		this.currentUser = null;
-	}
-
 	async createUser(alias, password) {
-		// Move logic from AuthManager
+		// Delegate to existing auth handlers
 		return new Promise((resolve, reject) => {
-			this.connection.user.create(alias, password, (ack) => {
+			this.user.create(alias, password, (ack) => {
 				if (ack.err) reject(ack.err);
 				else resolve(alias);
 			});
@@ -472,9 +481,9 @@ class ServiceController {
 	}
 
 	async loginUser(alias, password) {
-		// Move logic from AuthManager
+		// Delegate to existing auth handlers
 		return new Promise((resolve, reject) => {
-			this.connection.user.auth(alias, password, ({ err }) => {
+			this.user.auth(alias, password, ({ err }) => {
 				if (err) reject(err);
 				else {
 					this.currentUser = alias;
@@ -489,18 +498,19 @@ class ServiceController {
 #### **Phase 3: Add Room Management**
 
 ```javascript
-class ServiceController {
+// Add to existing AppController
+class AppController {
 	// ... existing code ...
 
 	async joinRoom(roomName) {
-		// Move logic from RoomManager
+		// Delegate to existing room handlers
 		this.currentRoom = roomName;
-		this.graphRoot = this.connection.gun.get('graphs').get(roomName);
+		this.graphRoot = this.rawGun.get('graphs').get(roomName);
 		return true;
 	}
 
 	async leaveRoom() {
-		// Move logic from RoomManager
+		// Delegate to existing room handlers
 		this.currentRoom = null;
 		this.graphRoot = null;
 		return true;
@@ -519,7 +529,7 @@ UI Event → EventCoordinator → Service → StateManager → DOM Event → UI 
 #### **New Event Flow**:
 
 ```
-UI Event → Controller → ServiceController → Direct UI Update
+UI Event → Controller → AppController → Direct UI Update
 ```
 
 #### **Implementation**:
@@ -535,7 +545,7 @@ document.addEventListener('ui:createNode', (e) => {
 
 // After (simple):
 document.addEventListener('ui:createNode', async (e) => {
-	const result = await this.serviceController.createNode(room, e.detail);
+	const result = await this.appController.createNode(room, e.detail);
 	if (result) {
 		// Update UI directly
 		this.updateNodeDisplay(result);
@@ -565,12 +575,14 @@ const node = await wrapper.getNode('public', 'test-node');
 console.log('Node retrieved:', node);
 ```
 
-### **Test 2: ServiceController CRUD**
+### **Test 2: AppController CRUD**
 
 ```javascript
 // Test in browser console
-const service = new ServiceController(wrapper);
-const result = await service.createNode('public', { label: 'Test', props: {} });
+const result = await appController.createNode('public', {
+	label: 'Test',
+	props: {},
+});
 console.log('Node created:', result);
 ```
 
@@ -602,7 +614,7 @@ document.dispatchEvent(
 -   Test individual methods to identify issue
 -   Fix method in place before continuing
 
-### **If ServiceController breaks**:
+### **If AppController breaks**:
 
 -   Comment out broken methods
 -   Keep old services running
@@ -637,8 +649,8 @@ document.dispatchEvent(
 
 ### **Ready for Phase 2 (Document-Centric) When**:
 
--   ✅ **gunWrapper is refactored** into focused service classes
--   ✅ **Controller-service communication** is clean and stable
+-   ✅ **gunWrapper is refactored** into focused methods
+-   ✅ **Controller-AppController communication** is clean and stable
 -   ✅ **All current functionality** works with new architecture
 -   ✅ **Foundation is solid** for major UI/UX changes
 
@@ -894,11 +906,11 @@ console.log('Node created:', result);
 ### **Phase 2 Success Criteria**
 
 -   ✅ **gunWrapper.js** < 200 lines (utility methods only)
--   ✅ **ServiceController** handles all CRUD operations
+-   ✅ **AppController** handles all CRUD operations
 -   ✅ **Basic functionality** works (create/read nodes, auth, connection)
 -   ✅ **No complex event coordination**
 -   ✅ **Controllers manage own state**
--   ✅ **Clean architecture** with single ServiceController
+-   ✅ **Clean architecture** with single AppController
 -   ✅ **Simple event flow** between controllers
 -   ✅ **No StateManager** dependency
 -   ✅ **All tests pass**

@@ -1127,7 +1127,8 @@ export class Room {
 				nodePropsField.placeholder = 'Loading props...';
 				nodePropsField.disabled = true;
 			} else {
-				nodePropsField.placeholder = 'Props (JSON object)';
+				nodePropsField.placeholder =
+					'{"url":"https://example.com","tags":["link"],"note":"..."}';
 				nodePropsField.disabled = false;
 			}
 		}
@@ -1139,7 +1140,7 @@ export class Room {
 				edgePropsField.placeholder = 'Loading props...';
 				edgePropsField.disabled = true;
 			} else {
-				edgePropsField.placeholder = 'Props (JSON object)';
+				edgePropsField.placeholder = '{"weight":1}';
 				edgePropsField.disabled = false;
 			}
 		}
@@ -1151,6 +1152,15 @@ export class Room {
 
 		// Show loading spinner
 		this.showLoading(true);
+	}
+
+	clearPropsLoading() {
+		// Hide loading spinner
+		this.showLoading(false);
+
+		// Clear both node and edge props fields
+		this.clearPropsField('node');
+		this.clearPropsField('edge');
 	}
 
 	updatePropsField(elementType, props) {

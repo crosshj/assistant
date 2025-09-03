@@ -167,10 +167,22 @@ export class GraphVisualization {
 			this.handleSelection(e);
 		});
 
+		// Handle background tap to clear selection
+		this.cy.on('tap', (e) => {
+			// If nothing is selected (background tap), clear edit forms
+			if (e.target === this.cy) {
+				this.handleClearSelection();
+			}
+		});
+
 		// Handle deselection to clear selection order
 		this.cy.on('unselect', 'node', () => {
 			// Clear selection order when nodes are deselected
 			this.selectionOrder = [];
+			// Check if nothing is selected and clear forms
+			if (this.cy.elements(':selected').length === 0) {
+				this.handleClearSelection();
+			}
 		});
 
 		// Add double-click to center on node
@@ -213,6 +225,32 @@ export class GraphVisualization {
 				this.cy.layout(layoutOptions).run();
 			}
 		});
+	}
+
+	// Handle clearing selection and edit forms
+	handleClearSelection() {
+		// Clear all form fields
+		this.clearNewNodeForm();
+		this.clearEdgeForm();
+
+		// Clear edit form fields (but props will be handled by clearPropsField)
+		$('nodeId').value = '';
+		$('nodeLabel').value = '';
+		$('edgeId').value = '';
+		$('edgeFrom').value = '';
+		$('edgeTo').value = '';
+		$('edgeLabel').value = '';
+
+		// Dispatch clear selection event
+		document.dispatchEvent(
+			new CustomEvent('graph:select', {
+				detail: {
+					elementId: null,
+					elementType: null,
+					room: this.currentRoom,
+				},
+			})
+		);
 	}
 
 	// Separate method to handle selection with proper error handling

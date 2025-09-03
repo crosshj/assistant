@@ -279,7 +279,14 @@ export class RoomController {
 
 	// Props UI handling methods (delegated to Room UI component)
 	handleSelectionChanged(detail) {
-		const { elementType } = detail;
+		const { elementId, elementType } = detail;
+
+		// If nothing is selected, clear the props loading state
+		if (!elementId || !elementType) {
+			this.ui.clearPropsLoading();
+			return;
+		}
+
 		this.ui.startPropsLoading(elementType);
 	}
 

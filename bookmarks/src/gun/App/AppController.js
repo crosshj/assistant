@@ -1,9 +1,23 @@
-import { addEventListener } from '../_lib/utils.js';
+import {
+	addEventListener,
+	log,
+	tryJSONParse,
+	dispatchEvent,
+} from '../_lib/utils.js';
 import { getHandlers as getConnectionHandlers } from './handlersConnection.js';
 import { getHandlers as getRoomHandlers } from './handlersRoom.js';
 import { getHandlers as getGraphWriteHandlers } from './handlersGraphWrite.js';
 import { getHandlers as getGraphReadHandlers } from './handlersGraphRead.js';
 import { GunDBWrapper } from '../_lib/gunWrapper.js';
+import Gun from 'gun';
+import 'gun/sea';
+import 'gun/axe';
+
+const defaultPeers = [
+	'https://gun-us.herokuapp.com/gun',
+	'https://gun-eu.herokuapp.com/gun',
+	'https://gunjs.herokuapp.com/gun',
+];
 
 /**
  * AppController
@@ -12,8 +26,23 @@ import { GunDBWrapper } from '../_lib/gunWrapper.js';
  */
 export class AppController {
 	constructor() {
-		// Initialize Gun wrapper
-		// this.gun = new GunDBWrapper();
+		// Default peers available everywhere
+		this.defaultPeers = defaultPeers;
+
+		// Initialize Gun instances - AppController now owns both
+		this.rawGun = Gun({
+			peers: this.defaultPeers,
+			localStorage: true,
+			multicast: true,
+			webrtc: true,
+			retry: 3,
+			timeout: 5000,
+		});
+
+		this.gun = new GunDBWrapper({ gun: this.rawGun });
+
+		// Initialize user for authentication
+		this.user = this.rawGun.user();
 
 		// Shared room state for handlers
 		this.currentRoom = null;
@@ -31,25 +60,15 @@ export class AppController {
 	}
 
 	/**
-	 * TEMPORARY: Inject GunDB instance from ConnectionService
-	 * TODO: Remove this method once AppController properly manages its own GunDB instance
+	 * Get Gun instances for external services to use
+	 * This allows services to access the instances owned by AppController
+	 * TEMPORARY: This is a hack to allow connection service to access the instances, remove this when connection service is refactored
 	 */
-	stupidDumbRemoveMe(connection) {
-		this.gun = new GunDBWrapper(connection);
-	}
-
-	init() {
-		// Initialize GunDB connection
-		this.gun.init();
-
-		// Trigger auto-login
-		this.gun.autoLogin();
-
-		// Start connection monitoring
-		// TODO: Move from gun.js setTimeout logic
-		setTimeout(() => {
-			this.gun.startMonitoring();
-		}, 2000); // 2 second delay to show "Connecting..." state
+	getGunInstances() {
+		return {
+			rawGun: this.rawGun,
+			gunDBWrapper: this.gun,
+		};
 	}
 
 	setupEventListeners() {
@@ -62,15 +81,16 @@ export class AppController {
 		const roomJoin = (event) => {
 			room.join(event, graphRead.subscribe);
 		};
-
 		const roomLeave = (event) => {
 			room.leave(event, graphRead.unsubscribe);
 		};
+
 		// App initialization event
 		addEventListener('app:init', () => {
-			console.log('TODO: app init here instead');
-			// TODO: Initialize AppController
-			// this.init();
+			connection.autoLogin();
+			setTimeout(() => {
+				connection.startMonitoring();
+			}, 2000); // 2 second delay to show "Connecting..." state
 		});
 
 		// Connection events
@@ -85,23 +105,6 @@ export class AppController {
 		// Room events
 		addEventListener('ui:joinRoom', roomJoin);
 		addEventListener('ui:leaveRoom', roomLeave);
-		addEventListener('room:exportRequested', room.export);
-		addEventListener('room:importRequested', room.import);
-
-		// Graph write events
-		addEventListener('graph:nodeUpsert', graphWrite.nodeUpsert);
-		addEventListener('graph:nodeDelete', graphWrite.nodeDelete);
-		addEventListener('graph:edgeUpsert', graphWrite.edgeUpsert);
-		addEventListener('graph:edgeDelete', graphWrite.edgeDelete);
-
-		// Graph read events
-		addEventListener('graph:select', graphRead.select);
-		addEventListener('ui:joinRoom', (e) =>
-			roomJoin(e, graphRead.subscribe)
-		);
-		addEventListener('ui:leaveRoom', (e) =>
-			roomLeave(e, graphRead.unsubscribe)
-		);
 		addEventListener('room:exportRequested', room.export);
 		addEventListener('room:importRequested', room.import);
 
