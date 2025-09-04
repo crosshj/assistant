@@ -214,15 +214,19 @@ export function getHandlers(appController) {
 	}
 
 	function isInRoom() {
-		// This is a placeholder - the room service should update this
-		// For now, return false to allow auto-join logic to work
-		return false;
+		// Check if we're currently in a room
+		return !!appController.currentRoom;
 	}
 
 	function handleAutoJoinFromHash() {
 		const hash = window.location.hash;
 		if (hash && hash.length > 1) {
 			const roomName = hash.substring(1); // Remove the # character
+
+			// Don't join if we're already in this room
+			if (appController.currentRoom === roomName) {
+				return;
+			}
 
 			// Small delay to ensure everything is ready
 			setTimeout(() => {

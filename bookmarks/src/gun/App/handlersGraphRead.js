@@ -72,17 +72,13 @@ export function getHandlers(appController) {
 		dispatchEvent('sync:clearGraph');
 
 		try {
-			// First, establish the subscription structure (but don't start syncing yet)
+			// subscribe to nodes and edges
+			appController.isSubscribed = true;
 			appController.nodesChain = graphRoot.get('nodes').map();
 			appController.edgesChain = graphRoot.get('edges').map();
-
-			// Mark as subscribed BEFORE setting up the data handlers
-			appController.isSubscribed = true;
+			appController.nodesChain.on(handleNodeUpdate);
+			appController.edgesChain.on(handleEdgeUpdate);
 			log('✅ Subscribed to room data');
-
-			// Set up data handlers immediately
-			setupDataHandlers();
-
 			return true;
 		} catch (error) {
 			log('❌ Error setting up room subscriptions: ' + error.message);
@@ -106,119 +102,105 @@ export function getHandlers(appController) {
 		log('✅ Unsubscribed from room data');
 	}
 
-	function setupDataHandlers() {
-		if (!appController.isSubscribed) return;
-
-		log('🔄 Setting up data handlers for room data sync');
-
+	function handleNodeUpdate(data, id) {
 		try {
-			// Subscribe to nodes
-			appController.nodesChain.on((data, id) => {
-				try {
-					// Check if props loading is in progress - skip updates if so
-					if (appController._propsLoadingFlag) {
-						return;
-					}
+			// Check if props loading is in progress - skip updates if so
+			if (appController._propsLoadingFlag) {
+				return;
+			}
 
-					const shortId = id.slice(0, 8);
+			const shortId = id.slice(0, 8);
 
-					if (!data) {
-						log(
-							`🗑️ Node ${shortId}... received null data - removing from graph`
-						);
-						// Dispatch removeNode event for proper cleanup
-						dispatchEvent('sync:removeNode', { id });
-						return;
-					}
+			if (!data) {
+				log(
+					`🗑️ Node ${shortId}... received null data - removing from graph`
+				);
+				// Dispatch removeNode event for proper cleanup
+				dispatchEvent('sync:removeNode', { id });
+				return;
+			}
 
-					// Check if data is actually empty (GunDB sometimes sends empty objects)
-					if (Object.keys(data).length === 0) {
-						log(
-							`🗑️ Node ${shortId}... received empty data object - removing from graph`
-						);
-						// Dispatch removeNode event for proper cleanup
-						dispatchEvent('sync:removeNode', { id });
-						return;
-					}
+			// Check if data is actually empty (GunDB sometimes sends empty objects)
+			if (Object.keys(data).length === 0) {
+				log(
+					`🗑️ Node ${shortId}... received empty data object - removing from graph`
+				);
+				// Dispatch removeNode event for proper cleanup
+				dispatchEvent('sync:removeNode', { id });
+				return;
+			}
 
-					// Use utility function to clean the node data
-					const cleanData = cleanNodeData(data) || data;
+			// Use utility function to clean the node data
+			const cleanData = cleanNodeData(data) || data;
 
-					dispatchEvent('sync:addNode', { data: cleanData, id });
-				} catch (error) {
-					const shortId = id.slice(0, 8);
-					log(
-						'❌ Error syncing node: ' +
-							error.message +
-							` (ID: ${shortId}...)`
-					);
-				}
-			});
-
-			// Subscribe to edges
-			appController.edgesChain.on((data, id) => {
-				try {
-					// Check if props loading is in progress - skip updates if so
-					if (appController._propsLoadingFlag) {
-						return;
-					}
-
-					const shortId = id.slice(0, 8);
-
-					if (!data) {
-						log(
-							`🗑️ Edge ${shortId}... received null data - removing from graph`
-						);
-						// Dispatch removeEdge event for proper cleanup
-						dispatchEvent('sync:removeEdge', { id });
-						return;
-					}
-
-					// Check if data is actually empty (GunDB sometimes sends empty objects)
-					if (Object.keys(data).length === 0) {
-						log(
-							`🗑️ Edge ${shortId}... received empty data object - removing from graph`
-						);
-						// Dispatch removeEdge event for proper cleanup
-						dispatchEvent('sync:removeEdge', { id });
-						return;
-					}
-
-					// Check if source and target nodes exist before creating edge
-					const sourceId = data.from || data.source;
-					const targetId = data.to || data.target;
-
-					if (sourceId && targetId) {
-						// Truncate IDs for display
-						const shortId = id.slice(0, 8);
-						const shortSource = sourceId.slice(0, 8);
-						const shortTarget = targetId.slice(0, 8);
-						const label = data.label || 'unnamed';
-
-						log(
-							`📊 Edge synced: ${shortId}... (${shortSource}... → ${shortTarget}...) [${label}]`
-						);
-
-						// Use utility function to clean the edge data
-						const cleanData = cleanEdgeData(data) || data;
-
-						// Create edge immediately - placeholder nodes will be created if needed
-						dispatchEvent('sync:addEdge', { data: cleanData, id });
-					} else {
-						// Edge data is missing source/target info
-						const shortId = id.slice(0, 8);
-						log(
-							`⚠️ Edge ${shortId}... skipped - missing source or target information`
-						);
-					}
-				} catch (error) {
-					log('❌ Error syncing edge: ' + error.message);
-				}
-			});
-
-			log('✅ Data handlers set up successfully');
+			dispatchEvent('sync:addNode', { data: cleanData, id });
 		} catch (error) {
-			log('❌ Error setting up data handlers: ' + error.message);
+			const shortId = id.slice(0, 8);
+			log(
+				'❌ Error syncing node: ' +
+					error.message +
+					` (ID: ${shortId}...)`
+			);
+		}
+	}
+
+	function handleEdgeUpdate(data, id) {
+		try {
+			// Check if props loading is in progress - skip updates if so
+			if (appController._propsLoadingFlag) {
+				return;
+			}
+
+			const shortId = id.slice(0, 8);
+
+			if (!data) {
+				log(
+					`🗑️ Edge ${shortId}... received null data - removing from graph`
+				);
+				// Dispatch removeEdge event for proper cleanup
+				dispatchEvent('sync:removeEdge', { id });
+				return;
+			}
+
+			// Check if data is actually empty (GunDB sometimes sends empty objects)
+			if (Object.keys(data).length === 0) {
+				log(
+					`🗑️ Edge ${shortId}... received empty data object - removing from graph`
+				);
+				// Dispatch removeEdge event for proper cleanup
+				dispatchEvent('sync:removeEdge', { id });
+				return;
+			}
+
+			// Check if source and target nodes exist before creating edge
+			const sourceId = data.from || data.source;
+			const targetId = data.to || data.target;
+
+			if (sourceId && targetId) {
+				// Truncate IDs for display
+				const shortId = id.slice(0, 8);
+				const shortSource = sourceId.slice(0, 8);
+				const shortTarget = targetId.slice(0, 8);
+				const label = data.label || 'unnamed';
+
+				log(
+					`📊 Edge synced: ${shortId}... (${shortSource}... → ${shortTarget}...) [${label}]`
+				);
+
+				// Use utility function to clean the edge data
+				const cleanData = cleanEdgeData(data) || data;
+
+				// Create edge immediately - placeholder nodes will be created if needed
+				dispatchEvent('sync:addEdge', { data: cleanData, id });
+			} else {
+				// Edge data is missing source/target info
+				const shortId = id.slice(0, 8);
+				log(
+					`⚠️ Edge ${shortId}... skipped - missing source or target information`
+				);
+			}
+		} catch (error) {
+			log('❌ Error syncing edge: ' + error.message);
 		}
 	}
 

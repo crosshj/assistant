@@ -21,58 +21,19 @@ export function getHandlers(appController) {
 			appController.currentRoom = room;
 			appController.graphRoot = appController.gun.getGraphRoot(room);
 
-			// Return a promise that resolves when room is ready
-			return new Promise((resolve) => {
-				let joinCompleted = false;
-
-				// Gun.js operations are asynchronous, so we need to wait for the operation to complete
-				// before marking the room as joined
-				appController.graphRoot.once((data, ack) => {
-					if (!joinCompleted) {
-						joinCompleted = true;
-
-						// Room is fully ready - fire joined event for UI components
-						dispatchEvent('room:joined', {
-							room,
-							graphRoot: appController.graphRoot,
-						});
-
-						// Call the callback if provided (e.g., sync subscription)
-						if (onRoomReady) {
-							onRoomReady(event);
-						}
-
-						resolve(true);
-					}
-				});
-
-				// Fallback: If Gun.js callback doesn't fire within 1 second, assume the room is accessible
-				// This handles cases where the room might be empty or the callback doesn't fire
-				setTimeout(() => {
-					if (
-						!joinCompleted &&
-						appController.currentRoom === room &&
-						appController.graphRoot
-					) {
-						joinCompleted = true;
-
-						// Room is fully ready - fire joined event for UI components
-						dispatchEvent('room:joined', {
-							room,
-							graphRoot: appController.graphRoot,
-						});
-
-						// Call the callback if provided (e.g., sync subscription)
-						if (onRoomReady) {
-							onRoomReady(event);
-						}
-
-						resolve(true);
-					} else if (joinCompleted) {
-						// Timeout fallback skipped - callback already fired
-					}
-				}, 1000);
+			// Room is ready immediately - no need to wait for GunDB confirmation
+			// Fire joined event for UI components
+			dispatchEvent('room:joined', {
+				room,
+				graphRoot: appController.graphRoot,
 			});
+
+			// Call the callback if provided (e.g., sync subscription)
+			if (onRoomReady) {
+				onRoomReady(event);
+			}
+
+			return true;
 		},
 
 		async leave(event, onBeforeLeave) {
