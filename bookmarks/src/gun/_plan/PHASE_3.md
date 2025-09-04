@@ -102,6 +102,7 @@ This phase builds upon the architectural foundations established in:
 -   **Auto-generated graph**: Visual representation of document relationships
 -   **Search and navigation**: Full-text search across documents
 -   **Version control**: Document history and change tracking
+-   **Authorization UX**: User-friendly modals for authentication, identity creation, and login flows
 
 ## Why This Approach?
 
