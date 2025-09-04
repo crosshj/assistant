@@ -22,31 +22,6 @@ export function getHandlers(appController) {
 		appController._propsLoadingFlag = value;
 	}
 
-	function refreshData() {
-		if (!appController.graphRoot) {
-			log('⚠️ Cannot refresh: No graph root available');
-			return false;
-		}
-
-		// Dispatch event for UI to clear graph
-		dispatchEvent('sync:clearGraph');
-
-		// Re-subscribe to get fresh data
-		subscribeToRoom();
-
-		log('🔄 Refreshing room data');
-		return true;
-	}
-
-	function getSubscriptionStatus() {
-		return {
-			isSubscribed: appController.isSubscribed,
-			hasNodesChain: !!appController.nodesChain,
-			hasEdgesChain: !!appController.edgesChain,
-			hasGraphRoot: !!appController.graphRoot,
-		};
-	}
-
 	function subscribeToRoom() {
 		if (!appController.graphRoot) {
 			log('⚠️ Cannot subscribe: No graph root available');
@@ -204,90 +179,83 @@ export function getHandlers(appController) {
 		}
 	}
 
-	return {
-		async select(event) {
-			const { elementId, elementType, room } = event.detail || {};
+	async function select(event) {
+		const { elementId, elementType, room } = event.detail || {};
 
-			// Validate required parameters
-			if (!elementId || !elementType || !room) {
-				dispatchEvent('graph:propsLoaded', {
-					elementId,
-					elementType,
-					room,
-					props: null,
-					error: 'Invalid selection data',
-				});
-				return;
-			}
+		// Validate required parameters
+		if (!elementId || !elementType || !room) {
+			dispatchEvent('graph:propsLoaded', {
+				elementId,
+				elementType,
+				room,
+				props: null,
+				error: 'Invalid selection data',
+			});
+			return;
+		}
 
-			if (!appController.gun) {
-				dispatchEvent('graph:propsLoaded', {
-					elementId,
-					elementType,
-					room,
-					props: null,
-					error: 'Service not initialized',
-				});
-				return;
-			}
+		if (!appController.gun) {
+			dispatchEvent('graph:propsLoaded', {
+				elementId,
+				elementType,
+				room,
+				props: null,
+				error: 'Service not initialized',
+			});
+			return;
+		}
 
-			// Prevent sync noise during props read
-			setPropsLoadingFlag(true);
-			pauseDataSync();
+		// Prevent sync noise during props read
+		setPropsLoadingFlag(true);
+		pauseDataSync();
 
+		try {
+			let props;
 			try {
-				let props;
-				try {
-					if (elementType === 'node') {
-						props = await appController.gun.getNodeProps(
-							room,
-							elementId
-						);
-					} else if (elementType === 'edge') {
-						props = await appController.gun.getEdgeProps(
-							room,
-							elementId
-						);
-					} else {
-						throw new Error(`Unknown element type: ${elementType}`);
-					}
-				} catch (innerErr) {
-					dispatchEvent('graph:propsLoaded', {
-						elementId,
-						elementType,
-						props: { error: 'Error fetching props' },
-						error: 'Error fetching props',
-					});
-					return;
+				if (elementType === 'node') {
+					props = await appController.gun.getNodeProps(
+						room,
+						elementId
+					);
+				} else if (elementType === 'edge') {
+					props = await appController.gun.getEdgeProps(
+						room,
+						elementId
+					);
+				} else {
+					throw new Error(`Unknown element type: ${elementType}`);
 				}
-
+			} catch (innerErr) {
 				dispatchEvent('graph:propsLoaded', {
 					elementId,
 					elementType,
-					props,
-					room,
+					props: { error: 'Error fetching props' },
+					error: 'Error fetching props',
 				});
-			} catch (error) {
-				dispatchEvent('graph:propsLoaded', {
-					elementId,
-					elementType,
-					props: {},
-					room,
-				});
-			} finally {
-				setPropsLoadingFlag(false);
-				resumeDataSync();
+				return;
 			}
-		},
 
-		subscribe(event) {
-			// Called when room is ready (via callback from room.join)
-			subscribeToRoom();
-		},
-
-		unsubscribe(event) {
-			// Called before room cleanup (via callback from room.leave)
-			unsubscribeFromRoom();
-		},
+			dispatchEvent('graph:propsLoaded', {
+				elementId,
+				elementType,
+				props,
+				room,
+			});
+		} catch (error) {
+			dispatchEvent('graph:propsLoaded', {
+				elementId,
+				elementType,
+				props: {},
+				room,
+			});
+		} finally {
+			setPropsLoadingFlag(false);
+			resumeDataSync();
+		}
+	}
+	return {
+		subscribe: subscribeToRoom,
+		unsubscribe: unsubscribeFromRoom,
+		select,
 	};
 }

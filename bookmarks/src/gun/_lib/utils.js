@@ -35,12 +35,6 @@ export const tryJSONParse = (t, d) => {
 	}
 };
 
-export const DEFAULT_PEERS = [
-	'https://gun-manhattan.herokuapp.com/gun',
-	'https://gun-us.herokuapp.com/gun',
-	'https://gun-eu.herokuapp.com/gun',
-];
-
 /**
  * Tagged template literal for HTML generation.
  * @param {TemplateStringsArray} strings
