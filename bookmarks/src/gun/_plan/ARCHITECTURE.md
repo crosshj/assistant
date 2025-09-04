@@ -2,7 +2,9 @@
 
 > **⚠️ IMPORTANT FOR AI ASSISTANTS**: This document contains specific guidance marked with "ask for guidance" or "ask about it". When you encounter these markers, you MUST ask the user for clarification rather than making assumptions or proceeding with your best guess. This is critical for maintaining code quality and architectural consistency.
 >
-> **⚠️ CHANGE SCOPE GUIDANCE**: One or two changes is good to do independently. If you think there will be many changes or you have to try multiple different approaches before getting it right, STOP and ask if this is the right way to go. Don't go crazy with tons of changes without confirming the approach first.
+> **⚠️ CHANGE SCOPE GUIDANCE**: One or two changes is good to do independently at a time. If you think there will be many changes or you have to try multiple different approaches before getting it right, STOP and ask if this is the right way to go. Don't go crazy with tons of changes without confirming the approach first.
+>
+> **⚠️ CODE STYLE GUIDANCE**: Prefer TERSE code that is not over-engineered. Stick to the established patterns and don't deviate unless there is a good reason. When you do have to deviate, ask first! Keep it simple, direct, and follow the architectural principles outlined below.
 
 ## File Structure
 
@@ -26,14 +28,32 @@ src/gun/
 └── gun.js (main app entry point)
 ```
 
-## Controller Pattern (Implemented)
+## Core Architecture Principles
 
-### Core Principles
+### Controller Pattern
+
+**Core Principles:**
 
 -   **Controller owns UI completely**: `this.ui = new Component()`
 -   **UI components are pure renderers**: No business logic, no controller knowledge
 -   **Event-driven communication**: All interactions via DOM events
 -   **Centralized event handling**: Controller binds all events in `setupEventListeners()`
+
+**Responsibilities:**
+
+-   **Controller**: Creates UI, handles all events, coordinates with AppController, calls UI methods
+-   **UI Component**: Pure rendering only, no event binding, no AppController dependencies
+-   **AppController**: Business logic, GunDB operations, emit events (uses handler modules for code organization)
+
+**Controller Size Guidelines:**
+
+-   **Controllers should be pretty skinny** - primarily event wiring and UI coordination
+-   **Exception**: AppController is allowed to be larger, but should still be relatively small since it uses handler modules for all of its business logic
+-   **If a controller is getting large or complex, consider:**
+    -   Moving business logic to AppController
+    -   Breaking down into smaller, focused controllers
+    -   Extracting complex UI logic into utility functions
+    -   Reviewing if the controller is doing too much
 
 ### Architecture Flow
 
@@ -45,82 +65,80 @@ D. External Events → DOM Events → Controller → UI
 ```
 
 **Flow Explanations:**
-
 A) When user interactions need UI coordination, validation, or transformation before reaching AppController
-
 B) When user actions can go directly to AppController without controller intervention (e.g., simple button clicks that trigger AppController methods)
-
 C) When controllers initiate actions or need to coordinate with AppController
-
 D) When external events (network changes, data updates) need to trigger UI updates
 
 **Note**: Controllers communicate with AppController via DOM events. All business logic is handled by AppController, which uses handler modules to organize its code.
 
-## Decision-Making Guidelines
+### Method Organization Principles
 
-### Flow Pattern Selection
+**Class Method Definition Guidelines:**
 
-**Prefer pattern B (User Action → AppController) when possible.** If you need or notice pattern A (User Action → Controller → AppController), ask about it to ensure it's the right approach.
+-   **Methods defined in class body should be of significance in terms of line count and complexity**
 
-### Event Creation
+**For simple methods (1-3 lines, basic passthroughs, or simple assignments):**
 
-**Use existing event patterns when possible.**
+-   Prefer inlining in constructor or initialization methods
+-   Use arrow function assignments: `this.methodName = () => this._rawGun.someMethod()`
+-   Avoid verbose class body definitions for trivial operations
+-   **If unsure whether a method is simple enough for inline, ask for guidance**
 
-### Method Organization
+**For complex methods (substantial logic, multiple operations, error handling):**
 
-**If unsure whether a method is simple enough for inline definition, ask for guidance.** The general rule is 1-3 lines should go inline, or where no significant change is needed.
+-   Define as separate methods in class body
+-   Include proper JSDoc documentation
+-   Examples: `getDetailedPeerInfo()`, `getNetworkInfo()`, `testConnection()`
+-   **Prefer that methods defined in class body are substantial blocks, not just dumb wrappers around other functions**
 
-### Controller Pattern
+**Benefits:**
 
-**All controllers should follow the `setupEventListeners()` pattern** for consistent event handling across the application.
+-   Cleaner, more readable class definitions
+-   Reduces boilerplate for simple operations
+-   Makes complex methods stand out clearly
+-   Better separation of concerns
 
-## Utils.js Anatomy
+**Example:**
 
-The `utils.js` file contains general utility functions used throughout the application:
+```javascript
+class GunDBWrapper {
+	constructor() {
+		// Simple methods - inline assignments
+		this.get = this._rawGun.get.bind(this._rawGun);
+		this.connect = () => this.reinitialize();
+		this.getPeers = () => this._rawGun.back('opt.peers') || {};
+	}
 
--   **`$()`** - DOM element selector utility (`document.getElementById`)
--   **`addEventListener()`** - Event listener utility (preferred over native addEventListener)
--   **`dispatchEvent()`** - Event dispatching utility (preferred over native dispatchEvent)
--   **`log()`** - Logging utility that fires activity log events
--   **`uuid() / generateId()`** - UUID generation utility
--   **`tryJSONParse()`** - Safe JSON parsing with fallback
--   **`html()`** - Tagged template literal for HTML generation (a dummy function that lets us syntax highlight html strings using lit)
+	// Complex method - separate definition
+	getDetailedPeerInfo() {
+		const peers = this.getPeers();
+		// ... substantial logic here
+		return detailedInfo;
+	}
+}
+```
 
-**Note**: These utilities should be used consistently across the application for event handling, logging, and DOM manipulation.
+### Decision-Making Guidelines
 
-### Responsibilities
+**Flow Pattern Selection:**
 
--   **Controller**: Creates UI, handles all events, coordinates with AppController, calls UI methods
--   **UI Component**: Pure rendering only, no event binding, no AppController dependencies
--   **AppController**: Business logic, GunDB operations, emit events (uses handler modules for code organization)
+-   **Prefer pattern B (User Action → AppController) when possible.** If you need or notice pattern A (User Action → Controller → AppController), ask about it to ensure it's the right approach.
 
-### Controller Size Warning
+**Event Creation:**
 
-**⚠️ CONTROLLER SIZE WARNING**: Controllers should be pretty skinny. A controller that has much more than just event wiring is a code smell. Controllers should primarily:
+-   **Use existing event patterns when possible.**
+-   **Before creating new events that are not found in the system already, ask for guidance.**
 
--   Bind events to UI elements
--   Coordinate between UI and AppController
--   Call UI methods to update the interface
--   Handle simple UI state management
+**Method Organization:**
 
-**Exception**: AppController is allowed to be larger, but it should still be relatively small since it uses handler modules for all of its business logic.
+-   **If unsure whether a method is simple enough for inline definition, ask for guidance.** The general rule is 1-3 lines should go inline, or where no significant change is needed.
 
-**If a controller is getting large or complex, consider:**
+**Controller Pattern:**
 
--   Moving business logic to AppController
--   Breaking down into smaller, focused controllers
--   Extracting complex UI logic into utility functions
--   Reviewing if the controller is doing too much
+-   **All controllers should follow the `setupEventListeners()` pattern** for consistent event handling across the application.
 
-### AppController Communication
-
--   Controllers communicate with AppController via DOM events
--   AppController handles all business logic and GunDB operations
--   Controllers only handle UI events and coordinate with AppController
-
-**Example**: `ActivityController` listens to generic `activity:log` DOM events from AppController, rather than binding directly to specific AppController methods.
-
-## Implementation Requirements
+## Implementation Guidelines
 
 ### UI Event Delegation Pattern (CRITICAL - ALWAYS USE FOR Controller to UI event binding)
 
@@ -168,69 +186,46 @@ setupEventListeners() {
 -   **Events scoped to component's DOM container**
 -   **Controller owns UI completely**: `this.ui = new Component()`
 
-## Method Organization Principles
+### AppController Communication
 
-### Class Method Definition Guidelines
+-   Controllers communicate with AppController via DOM events
+-   AppController handles all business logic and GunDB operations
+-   Controllers only handle UI events and coordinate with AppController
 
-**Methods defined in class body should be of significance in terms of line count and complexity.**
+**Example**: `ActivityController` listens to generic `activity:log` DOM events from AppController, rather than binding directly to specific AppController methods.
 
-**For simple methods (1-3 lines, basic passthroughs, or simple assignments):**
+## Reference Material
 
--   Prefer inlining in constructor or initialization methods
--   Use arrow function assignments: `this.methodName = () => this._rawGun.someMethod()`
--   Avoid verbose class body definitions for trivial operations
--   **If unsure whether a method is simple enough for inline, ask for guidance**
+### Utils.js Anatomy
 
-**For complex methods (substantial logic, multiple operations, error handling):**
+The `utils.js` file contains general utility functions used throughout the application:
 
--   Define as separate methods in class body
--   Include proper JSDoc documentation
--   Examples: `getDetailedPeerInfo()`, `getNetworkInfo()`, `testConnection()`
--   **Prefer that methods defined in class body are substantial blocks, not just dumb wrappers around other functions**
+-   **`$()`** - DOM element selector utility (`document.getElementById`)
+-   **`addEventListener()`** - Event listener utility (preferred over native addEventListener)
+-   **`dispatchEvent()`** - Event dispatching utility (preferred over native dispatchEvent)
+-   **`log()`** - Logging utility that fires activity log events
+-   **`uuid() / generateId()`** - UUID generation utility
+-   **`tryJSONParse()`** - Safe JSON parsing with fallback
+-   **`html()`** - Tagged template literal for HTML generation (a dummy function that lets us syntax highlight html strings using lit)
 
-**Benefits:**
+**Note**: These utilities should be used consistently across the application for event handling, logging, and DOM manipulation.
 
--   Cleaner, more readable class definitions
--   Reduces boilerplate for simple operations
--   Makes complex methods stand out clearly
--   Better separation of concerns
-
-**Example:**
-
-```javascript
-class GunDBWrapper {
-	constructor() {
-		// Simple methods - inline assignments
-		this.get = this._rawGun.get.bind(this._rawGun);
-		this.connect = () => this.reinitialize();
-		this.getPeers = () => this._rawGun.back('opt.peers') || {};
-	}
-
-	// Complex method - separate definition
-	getDetailedPeerInfo() {
-		const peers = this.getPeers();
-		// ... substantial logic here
-		return detailedInfo;
-	}
-}
-```
-
-## Event Catalog
+### Event Catalog
 
 This section documents all events used throughout the application for reference and consistency.
 
 **⚠️ IMPORTANT**: Before creating new events that are not found in the system already, ask for guidance. Use existing event patterns when possible.
 
-### Application Events
+#### Application Events
 
 -   **`app:init`** - Application initialization event fired on startup
 
-### Authentication Events
+#### Authentication Events
 
 -   **`auth:authenticated`** - User successfully authenticated with alias
 -   **`auth:anonymous`** - User is in anonymous mode
 
-### Network Events
+#### Network Events
 
 -   **`network:connecting`** - Network connection in progress
 -   **`network:connected`** - Network successfully connected with peer count
@@ -239,7 +234,7 @@ This section documents all events used throughout the application for reference 
 -   **`network:infoResponse`** - Network information response with peer details
 -   **`networkDiscovery`** - Trigger network discovery process
 
-### Room Events
+#### Room Events
 
 -   **`room:joining`** - Room join process started
 -   **`room:joined`** - Room successfully joined with graph root
@@ -250,7 +245,7 @@ This section documents all events used throughout the application for reference 
 -   **`room:importRequested`** - Room import requested with data
 -   **`room:importCompleted`** - Room import completed with success status
 
-### UI Events
+#### UI Events
 
 -   **`ui:connect`** - Connect button clicked
 -   **`ui:disconnect`** - Disconnect button clicked
@@ -263,7 +258,7 @@ This section documents all events used throughout the application for reference 
 -   **`ui:roomPaneConnected`** - Room pane connected state
 -   **`ui:roomPaneDisconnected`** - Room pane disconnected state
 
-### Graph Sync Events
+#### Graph Sync Events
 
 -   **`sync:clearGraph`** - Clear all graph data
 -   **`sync:addNode`** - Add node to graph
@@ -271,7 +266,7 @@ This section documents all events used throughout the application for reference 
 -   **`sync:addEdge`** - Add edge to graph
 -   **`sync:removeEdge`** - Remove edge from graph
 
-### Graph Operation Events
+#### Graph Operation Events
 
 -   **`graph:nodeUpsert`** - Upsert node operation
 -   **`graph:nodeDelete`** - Delete node operation
@@ -287,11 +282,11 @@ This section documents all events used throughout the application for reference 
 -   **`graph:searchCleared`** - Search cleared
 -   **`graph:fitRequested`** - Fit graph requested
 
-### Activity Events
+#### Activity Events
 
 -   **`activity:log`** - Log message for activity display
 
-### Native DOM Events
+#### Native DOM Events
 
 -   **`click`** - Button and element clicks (UI delegation)
 -   **`input`** - Form input changes
