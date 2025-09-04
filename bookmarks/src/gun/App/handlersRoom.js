@@ -19,9 +19,7 @@ export function getHandlers(appController) {
 
 			// Set current room and get graph root
 			appController.currentRoom = room;
-			appController.graphRoot = appController.rawGun
-				.get('graphs')
-				.get(room);
+			appController.graphRoot = appController.gun.getGraphRoot(room);
 
 			// Return a promise that resolves when room is ready
 			return new Promise((resolve) => {
@@ -109,9 +107,9 @@ export function getHandlers(appController) {
 			const edges = {};
 
 			return new Promise((resolve) => {
-				const graphRoot = appController.rawGun.get('graphs').get(room);
-				const nodesChain = graphRoot.get('nodes').map();
-				const edgesChain = graphRoot.get('edges').map();
+				const graphRoot = appController.gun.getGraphRoot(room);
+				const nodesChain = appController.gun.getNodesChain(room).map();
+				const edgesChain = appController.gun.getEdgesChain(room).map();
 
 				let nodeCount = 0;
 				let edgeCount = 0;

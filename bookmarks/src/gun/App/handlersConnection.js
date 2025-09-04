@@ -1,5 +1,5 @@
 import { dispatchEvent, log, uuid, tryJSONParse } from '../_lib/utils.js';
-import { GunDBWrapper } from '../_lib/gunWrapper.js';
+import { DEFAULT_PEERS } from '../_lib/gunWrapper.js';
 
 /**
  * Connection handlers - handles all connection-related events
@@ -7,70 +7,16 @@ import { GunDBWrapper } from '../_lib/gunWrapper.js';
  * Returns bound methods for AppController to use
  */
 export function getHandlers(appController) {
-	// Internal methods (not exported as events)
-	function getDefaultPeers() {
-		// TODO: Move from services/connection.js getDefaultPeers()
-	}
-
-	function createIsolatedInstance() {
-		// TODO: Move from services/connection.js createIsolatedInstance()
-	}
-
-	function monitorConnections() {
-		// TODO: Move from services/connection.js monitorConnections()
-	}
-
-	function updateConnectionStatusFromPeers() {
-		// TODO: Move from services/connection.js updateConnectionStatusFromPeers()
-	}
-
-	function updateConnectionStatus(connected, total) {
-		// TODO: Move from services/connection.js updateConnectionStatus()
-	}
-
 	function getDetailedPeerInfo() {
-		if (!appController.rawGun) {
+		if (!appController.gun) {
 			return {};
 		}
 
-		const peers = appController.rawGun.back('opt.peers') || {};
-		const detailedPeers = {};
-
-		Object.entries(peers).forEach(([peerId, peer]) => {
-			if (!peer) return;
-
-			// Note: We don't have peerStability tracking in AppController yet
-			// This will need to be added when we move monitoring logic
-			const isConnected = peer.wire && peer.wire.readyState === 1;
-
-			detailedPeers[peerId] = {
-				id: peer.id || peerId,
-				url: peer.url || 'Unknown',
-				wire: peer.wire,
-				readyState: peer.wire ? peer.wire.readyState : null,
-				isConnected,
-				stability: {
-					connected: isConnected,
-					stableSince: null, // TODO: Add when monitoring is moved
-					stableTime: 0,
-					stable: isConnected, // Simplified for now
-				},
-				lastActivity: {
-					connected: isConnected ? Date.now() : null,
-					disconnected: !isConnected ? Date.now() : null,
-				},
-				metadata: {
-					pid: peer.pid,
-					opt: peer.opt,
-				},
-			};
-		});
-
-		return detailedPeers;
+		return appController.gun.getDetailedPeerInfo();
 	}
 
 	function getNetworkInfo() {
-		if (!appController.rawGun) {
+		if (!appController.gun) {
 			return {
 				totalPeers: 0,
 				connectedPeers: 0,
@@ -78,58 +24,13 @@ export function getHandlers(appController) {
 				connectionRate: 0,
 				gunOptions: {},
 				networkStatus: 'disconnected',
+				isDisconnected: false,
+				defaultPeers: DEFAULT_PEERS,
+				currentPeers: [],
 			};
 		}
 
-		const peers = appController.rawGun.back('opt.peers') || {};
-		const peerEntries = Object.entries(peers);
-		const totalPeers = peerEntries.length;
-
-		let connectedPeers = 0;
-		let stablePeers = 0;
-
-		peerEntries.forEach(([peerId, peer]) => {
-			if (peer && peer.wire && peer.wire.readyState === 1) {
-				connectedPeers++;
-
-				// Note: We don't have peerStability tracking in AppController yet
-				// This will need to be added when we move monitoring logic
-				stablePeers = connectedPeers; // Simplified for now
-			}
-		});
-
-		const connectionRate =
-			totalPeers > 0 ? (connectedPeers / totalPeers) * 100 : 0;
-
-		let networkStatus = 'disconnected';
-		if (connectedPeers === totalPeers && totalPeers > 0) {
-			networkStatus = 'connected';
-		} else if (connectedPeers > 0) {
-			networkStatus = 'partial';
-		}
-
-		return {
-			totalPeers,
-			connectedPeers,
-			stablePeers,
-			connectionRate: Math.round(connectionRate),
-			gunOptions: appController.rawGun.back('opt') || {},
-			networkStatus,
-			isDisconnected: false, // TODO: Track this in AppController
-			defaultPeers: appController.defaultPeers,
-			currentPeers: getCurrentPeers(),
-		};
-	}
-
-	function getCurrentPeers() {
-		// Get current peers from the raw Gun instance
-		if (!appController.rawGun) {
-			return [];
-		}
-		const peers = appController.rawGun.back('opt.peers') || {};
-		return Object.values(peers)
-			.map((peer) => peer?.url)
-			.filter(Boolean);
+		return appController.gun.getNetworkInfo();
 	}
 
 	function login(alias, pass) {
@@ -138,7 +39,8 @@ export function getHandlers(appController) {
 			return;
 		}
 
-		appController.user.auth(alias, pass, ({ err }) => {
+		const user = appController.gun.user();
+		user.auth(alias, pass, ({ err }) => {
 			if (err) {
 				log('auth error ' + err);
 			} else {
@@ -154,19 +56,37 @@ export function getHandlers(appController) {
 		});
 	}
 
-	function isConnected() {
-		// TODO: Move from services/connection.js isConnected()
+	function stopMonitoring() {
+		// Remove event listeners
+		appController.gun.off('hi');
+		appController.gun.off('bye');
+		appController.gun.off('error');
+
+		// Clear any existing intervals
+		if (appController.monitoringInterval) {
+			clearInterval(appController.monitoringInterval);
+			appController.monitoringInterval = null;
+		}
+
+		// Mark that monitoring is inactive
+		appController.monitoringActive = false;
 	}
 
 	function startMonitoring() {
+		// Stop existing monitoring first
+		stopMonitoring();
+
 		// Initialize connection status tracking
 		appController.connectionStatus = { connected: 0, total: 0 };
 		appController.isDisconnected = false;
 		appController.previousConnectionState = null;
 		appController.peerStability = new Map();
 
+		// Mark that monitoring is active
+		appController.monitoringActive = true;
+
 		// Use GunDB's built-in connection events
-		appController.rawGun.on('hi', (peer) => {
+		appController.gun.on('hi', (peer) => {
 			const peerUrl = peer.url || 'unknown';
 
 			// Mark peer as connected and start stability timer
@@ -179,7 +99,7 @@ export function getHandlers(appController) {
 			updateConnectionStatusFromPeers();
 		});
 
-		appController.rawGun.on('bye', (peer) => {
+		appController.gun.on('bye', (peer) => {
 			const peerUrl = peer.url || 'unknown';
 
 			// Mark peer as disconnected
@@ -193,7 +113,7 @@ export function getHandlers(appController) {
 		});
 
 		// Handle connection errors
-		appController.rawGun.on('error', (error) => {
+		appController.gun.on('error', (error) => {
 			// Don't log connection errors - too noisy
 		});
 
@@ -203,15 +123,15 @@ export function getHandlers(appController) {
 		}, 1000);
 
 		// Also set up periodic connection checking as a fallback
-		setInterval(() => {
+		appController.monitoringInterval = setInterval(() => {
 			updateConnectionStatusFromPeers();
 		}, 2000);
 	}
 
 	function updateConnectionStatusFromPeers() {
-		if (!appController.rawGun || appController.isDisconnected) return;
+		if (!appController.gun || appController.isDisconnected) return;
 
-		const peers = appController.rawGun.back('opt.peers') || {};
+		const peers = appController.gun.getPeers();
 		const peerCount = Object.keys(peers).length;
 
 		// Count stable connected peers
@@ -322,7 +242,8 @@ export function getHandlers(appController) {
 		// Handle auth auto-login
 		const saved = tryJSONParse(localStorage.getItem('gun_demo_creds'));
 		if (saved) {
-			appController.user.auth(saved.alias, saved.pass, ({ err }) => {
+			const user = appController.gun.user();
+			user.auth(saved.alias, saved.pass, ({ err }) => {
 				if (err) {
 					log('auth error ' + err);
 				} else {
@@ -334,81 +255,37 @@ export function getHandlers(appController) {
 	}
 
 	return {
-		discovery(event) {
-			// Use GunDBWrapper instance from AppController
-			appController.gun.runNetworkDiscovery();
-		},
+		discovery: appController.gun.runNetworkDiscovery,
 
 		connect(event) {
-			// Update state via event instead of direct call
 			dispatchEvent('network:connecting');
-
-			// Reset disconnected flag when manually connecting
 			appController.isDisconnected = false;
-
-			// Reinitialize AppController's Gun instance with default peers
-			// Note: Gun.js doesn't support dynamic peer updates, so we need to recreate
-			const Gun = appController.rawGun.constructor; // Get Gun constructor
-
-			appController.rawGun = Gun({
-				peers: appController.defaultPeers,
-				localStorage: true,
-				multicast: true,
-				webrtc: true,
-				retry: 3,
-				timeout: 5000,
-			});
-
-			// Update GunDBWrapper with new Gun instance
-			appController.gun = new GunDBWrapper({ gun: appController.rawGun });
-
-			// Reinitialize user for authentication
-			appController.user = appController.rawGun.user();
+			appController.gun.connect();
+			appController.user = appController.gun.user();
 		},
 
 		disconnect(event) {
-			// Set disconnected flag to prevent automatic reconnection
 			appController.isDisconnected = true;
-
-			// Close all peer connections using AppController's raw Gun instance
-			if (appController.rawGun) {
-				const peers = appController.rawGun.back('opt.peers') || {};
-				Object.values(peers).forEach((peer) => {
-					if (peer && peer.wire) {
-						peer.wire.close();
-					}
-				});
-			}
-
-			// Reset connection status
+			appController.gun.disconnect();
 			appController.connectionStatus = { connected: 0, total: 0 };
 
-			// Dispatch state update event
+			// Stop monitoring when disconnecting
+			stopMonitoring();
+
 			dispatchEvent('network:disconnected');
 		},
 
 		test(event) {
-			// Test connection using AppController's raw Gun instance
-			const peers = appController.rawGun.back('opt.peers') || {};
-			const peerCount = Object.keys(peers).length;
-			const connectedPeers = Object.values(peers).filter(
-				(peer) =>
-					peer && peer.url && peer.wire && peer.wire.readyState === 1
-			).length;
-
-			// Log connection test results for manual testing
+			const connectionInfo = appController.gun.testConnection();
 			log(
-				`📊 Manual Connection Check: ${connectedPeers}/${peerCount} peers connected`
+				`📊 Manual Connection Check: ${connectionInfo.connectedPeers}/${connectionInfo.totalPeers} peers connected`
 			);
 
-			if (connectedPeers === 0) {
+			if (connectionInfo.connectedPeers === 0) {
 				log(`❌ No peers connected.`);
 			} else {
 				log('✅ Connection looks good! Graph operations should work.');
 			}
-
-			// Update connection status (we'll need to implement this in AppController)
-			// TODO: Add connection status tracking to AppController
 		},
 
 		identityCreate(event) {
@@ -416,13 +293,12 @@ export function getHandlers(appController) {
 			const userAlias = alias || `u_${uuid().slice(0, 6)}`;
 			const pass = crypto.getRandomValues(new Uint8Array(16)).join('');
 
-			appController.user.create(userAlias, pass, (ack) => {
+			const user = appController.gun.user();
+			user.create(userAlias, pass, (ack) => {
 				if (ack.err) {
 					log('create error ' + ack.err);
 					return;
 				}
-
-				// Auto-login after creating identity
 				login(userAlias, pass);
 			});
 		},
@@ -436,7 +312,8 @@ export function getHandlers(appController) {
 			const userAlias = alias || `u_${uuid().slice(0, 6)}`;
 			const pass = crypto.getRandomValues(new Uint8Array(16)).join('');
 
-			appController.user.create(userAlias, pass, (ack) => {
+			const user = appController.gun.user();
+			user.create(userAlias, pass, (ack) => {
 				if (ack.err) {
 					log('create error ' + ack.err);
 					return;
@@ -451,24 +328,17 @@ export function getHandlers(appController) {
 			// Gather all network info and dispatch consolidated response
 			const detailedPeerInfo = getDetailedPeerInfo();
 			const networkInfo = getNetworkInfo();
-			const defaultPeers = appController.defaultPeers;
-			const currentPeers = getCurrentPeers();
 
-			// Dispatch consolidated response
+			// Dispatch consolidated response with the structure the UI expects
 			dispatchEvent('network:infoResponse', {
 				detailedPeerInfo,
 				networkInfo,
-				defaultPeers,
-				currentPeers,
+				defaultPeers: networkInfo.defaultPeers || [],
+				currentPeers: networkInfo.currentPeers || [],
 			});
 		},
 
-		startMonitoring() {
-			startMonitoring();
-		},
-
-		autoLogin() {
-			autoLogin();
-		},
+		startMonitoring,
+		autoLogin,
 	};
 }

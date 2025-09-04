@@ -1,4 +1,5 @@
 import { log, dispatchEvent } from '../_lib/utils.js';
+import { cleanNodeData, cleanEdgeData } from '../_lib/gun.utils.js';
 
 /**
  * Graph read handlers - handles all graph read operations (data requests and real-time sync)
@@ -7,8 +8,6 @@ import { log, dispatchEvent } from '../_lib/utils.js';
  */
 export function getHandlers(appController) {
 	// Sync state kept in closure
-	// Note: nodesChain, edgesChain, isSubscribed, _isPaused, _propsLoadingFlag are now managed by AppController
-	// Note: gunWrapper is now appController.gun
 
 	// Internal methods (not exported as events)
 	function pauseDataSync() {
@@ -142,9 +141,8 @@ export function getHandlers(appController) {
 						return;
 					}
 
-					// Use GunDBWrapper to clean the node data
-					const cleanData =
-						appController.gun?.cleanNodeData(data) || data;
+					// Use utility function to clean the node data
+					const cleanData = cleanNodeData(data) || data;
 
 					dispatchEvent('sync:addNode', { data: cleanData, id });
 				} catch (error) {
@@ -201,9 +199,8 @@ export function getHandlers(appController) {
 							`📊 Edge synced: ${shortId}... (${shortSource}... → ${shortTarget}...) [${label}]`
 						);
 
-						// Use GunDBWrapper to clean the edge data
-						const cleanData =
-							appController.gun?.cleanEdgeData(data) || data;
+						// Use utility function to clean the edge data
+						const cleanData = cleanEdgeData(data) || data;
 
 						// Create edge immediately - placeholder nodes will be created if needed
 						dispatchEvent('sync:addEdge', { data: cleanData, id });
@@ -261,11 +258,6 @@ export function getHandlers(appController) {
 				try {
 					if (elementType === 'node') {
 						props = await appController.gun.getNodeProps(
-							room,
-							elementId
-						);
-						// warm cache/full data if needed
-						await appController.gun.getNodeFullData(
 							room,
 							elementId
 						);

@@ -9,15 +9,6 @@ import { getHandlers as getRoomHandlers } from './handlersRoom.js';
 import { getHandlers as getGraphWriteHandlers } from './handlersGraphWrite.js';
 import { getHandlers as getGraphReadHandlers } from './handlersGraphRead.js';
 import { GunDBWrapper } from '../_lib/gunWrapper.js';
-import Gun from 'gun';
-import 'gun/sea';
-import 'gun/axe';
-
-const defaultPeers = [
-	'https://gun-us.herokuapp.com/gun',
-	'https://gun-eu.herokuapp.com/gun',
-	'https://gunjs.herokuapp.com/gun',
-];
 
 /**
  * AppController
@@ -26,23 +17,10 @@ const defaultPeers = [
  */
 export class AppController {
 	constructor() {
-		// Default peers available everywhere
-		this.defaultPeers = defaultPeers;
-
-		// Initialize Gun instances - AppController now owns both
-		this.rawGun = Gun({
-			peers: this.defaultPeers,
-			localStorage: true,
-			multicast: true,
-			webrtc: true,
-			retry: 3,
-			timeout: 5000,
-		});
-
-		this.gun = new GunDBWrapper({ gun: this.rawGun });
+		this.gun = new GunDBWrapper();
 
 		// Initialize user for authentication
-		this.user = this.rawGun.user();
+		this.user = this.gun.user();
 
 		// Shared room state for handlers
 		this.currentRoom = null;
@@ -57,18 +35,6 @@ export class AppController {
 
 		// Set up application-level event listeners
 		this.setupEventListeners();
-	}
-
-	/**
-	 * Get Gun instances for external services to use
-	 * This allows services to access the instances owned by AppController
-	 * TEMPORARY: This is a hack to allow connection service to access the instances, remove this when connection service is refactored
-	 */
-	getGunInstances() {
-		return {
-			rawGun: this.rawGun,
-			gunDBWrapper: this.gun,
-		};
 	}
 
 	setupEventListeners() {

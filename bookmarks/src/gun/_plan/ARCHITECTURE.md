@@ -83,6 +83,51 @@ setupEventListeners() {
 -   **Events scoped to component's DOM container**
 -   **Controller owns UI completely**: `this.ui = new Component()`
 
+## Method Organization Principles
+
+### Class Method Definition Guidelines
+
+**Methods defined in class body should be of significance in terms of line count and complexity.**
+
+**For simple methods (1-3 lines, basic passthroughs, or simple assignments):**
+
+-   Prefer inlining in constructor or initialization methods
+-   Use arrow function assignments: `this.methodName = () => this._rawGun.someMethod()`
+-   Avoid verbose class body definitions for trivial operations
+
+**For complex methods (substantial logic, multiple operations, error handling):**
+
+-   Define as separate methods in class body
+-   Include proper JSDoc documentation
+-   Examples: `getDetailedPeerInfo()`, `getNetworkInfo()`, `testConnection()`
+
+**Benefits:**
+
+-   Cleaner, more readable class definitions
+-   Reduces boilerplate for simple operations
+-   Makes complex methods stand out clearly
+-   Better separation of concerns
+
+**Example:**
+
+```javascript
+class GunDBWrapper {
+	constructor() {
+		// Simple methods - inline assignments
+		this.get = this._rawGun.get.bind(this._rawGun);
+		this.connect = () => this.reinitialize();
+		this.getPeers = () => this._rawGun.back('opt.peers') || {};
+	}
+
+	// Complex method - separate definition
+	getDetailedPeerInfo() {
+		const peers = this.getPeers();
+		// ... substantial logic here
+		return detailedInfo;
+	}
+}
+```
+
 ## File Structure
 
 ```
