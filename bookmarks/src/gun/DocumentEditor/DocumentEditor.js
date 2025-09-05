@@ -17,7 +17,7 @@ export class DocumentEditor {
 		// Create basic document editor placeholder
 		this.container.innerHTML = html`
 			<div class="document-editor">
-				<h2>Document Editor</h2>
+				<strong>Document Editor</strong>
 				<p>Document editor placeholder</p>
 			</div>
 		`;
