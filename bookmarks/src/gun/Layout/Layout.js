@@ -253,17 +253,18 @@ const LayoutBeta = html`
 			overflow: hidden;
 		}
 		.toggle-btn {
-			padding: 0.25rem 0.5rem;
-			border: none;
-			border-radius: 12px;
-			background: var(--card-bg);
-			color: var(--text-primary);
+			background: transparent;
+			color: var(--text-bright);
+			border: 1px solid var(--card-border);
+			padding: 0.5rem 1rem;
+			border-radius: 8px;
+			font-weight: 500;
 			cursor: pointer;
-			font-size: 0.8rem;
-			font-weight: normal;
+			transition: all 0.2s ease;
 		}
 		.toggle-btn:hover {
-			background: var(--hover-bg);
+			background: var(--card-border);
+			border-color: var(--accent);
 		}
 		.component-container {
 			flex: 1;

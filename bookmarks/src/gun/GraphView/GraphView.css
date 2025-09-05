@@ -40,33 +40,46 @@
 }
 
 .row button {
-	padding: 0.5rem 0.75rem;
+	background: transparent;
+	color: var(--text-bright);
 	border: 1px solid var(--card-border);
-	border-radius: 4px;
-	background: var(--button-bg);
-	color: var(--text-primary);
+	padding: 0.5rem 1rem;
+	border-radius: 8px;
+	font-weight: 500;
 	cursor: pointer;
-	font-size: 0.9rem;
-	transition: background-color 0.2s;
+	transition: all 0.2s ease;
 }
 
 .row button:hover {
-	background: var(--hover-bg);
+	background: var(--card-border);
+	border-color: var(--accent);
 }
 
 .row select {
-	padding: 0.5rem;
+	background: transparent;
+	color: var(--text-bright);
 	border: 1px solid var(--card-border);
-	border-radius: 4px;
-	background: var(--input-bg);
-	color: var(--text-primary);
-	font-size: 0.9rem;
+	padding: 0.5rem 1rem;
+	border-radius: 8px;
+	font-weight: 500;
 	cursor: pointer;
+	transition: all 0.2s ease;
+	appearance: none;
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3cpolygon points='6,9 12,15 18,9' fill='%23c9d1d9'%3e%3c/polygon%3e%3c/svg%3e");
+	background-repeat: no-repeat;
+	background-position: right 0.75rem center;
+	background-size: 1rem;
+	padding-right: 2.5rem;
+}
+
+.row select:hover {
+	background-color: var(--card-border);
+	border-color: var(--accent);
 }
 
 .row select:focus {
 	outline: none;
-	border-color: var(--accent-color);
+	border-color: var(--accent);
 	box-shadow: 0 0 0 2px var(--accent-color-alpha);
 }
 
