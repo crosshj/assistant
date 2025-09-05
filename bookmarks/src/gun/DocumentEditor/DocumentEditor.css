@@ -1,98 +1,57 @@
-.document-editor {
-	height: 100%;
-	padding: 1rem;
+/* DocumentEditor Component Styles */
+
+.document-panel {
 	background: var(--card-bg);
 	border: 1px solid var(--card-border);
 	border-radius: var(--card-radius);
+	overflow: hidden;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	padding: 1rem;
 }
 
-.editor-header {
+.document-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding: 1rem;
-	border-bottom: 1px solid var(--card-border);
-	background: var(--card-bg);
+	margin-bottom: 1rem;
 }
-
-.editor-header h2 {
+.document-header strong {
 	margin: 0;
 	font-size: 1.2rem;
 	color: var(--text-primary);
 }
 
-.editor-actions {
-	display: flex;
-	gap: 0.5rem;
-}
-
-.btn-primary,
-.btn-secondary {
-	padding: 0.5rem 1rem;
-	border: 1px solid var(--card-border);
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 0.9rem;
-	transition: all 0.2s;
-}
-
-.btn-primary {
-	background: var(--accent-color);
-	color: white;
-}
-
-.btn-primary:hover {
-	background: var(--accent-hover);
-}
-
-.btn-secondary {
-	background: var(--card-bg);
-	color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-	background: var(--hover-bg);
-}
-
-.editor-content {
+.document-panel .contents {
 	flex: 1;
-	display: flex;
-	flex-direction: column;
-	padding: 0;
+	overflow: auto;
+	/* padding: 1rem; */
 }
 
-.document-textarea {
-	flex: 1;
-	border: none;
-	outline: none;
-	padding: 1rem;
+#selection-display {
+	margin: 0;
+	background: #0d1117;
+	border-radius: var(--card-radius);
 	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-	font-size: 14px;
-	line-height: 1.5;
-	background: var(--card-bg);
+	font-size: 0.9rem;
+	line-height: 1.4;
 	color: var(--text-primary);
-	resize: none;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	height: 100%;
+	overflow: auto;
+	padding: 1rem;
 }
 
-.document-textarea::placeholder {
-	color: var(--text-secondary);
-}
+/* Responsive adjustments */
+@media (max-width: 768px) {
+	.document-content {
+		padding: 0.5rem;
+	}
 
-.editor-footer {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 0.5rem 1rem;
-	border-top: 1px solid var(--card-border);
-	background: var(--card-bg);
-	font-size: 0.8rem;
-	color: var(--text-secondary);
-}
-
-.status-text {
-	font-weight: 500;
-}
-
-.word-count {
-	font-family: monospace;
+	#selection-display {
+		padding: 0.75rem;
+		font-size: 0.8rem;
+	}
 }

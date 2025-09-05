@@ -81,7 +81,7 @@ export class Header {
 					class="header-row-item room-section"
 					id="roomSection"
 				>
-					<strong>Graph</strong>
+					<strong>Room</strong>
 					<!-- Loading state (shown initially) -->
 					<div
 						class="room-loading"
@@ -97,7 +97,7 @@ export class Header {
 						<input
 							id="room"
 							class="input-size-14"
-							placeholder="graph-name"
+							placeholder="room-name"
 						/>
 						<button
 							id="join"

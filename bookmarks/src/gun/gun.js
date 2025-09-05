@@ -9,6 +9,8 @@ import { RoomController } from './Room/RoomController.js';
 import { HeaderController } from './Header/HeaderController.js';
 import { ActivityController } from './Activity/ActivityController.js';
 import { DocumentEditorController } from './DocumentEditor/DocumentEditorController.js';
+import { GraphViewController } from './GraphView/GraphViewController.js';
+import { FileTreeController } from './FileTree/FileTreeController.js';
 import { ConnectionController } from './Connection/ConnectionController.js';
 import { AppController } from './App/AppController.js';
 
@@ -19,6 +21,8 @@ async function startApp() {
 	const headerController = new HeaderController();
 	const activityController = new ActivityController();
 	const documentEditorController = new DocumentEditorController();
+	const graphViewController = new GraphViewController();
+	const fileTreeController = new FileTreeController();
 	const connectionController = new ConnectionController();
 	const appController = new AppController();
 

@@ -74,6 +74,9 @@ export function getHandlers(appController) {
 		appController.isSubscribed = false;
 		appController._isPaused = false; // Reset paused state
 
+		// Dispatch event for UI to clear graph
+		dispatchEvent('sync:clearGraph');
+
 		log('✅ Unsubscribed from room data');
 	}
 

@@ -229,17 +229,24 @@ export class GraphVisualization {
 
 	// Handle clearing selection and edit forms
 	handleClearSelection() {
-		// Clear all form fields
+		// Clear all form fields (defensive - only if they exist)
 		this.clearNewNodeForm();
 		this.clearEdgeForm();
 
-		// Clear edit form fields (but props will be handled by clearPropsField)
-		$('nodeId').value = '';
-		$('nodeLabel').value = '';
-		$('edgeId').value = '';
-		$('edgeFrom').value = '';
-		$('edgeTo').value = '';
-		$('edgeLabel').value = '';
+		// Clear edit form fields (defensive - only if they exist)
+		const nodeIdField = $('nodeId');
+		const nodeLabelField = $('nodeLabel');
+		const edgeIdField = $('edgeId');
+		const edgeFromField = $('edgeFrom');
+		const edgeToField = $('edgeTo');
+		const edgeLabelField = $('edgeLabel');
+
+		if (nodeIdField) nodeIdField.value = '';
+		if (nodeLabelField) nodeLabelField.value = '';
+		if (edgeIdField) edgeIdField.value = '';
+		if (edgeFromField) edgeFromField.value = '';
+		if (edgeToField) edgeToField.value = '';
+		if (edgeLabelField) edgeLabelField.value = '';
 
 		// Dispatch clear selection event
 		document.dispatchEvent(
@@ -277,7 +284,7 @@ export class GraphVisualization {
 					this.clearEdgeForm();
 				}
 
-				// Update form fields only for single node selection
+				// Update form fields only for single node selection (defensive - only if they exist)
 				if (this.selectionOrder.length === 1) {
 					const nodeIdField = $('nodeId');
 					const nodeLabelField = $('nodeLabel');
@@ -310,11 +317,18 @@ export class GraphVisualization {
 				// Clear the new node form when edges are selected
 				this.clearNewNodeForm();
 
-				// Update form fields (but NOT the props field - wait for props to load)
-				$('edgeId').value = d.eid || '';
-				$('edgeFrom').value = d.source?.replace('n_', '') || '';
-				$('edgeTo').value = d.target?.replace('n_', '') || '';
-				$('edgeLabel').value = d.label || '';
+				// Update form fields (defensive - only if they exist)
+				const edgeIdField = $('edgeId');
+				const edgeFromField = $('edgeFrom');
+				const edgeToField = $('edgeTo');
+				const edgeLabelField = $('edgeLabel');
+
+				if (edgeIdField) edgeIdField.value = d.eid || '';
+				if (edgeFromField)
+					edgeFromField.value = d.source?.replace('n_', '') || '';
+				if (edgeToField)
+					edgeToField.value = d.target?.replace('n_', '') || '';
+				if (edgeLabelField) edgeLabelField.value = d.label || '';
 
 				// DO NOT update edgeProps field here - wait for props to load via event system
 				// This prevents showing stale/incomplete data
@@ -493,42 +507,56 @@ export class GraphVisualization {
 	}
 
 	setupSearchFunctionality() {
-		$('searchNode').addEventListener('input', (e) => {
-			const searchTerm = e.target.value.toLowerCase();
-			if (searchTerm === '') {
-				this.cy.elements().removeClass('search-highlight');
-				return;
-			}
+		const searchInput = $('searchNode');
+		const clearButton = $('clearSearch');
 
-			this.cy.elements().removeClass('search-highlight');
-			this.cy.nodes().forEach((node) => {
-				const label = node.data('label') || '';
-				const props = JSON.stringify(node.data('props') || {});
-				if (
-					label.toLowerCase().includes(searchTerm) ||
-					props.toLowerCase().includes(searchTerm)
-				) {
-					node.addClass('search-highlight');
+		if (searchInput) {
+			searchInput.addEventListener('input', (e) => {
+				const searchTerm = e.target.value.toLowerCase();
+				if (searchTerm === '') {
+					this.cy.elements().removeClass('search-highlight');
+					return;
 				}
-			});
-		});
 
-		$('clearSearch').addEventListener('click', () => {
-			$('searchNode').value = '';
-			this.cy.elements().removeClass('search-highlight');
-		});
+				this.cy.elements().removeClass('search-highlight');
+				this.cy.nodes().forEach((node) => {
+					const label = node.data('label') || '';
+					const props = JSON.stringify(node.data('props') || {});
+					if (
+						label.toLowerCase().includes(searchTerm) ||
+						props.toLowerCase().includes(searchTerm)
+					) {
+						node.addClass('search-highlight');
+					}
+				});
+			});
+		}
+
+		if (clearButton) {
+			clearButton.addEventListener('click', () => {
+				if (searchInput) searchInput.value = '';
+				this.cy.elements().removeClass('search-highlight');
+			});
+		}
 	}
 
 	setupLayoutControls() {
-		$('layoutSelect').addEventListener('change', (e) => {
-			const layout = e.target.value;
-			this.cy.layout({ name: layout, animate: true }).run();
-		});
+		const layoutSelect = $('layoutSelect');
+		const fitButton = $('fitGraph');
 
-		$('fitGraph').addEventListener('click', () => {
-			this.cy.fit();
-			this.cy.center();
-		});
+		if (layoutSelect) {
+			layoutSelect.addEventListener('change', (e) => {
+				const layout = e.target.value;
+				this.cy.layout({ name: layout, animate: true }).run();
+			});
+		}
+
+		if (fitButton) {
+			fitButton.addEventListener('click', () => {
+				this.cy.fit();
+				this.cy.center();
+			});
+		}
 	}
 
 	clearGraph() {

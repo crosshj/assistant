@@ -21,6 +21,9 @@ export function getHandlers(appController) {
 			appController.currentRoom = room;
 			appController.graphRoot = appController.gun.getGraphRoot(room);
 
+			// Set URL hash
+			window.location.hash = `#${room}`;
+
 			// Room is ready immediately - no need to wait for GunDB confirmation
 			// Fire joined event for UI components
 			dispatchEvent('room:joined', {
@@ -50,6 +53,13 @@ export function getHandlers(appController) {
 			// Clear room state (sync cleanup is handled by the callback)
 			appController.currentRoom = null;
 			appController.graphRoot = null;
+
+			// Clear URL hash
+			window.history.replaceState(
+				null,
+				null,
+				window.location.pathname + window.location.search
+			);
 
 			// 2. FULLY left - All cleanup complete - fire left event for UI components
 			dispatchEvent('room:left', {
