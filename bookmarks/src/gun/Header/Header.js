@@ -15,8 +15,7 @@ export class Header {
 		// Find the header container
 		this.container = document.getElementById('header-container');
 		if (!this.container) {
-			console.error('Header container not found');
-			return;
+			throw new Error('Header container not found');
 		}
 
 		// Create the header DOM structure

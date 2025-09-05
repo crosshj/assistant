@@ -9,7 +9,12 @@ import { Room } from './Room.js';
 export class RoomController {
 	constructor() {
 		// Create Room component with controller reference
-		this.ui = new Room({ controller: this });
+		try {
+			this.ui = new Room({ controller: this });
+		} catch (error) {
+			console.warn('Failed to initialize Room UI:', error);
+			return;
+		}
 
 		// Bind room lifecycle methods
 		this.onRoomJoining = this.onRoomJoining.bind(this);

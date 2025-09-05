@@ -4,7 +4,12 @@ import { dispatchEvent } from '../_lib/utils.js';
 export class HeaderController {
 	constructor() {
 		// Create Header component with controller reference
-		this.ui = new Header({ controller: this });
+		try {
+			this.ui = new Header({ controller: this });
+		} catch (error) {
+			console.warn('Failed to initialize Header UI:', error);
+			return;
+		}
 
 		this.setupEventListeners();
 

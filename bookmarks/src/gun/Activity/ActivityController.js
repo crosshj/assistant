@@ -3,7 +3,12 @@ import { Activity } from './Activity.js';
 export class ActivityController {
 	constructor() {
 		// Create pure UI component (no controller reference needed)
-		this.ui = new Activity();
+		try {
+			this.ui = new Activity();
+		} catch (error) {
+			console.warn('Failed to initialize Activity UI:', error);
+			return;
+		}
 
 		// Setup event listeners
 		this.setupEventListeners();

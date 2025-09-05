@@ -44,8 +44,7 @@ export class Room {
 		// Find the left pane container
 		const leftPane = document.getElementById('left-pane');
 		if (!leftPane) {
-			console.error('Left pane container not found');
-			return;
+			throw new Error('Left pane container not found');
 		}
 		this.container = { left: leftPane };
 

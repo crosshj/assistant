@@ -8,6 +8,7 @@ import { LayoutController } from './Layout/LayoutController.js';
 import { RoomController } from './Room/RoomController.js';
 import { HeaderController } from './Header/HeaderController.js';
 import { ActivityController } from './Activity/ActivityController.js';
+import { DocumentEditorController } from './DocumentEditor/DocumentEditorController.js';
 import { ConnectionController } from './Connection/ConnectionController.js';
 import { AppController } from './App/AppController.js';
 
@@ -17,6 +18,7 @@ async function startApp() {
 	const roomController = new RoomController();
 	const headerController = new HeaderController();
 	const activityController = new ActivityController();
+	const documentEditorController = new DocumentEditorController();
 	const connectionController = new ConnectionController();
 	const appController = new AppController();
 

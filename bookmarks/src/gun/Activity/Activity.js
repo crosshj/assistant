@@ -15,8 +15,7 @@ export class Activity {
 		// Find the right pane container
 		this.container = document.getElementById('right-pane');
 		if (!this.container) {
-			console.error('Right pane container not found');
-			return;
+			throw new Error('Right pane container not found');
 		}
 
 		// Create the activity panel DOM structure
