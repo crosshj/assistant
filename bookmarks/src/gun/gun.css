@@ -62,6 +62,13 @@ h3 {
 /* =====================
       GLOBAL UTILITY CLASSES
       ===================== */
+.section-header {
+	font-size: 1rem;
+	font-weight: 600;
+	color: var(--text-bright);
+	margin: 0;
+}
+
 .mono {
 	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
 		'Courier New', monospace;

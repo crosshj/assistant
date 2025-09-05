@@ -19,7 +19,7 @@ export class DocumentEditor {
 		this.container.innerHTML = html`
 			<section class="card document-panel">
 				<div class="document-header">
-					<strong>Document Editor</strong>
+					<strong class="section-header">Document Details</strong>
 				</div>
 				<div class="contents">
 					<pre id="selection-display">No selection</pre>

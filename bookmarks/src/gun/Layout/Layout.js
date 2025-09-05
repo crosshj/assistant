@@ -240,11 +240,7 @@ const LayoutBeta = html`
 			justify-content: space-between;
 			align-items: center;
 			margin-bottom: 1rem;
-		}
-		.sidebar-header strong {
-			margin: 0;
-			font-size: 1.2rem;
-			color: var(--text-primary);
+			height: 2.5rem;
 		}
 		.sidebar-content {
 			flex: 1;
@@ -378,7 +374,7 @@ const LayoutBeta = html`
 		<header id="header-container"></header>
 		<div id="sidebar-pane">
 			<div class="sidebar-header">
-				<strong>Graph</strong>
+				<strong class="section-header">Graph</strong>
 				<button
 					id="sidebar-toggle"
 					class="toggle-btn"

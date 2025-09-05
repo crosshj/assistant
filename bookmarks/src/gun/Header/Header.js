@@ -26,7 +26,7 @@ export class Header {
 					class="header-row-item network-section"
 					id="networkSection"
 				>
-					<strong>Network</strong>
+					<strong class="section-header">Network</strong>
 
 					<!-- Connection Status (always visible) -->
 					<span
@@ -81,7 +81,7 @@ export class Header {
 					class="header-row-item room-section"
 					id="roomSection"
 				>
-					<strong>Room</strong>
+					<strong class="section-header">Room</strong>
 					<!-- Loading state (shown initially) -->
 					<div
 						class="room-loading"
@@ -137,7 +137,7 @@ export class Header {
 					class="header-row-item auth-section"
 					id="authSection"
 				>
-					<strong>Identity</strong>
+					<strong class="section-header">Identity</strong>
 					<!-- Identity inputs and buttons (shown when not authenticated) -->
 					<div
 						class="identity-inputs"
