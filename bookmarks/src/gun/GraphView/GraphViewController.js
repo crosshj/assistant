@@ -8,6 +8,7 @@ import { GraphView } from './GraphView.js';
 export class GraphViewController {
 	constructor() {
 		this.ui = new GraphView();
+		this.isProgrammaticSelection = false; // Flag to prevent recursive selection
 
 		// Bind controller methods
 		this.handleRoomJoined = this.handleRoomJoined.bind(this);
@@ -21,6 +22,7 @@ export class GraphViewController {
 		this.handleGraphClearSearch = this.handleGraphClearSearch.bind(this);
 		this.handleGraphLayoutChange = this.handleGraphLayoutChange.bind(this);
 		this.handleGraphFit = this.handleGraphFit.bind(this);
+		this.handleGraphSelect = this.handleGraphSelect.bind(this);
 
 		// Setup event listeners
 		this.setupEventListeners();
@@ -63,6 +65,7 @@ export class GraphViewController {
 		addEventListener('graph:clearSearch', this.handleGraphClearSearch);
 		addEventListener('graph:layoutChange', this.handleGraphLayoutChange);
 		addEventListener('graph:fit', this.handleGraphFit);
+		addEventListener('graph:select', this.handleGraphSelect);
 	}
 
 	setupUIEventDelegation() {
@@ -181,6 +184,26 @@ export class GraphViewController {
 
 		// Dispatch fit event
 		dispatchEvent('graph:fitRequested');
+	}
+
+	handleGraphSelect(event) {
+		// Skip if this is a programmatic selection to prevent infinite recursion
+		if (this.isProgrammaticSelection) {
+			return;
+		}
+
+		const { elementId, elementType } = event.detail;
+
+		// Only handle if visualization is ready
+		if (this.ui.visualization && this.ui.visualization.isInitialized()) {
+			// Set flag to prevent recursive selection
+			this.isProgrammaticSelection = true;
+			this.ui.visualization.selectElement(elementId, elementType);
+			// Reset flag after a short delay to allow the selection to complete
+			setTimeout(() => {
+				this.isProgrammaticSelection = false;
+			}, 10);
+		}
 	}
 
 	// Clean up method

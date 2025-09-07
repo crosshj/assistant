@@ -230,15 +230,15 @@ export class GraphView {
 			return;
 		}
 
+		// Clear existing timer and add edge immediately
 		if (this.graphUpdateTimers.addEdge) {
 			clearTimeout(this.graphUpdateTimers.addEdge);
 		}
 
-		this.graphUpdateTimers.addEdge = setTimeout(() => {
-			if (this.visualization && this.visualization.isInitialized()) {
-				this.visualization.addEdge(edgeData.data);
-			}
-		}, 100);
+		// Add edge immediately instead of debouncing
+		if (this.visualization && this.visualization.isInitialized()) {
+			this.visualization.addEdge(edgeData.data);
+		}
 	}
 
 	syncRemoveEdge(edgeData) {

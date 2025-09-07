@@ -213,15 +213,15 @@ export function getHandlers(appController) {
 		pauseDataSync();
 
 		try {
-			let props;
+			let elementData;
 			try {
 				if (elementType === 'node') {
-					props = await appController.gun.getNodeProps(
+					elementData = await appController.gun.getNode(
 						room,
 						elementId
 					);
 				} else if (elementType === 'edge') {
-					props = await appController.gun.getEdgeProps(
+					elementData = await appController.gun.getEdge(
 						room,
 						elementId
 					);
@@ -232,16 +232,37 @@ export function getHandlers(appController) {
 				dispatchEvent('graph:propsLoaded', {
 					elementId,
 					elementType,
-					props: { error: 'Error fetching props' },
-					error: 'Error fetching props',
+					props: { error: 'Error fetching element data' },
+					label: 'N/A',
+					from: 'N/A',
+					to: 'N/A',
+					direction: 'N/A',
+					error: 'Error fetching element data',
 				});
 				return;
 			}
+
+			// Extract data from the full element
+			const props = elementData?.props || {};
+			const label = elementData?.label || 'N/A';
+			const from =
+				elementData?.from ||
+				elementData?.source?.replace('n_', '') ||
+				'N/A';
+			const to =
+				elementData?.to ||
+				elementData?.target?.replace('n_', '') ||
+				'N/A';
+			const direction = elementData?.direction || 'N/A';
 
 			dispatchEvent('graph:propsLoaded', {
 				elementId,
 				elementType,
 				props,
+				label,
+				from,
+				to,
+				direction,
 				room,
 			});
 		} catch (error) {
@@ -249,6 +270,10 @@ export function getHandlers(appController) {
 				elementId,
 				elementType,
 				props: {},
+				label: 'N/A',
+				from: 'N/A',
+				to: 'N/A',
+				direction: 'N/A',
 				room,
 			});
 		} finally {

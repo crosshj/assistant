@@ -25,8 +25,36 @@ export class Layout {
 		// Update header title based on what's now visible
 		if (filetreeContainer.classList.contains('hidden')) {
 			headerTitle.textContent = 'Graph';
+			localStorage.setItem('sidebar-view', 'graph');
 		} else {
 			headerTitle.textContent = 'Documents';
+			localStorage.setItem('sidebar-view', 'documents');
+		}
+	}
+
+	restoreView() {
+		const filetreeContainer = document.getElementById('filetree-container');
+		const graphviewContainer = document.getElementById(
+			'graphview-container'
+		);
+		const headerTitle = document.querySelector('.sidebar-header strong');
+
+		// Get saved preference from localStorage
+		const savedView = localStorage.getItem('sidebar-view');
+
+		// Default to graph view if no preference is saved
+		const showFileTree = savedView === 'documents';
+
+		if (showFileTree) {
+			// Show file tree, hide graph
+			filetreeContainer.classList.remove('hidden');
+			graphviewContainer.classList.add('hidden');
+			headerTitle.textContent = 'Documents';
+		} else {
+			// Show graph, hide file tree
+			filetreeContainer.classList.add('hidden');
+			graphviewContainer.classList.remove('hidden');
+			headerTitle.textContent = 'Graph';
 		}
 	}
 

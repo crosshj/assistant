@@ -620,6 +620,30 @@ export class GraphVisualization {
 		}
 	}
 
+	selectElement(elementId, elementType) {
+		if (!this.cy) return;
+
+		// Clear current selection
+		this.cy.elements().unselect();
+
+		if (!elementId || !elementType) return;
+
+		// Select the element based on type
+		if (elementType === 'node') {
+			const cyNodeId = 'n_' + elementId;
+			const node = this.cy.getElementById(cyNodeId);
+			if (!node.empty()) {
+				node.select();
+			}
+		} else if (elementType === 'edge') {
+			const cyEdgeId = 'e_' + elementId;
+			const edge = this.cy.getElementById(cyEdgeId);
+			if (!edge.empty()) {
+				edge.select();
+			}
+		}
+	}
+
 	addEdge(edgeData) {
 		if (!this.cy) return;
 
@@ -632,6 +656,7 @@ export class GraphVisualization {
 		if (!exists.empty()) exists.remove();
 
 		// Check if source and target nodes exist, create placeholders if they don't
+
 		if (this.cy.getElementById(sourceId).empty()) {
 			this.cy.add({
 				group: 'nodes',

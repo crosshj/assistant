@@ -19,7 +19,7 @@ export class DocumentEditor {
 		this.container.innerHTML = html`
 			<section class="card document-panel">
 				<div class="document-header">
-					<strong class="section-header">Document Details</strong>
+					<strong class="section-header">Details</strong>
 				</div>
 				<div class="contents">
 					<pre id="selection-display">No selection</pre>
@@ -29,48 +29,37 @@ export class DocumentEditor {
 	}
 
 	updateSelection(selectionData) {
-		this.currentSelection = selectionData;
-		this.renderSelection();
-	}
-
-	renderSelection() {
 		const display = document.getElementById('selection-display');
 		if (!display) return;
 
-		if (!this.currentSelection) {
+		if (!selectionData?.elementType) {
 			display.textContent = 'No selection';
 			return;
 		}
 
 		const { elementType, elementId, label, props, from, to, direction } =
-			this.currentSelection;
+			selectionData;
 
-		let content = '';
+		const lines = [
+			`Selected: ${elementType === 'node' ? 'Node' : 'Edge'}`,
+			`ID: ${elementId || 'N/A'}`,
+		];
 
-		if (elementType === 'node') {
-			content = `Selected: Node
-ID: ${elementId || 'N/A'}
-
-Label: ${label || 'N/A'}
-
-Props: ${props ? JSON.stringify(props, null, 2) : 'Loading...'}`;
-		} else if (elementType === 'edge') {
-			content = `Selected: Edge
-            
-ID: ${elementId || 'N/A'}
-
-From: ${from || 'N/A'}
-To: ${to || 'N/A'}
-
-Label: ${label || 'N/A'}
-
-Direction: ${direction || 'N/A'}
-
-Props: ${props ? JSON.stringify(props, null, 2) : 'Loading...'}`;
-		} else {
-			content = 'No selection';
+		if (!props) {
+			display.textContent = lines.join('\n\n');
+			return;
 		}
 
-		display.textContent = content;
+		lines.push(`Label: ${label || 'N/A'}`);
+
+		if (elementType === 'edge') {
+			lines.push(`Direction: ${direction || 'N/A'}`);
+			lines.push(`From: ${from || 'N/A'}`);
+			lines.push(`To: ${to || 'N/A'}`);
+		}
+
+		lines.push(`Props: ${props ? JSON.stringify(props, null, 2) : '{}'}`);
+
+		display.textContent = lines.join('\n\n');
 	}
 }

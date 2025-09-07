@@ -18,6 +18,9 @@ export class LayoutController {
 		this.setupToggleListener();
 		this.setupRoomStateListeners();
 
+		// Restore saved view preference
+		this.ui.restoreView();
+
 		// Start with loading state
 		this.ui.showRoomState();
 		this.ui.showLoadingSpinner();
