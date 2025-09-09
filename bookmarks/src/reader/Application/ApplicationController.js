@@ -1,11 +1,15 @@
 import { dispatchEvent, addEventListener } from '../_lib/utils.js';
 import { FileService } from '../_lib/fileService.js';
+import { DatabaseService } from '../_lib/databaseService.js';
 import { getHandlers as getFileHandlers } from './handlersFiles.js';
+import { getHandlers as getDatabaseHandlers } from './handlersDatabase.js';
 
 export class ApplicationController {
 	constructor() {
 		this.fileService = new FileService();
-		this.fileHandlers = getFileHandlers(this.fileService);
+		this.databaseService = new DatabaseService();
+		this.fileHandlers = getFileHandlers(this);
+		this.databaseHandlers = getDatabaseHandlers(this);
 		this.setupEventListeners();
 	}
 
@@ -21,9 +25,19 @@ export class ApplicationController {
 			'ui:testCreateFile',
 			this.fileHandlers.handleTestCreateFile
 		);
+
+		// Database operation event handlers
 		addEventListener(
-			'ui:testSaveFile',
-			this.fileHandlers.handleTestSaveFile
+			'ui:testInsertData',
+			this.databaseHandlers.handleTestInsertData
+		);
+		addEventListener(
+			'ui:testUpdateData',
+			this.databaseHandlers.handleTestUpdateData
+		);
+		addEventListener(
+			'ui:testDeleteData',
+			this.databaseHandlers.handleTestDeleteData
 		);
 	}
 

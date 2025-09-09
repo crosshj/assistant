@@ -1,6 +1,6 @@
 /**
  * File Service
- * Handles File System Access API operations for .rdb files
+ * Handles File System Access API operations for .smartText files
  */
 export class FileService {
 	constructor() {
@@ -9,7 +9,7 @@ export class FileService {
 	}
 
 	/**
-	 * Open file picker to select .rdb file
+	 * Open file picker to select .smartText file
 	 * @returns {Promise<File>} Selected file
 	 */
 	async openFile() {
@@ -19,13 +19,13 @@ export class FileService {
 				throw new Error('File System Access API not supported');
 			}
 
-			// Show file picker for .rdb files
+			// Show file picker for .smartText files
 			const [fileHandle] = await window.showOpenFilePicker({
 				types: [
 					{
 						description: 'Reader Database files',
 						accept: {
-							'application/octet-stream': ['.rdb'],
+							'application/octet-stream': ['.smartText'],
 						},
 					},
 				],
@@ -49,7 +49,7 @@ export class FileService {
 	}
 
 	/**
-	 * Create new .rdb file
+	 * Create new .smartText file
 	 * @returns {Promise<FileSystemFileHandle>} New file handle
 	 */
 	async createFile() {
@@ -59,17 +59,17 @@ export class FileService {
 				throw new Error('File System Access API not supported');
 			}
 
-			// Show save file picker for .rdb files
+			// Show save file picker for .smartText files
 			const fileHandle = await window.showSaveFilePicker({
 				types: [
 					{
 						description: 'Reader Database files',
 						accept: {
-							'application/octet-stream': ['.rdb'],
+							'application/octet-stream': ['.smartText'],
 						},
 					},
 				],
-				suggestedName: 'new-database.rdb',
+				suggestedName: 'eg.smartText',
 			});
 
 			this.fileHandle = fileHandle;

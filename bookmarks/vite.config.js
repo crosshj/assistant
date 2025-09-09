@@ -17,4 +17,10 @@ export default defineConfig({
 		__BUILD_DATE__: JSON.stringify(new Date().toISOString()),
 		__PACKAGE_VERSION__: JSON.stringify(pkg.version),
 	},
+	server: {
+		headers: {
+			'Cross-Origin-Embedder-Policy': 'require-corp',
+			'Cross-Origin-Opener-Policy': 'same-origin',
+		},
+	},
 });

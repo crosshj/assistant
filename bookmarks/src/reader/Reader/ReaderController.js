@@ -18,17 +18,26 @@ export class ReaderController {
 			if (e.target.matches('#test-create-file')) {
 				dispatchEvent('ui:testCreateFile');
 			}
-			if (e.target.matches('#test-save-file')) {
-				dispatchEvent('ui:testSaveFile');
+			if (e.target.matches('#test-insert-data')) {
+				dispatchEvent('ui:testInsertData');
+			}
+			if (e.target.matches('#test-update-data')) {
+				dispatchEvent('ui:testUpdateData');
+			}
+			if (e.target.matches('#test-delete-data')) {
+				dispatchEvent('ui:testDeleteData');
 			}
 		});
 
-		addEventListener('file:content', (e) => {
-			this.ui.showFileContent(e.detail.content);
-		});
+		addEventListener('db:state', (e) => {
+			const { action, state, metadata, message, error } = e.detail;
 
-		addEventListener('file:opened', () => {
-			this.ui.enableSaveButton();
+			if (error) {
+				this.ui.showDatabaseError(error);
+			} else {
+				this.ui.showDatabaseState({ action, state, metadata, message });
+				this.ui.enableDatabaseOperationButtons();
+			}
 		});
 	}
 }

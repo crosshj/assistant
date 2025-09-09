@@ -1,23 +1,23 @@
 import { dispatchEvent } from '../_lib/utils.js';
-import { FileService } from '../_lib/fileService.js';
 
 /**
  * File operation handlers for ApplicationController
  */
-export function getHandlers(fileService) {
+export function getHandlers(appController) {
 	return {
 		async handleTestFilePicker() {
 			try {
 				console.log('Testing file picker...');
-				const file = await fileService.openFile();
+				const file = await appController.fileService.openFile();
 				if (file) {
 					console.log(
 						`File opened: ${file.name} (${file.size} bytes)`
 					);
 
-					// Read and display file content
-					const content = await file.text();
-					dispatchEvent('file:content', { content });
+					// Call database handler to load the file
+					await appController.databaseHandlers.handleLoadFromFile(
+						file
+					);
 
 					// Enable save button since we now have a file handle
 					dispatchEvent('file:opened');
@@ -32,24 +32,24 @@ export function getHandlers(fileService) {
 		async handleTestCreateFile() {
 			try {
 				console.log('Testing file creation...');
-				const fileHandle = await fileService.createFile();
+				const fileHandle = await appController.fileService.createFile();
 				if (fileHandle) {
-					// Create initial content with timestamp
-					const now = new Date();
-					const timestamp = now.toLocaleString();
-					const content = `File created at ${timestamp}`;
+					// Create a barebones SQLite database
+					const dbData =
+						await appController.databaseService.createBarebonesDatabase();
 
-					// Save the initial content
-					const data = new TextEncoder().encode(content);
-					await fileService.saveFile(data);
+					// Save the database
+					await appController.fileService.saveFile(dbData);
 
 					// Update file data after saving
-					fileService.updateFileData(data);
+					appController.fileService.updateFileData(dbData);
 
 					console.log(`File created: ${fileHandle.name}`);
 
-					// Display the content
-					dispatchEvent('file:content', { content });
+					// Call database handler to load the created file
+					await appController.databaseHandlers.handleLoadFromArrayBuffer(
+						dbData
+					);
 
 					// Enable save button since we now have a file handle
 					dispatchEvent('file:opened');
@@ -61,41 +61,14 @@ export function getHandlers(fileService) {
 			}
 		},
 
-		async handleTestSaveFile() {
+		async saveFile(data) {
 			try {
-				console.log('Testing file save...');
-				const fileHandle = fileService.getFileHandle();
-				if (!fileHandle) {
-					console.error(
-						'No file handle available. Create or open a file first.'
-					);
-					return;
-				}
-
-				// Get current content and add save timestamp
-				const currentFile = fileService.getFileData();
-				let content = '';
-				if (currentFile) {
-					content = await currentFile.text();
-				}
-
-				const now = new Date();
-				const timestamp = now.toLocaleString();
-				const newContent = content + `\n\nSaved at ${timestamp}`;
-
-				// Save the updated content
-				const data = new TextEncoder().encode(newContent);
-				await fileService.saveFile(data);
-
-				// Update file data after saving
-				fileService.updateFileData(data);
-
-				console.log('File saved successfully');
-
-				// Display the updated content
-				dispatchEvent('file:content', { content: newContent });
+				await appController.fileService.saveFile(data);
+				appController.fileService.updateFileData(data);
+				console.log('File saved');
 			} catch (error) {
-				console.error(`Error: ${error.message}`);
+				console.warn('Save failed:', error);
+				throw error;
 			}
 		},
 	};

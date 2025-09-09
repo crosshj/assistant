@@ -43,13 +43,6 @@ export class Reader {
 							>
 								Create File
 							</button>
-							<button
-								id="test-save-file"
-								class="test-btn"
-								disabled
-							>
-								Save File
-							</button>
 						</div>
 					</div>
 
@@ -57,25 +50,25 @@ export class Reader {
 						<h3>Database Operations</h3>
 						<div class="test-buttons">
 							<button
-								id="test-db-load"
+								id="test-insert-data"
 								class="test-btn"
 								disabled
 							>
-								Load Database
+								Insert Data
 							</button>
 							<button
-								id="test-db-query"
+								id="test-update-data"
 								class="test-btn"
 								disabled
 							>
-								Query Database
+								Update Data
 							</button>
 							<button
-								id="test-db-schema"
+								id="test-delete-data"
 								class="test-btn"
 								disabled
 							>
-								Test Schema
+								Delete Data
 							</button>
 						</div>
 					</div>
@@ -102,9 +95,6 @@ export class Reader {
 				</div>
 
 				<div class="file-content">
-					<div class="file-content-header">
-						<h3>File Content</h3>
-					</div>
 					<div
 						id="file-content-display"
 						class="file-content-display"
@@ -116,28 +106,82 @@ export class Reader {
 		`;
 	}
 
-	showFileContent(content) {
+	enableDatabaseOperationButtons() {
+		const buttons = this.container.querySelectorAll(
+			'#test-insert-data, #test-update-data, #test-delete-data'
+		);
+		buttons.forEach((btn) => {
+			btn.disabled = false;
+		});
+	}
+
+	showDatabaseState({ action, state, metadata, message }) {
 		const display = this.container.querySelector('#file-content-display');
 		if (display) {
-			if (content) {
-				display.innerHTML = `<pre>${content}</pre>`;
-			} else {
-				display.innerHTML = '<p>No file loaded</p>';
-			}
+			// Get appropriate header based on action
+			let header = 'Database State';
+			if (action === 'file_opened') header = 'Database Loaded';
+			else if (action === 'item_inserted') header = 'Item Inserted';
+			else if (action === 'item_updated') header = 'Item Updated';
+			else if (action === 'item_deleted') header = 'Item Deleted';
+			else if (action === 'file_saved') header = 'File Saved';
+
+			display.innerHTML = html`
+				<div class="database-results">
+					<h4>${header}</h4>
+					<p><strong>Message:</strong> ${message}</p>
+					${metadata
+						? html`
+								<div class="table-results">
+									<h5>Metadata</h5>
+									<p>
+										<strong>Version:</strong>
+										${metadata.version}
+									</p>
+									<pre><code>${JSON.stringify(
+										metadata.schema,
+										null,
+										2
+									)}</code></pre>
+								</div>
+						  `
+						: ''}
+					${Object.entries(state || {})
+						.map(
+							([tableName, tableResults]) => html`
+								<div class="table-results">
+									<h5>Table: ${tableName}</h5>
+									${tableResults.error
+										? `<p style="color: red;">Error: ${tableResults.error}</p>`
+										: html`
+												<p>
+													<strong>Rows:</strong>
+													${tableResults.length}
+												</p>
+												<pre><code>${JSON.stringify(
+													tableResults,
+													null,
+													2
+												)}</code></pre>
+										  `}
+								</div>
+							`
+						)
+						.join('')}
+				</div>
+			`;
 		}
 	}
 
-	enableSaveButton() {
-		const saveBtn = this.container.querySelector('#test-save-file');
-		if (saveBtn) {
-			saveBtn.disabled = false;
-		}
-	}
-
-	disableSaveButton() {
-		const saveBtn = this.container.querySelector('#test-save-file');
-		if (saveBtn) {
-			saveBtn.disabled = true;
+	showDatabaseError(error) {
+		const display = this.container.querySelector('#file-content-display');
+		if (display) {
+			display.innerHTML = html`
+				<div class="database-error">
+					<h4>Database Error</h4>
+					<p style="color: red;">${error}</p>
+				</div>
+			`;
 		}
 	}
 }
