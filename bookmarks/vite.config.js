@@ -9,6 +9,7 @@ export default defineConfig({
 			input: {
 				main: 'index.html',
 				gun: 'gun.html',
+				reader: 'reader.html',
 			},
 		},
 	},

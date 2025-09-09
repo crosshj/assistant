@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta name="darkreader-lock" />
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width,initial-scale=1"
+		/>
+		<meta
+			name="color-scheme"
+			content="light dark"
+		/>
+		<title>Reader</title>
+		<link
+			rel="icon"
+			type="image/svg+xml"
+			href="/favicon.svg"
+		/>
+		<style>
+			/* Hide content until styles are loaded to prevent FOUC */
+			body {
+				visibility: hidden;
+			}
+			body.styles-loaded {
+				visibility: visible;
+			}
+		</style>
+	</head>
+	<body>
+		<script
+			type="module"
+			src="/src/reader/reader.js"
+		></script>
+	</body>
+</html>

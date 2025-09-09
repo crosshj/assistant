@@ -1,0 +1,60 @@
+/* =====================
+   THEME & ROOT VARS (Consistent with index.css)
+   ===================== */
+:root {
+	color-scheme: light dark;
+	--bg: Canvas;
+	--fg: CanvasText;
+	--accent: LinkText;
+	--muted: 0.6;
+	--card-bg: color-mix(in srgb, canvastext 1%, Canvas);
+	--card-border: rgba(255, 255, 255, 0.1);
+	--text-muted: color-mix(in srgb, canvastext 60%, transparent);
+	--text-subtle: color-mix(in srgb, canvastext 40%, transparent);
+	--text-bright: var(--fg);
+	--text-accent: color-mix(in srgb, canvastext 35%, var(--accent));
+	--card-radius: 16px;
+	--card-padding: 1.25em 1.5em;
+	--card-gap: 1.5em;
+	--card-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.18);
+	--font-body: system-ui, sans-serif;
+	--font-heading: system-ui, sans-serif;
+}
+
+/* =====================
+      LAYOUT & STRUCTURE
+      ===================== */
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	background: var(--bg);
+	color: var(--text-bright);
+	font-family: var(--font-body);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+body {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	overflow: hidden;
+}
+
+h1,
+h2,
+h3 {
+	font-family: var(--font-heading);
+	margin: 0;
+}
+
+h3 {
+	font-size: 1.12rem;
+	font-weight: 700;
+}
