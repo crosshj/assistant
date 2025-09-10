@@ -8,6 +8,8 @@
     "routes": [
         { "src": "/api/(.*)", "dest": "/api/$1" },
         { "src": "/gun", "dest": "/gun.html" },
-        { "src": "/gun/", "dest": "/gun.html" }
+        { "src": "/gun/", "dest": "/gun.html" },
+        { "src": "/reader", "dest": "/reader.html" },
+        { "src": "/reader/", "dest": "/reader.html" }
     ]
 }
