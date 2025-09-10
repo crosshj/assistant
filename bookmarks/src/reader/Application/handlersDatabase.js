@@ -167,34 +167,35 @@ export function getHandlers(appController) {
 			try {
 				// Extract parameters from event detail or use defaults
 				const tableName = event?.detail?.tableName || 'items';
-				const timestamp = new Date().toLocaleTimeString();
-				const data = event?.detail?.data || {
-					text: `Updated at ${timestamp}`,
-				};
+				const data = event?.detail?.data || {};
+				const whereClause = event?.detail?.whereClause;
 
 				if (!appController.databaseService.isLoaded()) {
 					throw new Error('No database loaded');
 				}
 
-				// Get the last item ID directly from database right before update
-				const lastItem =
-					appController.databaseService.queryTable(tableName);
-				if (!lastItem || lastItem.length === 0) {
-					throw new Error('No items to update');
+				// Use provided whereClause or fall back to last item
+				let finalWhereClause = whereClause;
+				if (!finalWhereClause) {
+					const lastItem =
+						appController.databaseService.queryTable(tableName);
+					if (!lastItem || lastItem.length === 0) {
+						throw new Error('No items to update');
+					}
+					const lastId = lastItem[lastItem.length - 1].id;
+					finalWhereClause = `id = ${lastId}`;
 				}
-				const lastId = lastItem[lastItem.length - 1].id;
-				const whereClause = `id = ${lastId}`;
 
 				console.log(
 					`Testing database update in ${tableName}:`,
 					data,
-					`(updating item ID: ${lastId})`
+					`(updating with whereClause: ${finalWhereClause})`
 				);
 
 				const rowsAffected = appController.databaseService.updateData(
 					tableName,
 					data,
-					whereClause
+					finalWhereClause
 				);
 				console.log(
 					`Update successful, rows affected: ${rowsAffected}`
@@ -300,6 +301,67 @@ export function getHandlers(appController) {
 					action: 'error',
 					error: error.message,
 					message: `Error: ${error.message}`,
+				});
+			}
+		},
+
+		async handleUpdateMetadata(e) {
+			const { metadata } = e.detail;
+
+			try {
+				// Update the schema in the database
+				await appController.databaseService.updateSchema(metadata);
+
+				// Save the file to persist changes
+				const dbData = appController.databaseService.exportDatabase();
+				await appController.fileHandlers.saveFile(dbData);
+
+				// Use the existing dispatchDbState function
+				dispatchDbState(
+					'metadata_updated',
+					'Database metadata updated successfully'
+				);
+			} catch (error) {
+				console.error('Error updating metadata:', error);
+				dispatchEvent('db:state', {
+					action: 'error',
+					error: error.message,
+					message: `Error updating metadata: ${error.message}`,
+				});
+			}
+		},
+
+		async handleBulkUpsert(e) {
+			const { items, tableName } = e.detail;
+
+			try {
+				await appController.databaseService.bulkUpsert(
+					items,
+					tableName
+				);
+
+				// Save the file to persist changes
+				try {
+					const dbData =
+						appController.databaseService.exportDatabase();
+					await appController.fileHandlers.saveFile(dbData);
+				} catch (saveError) {
+					console.warn(
+						'Auto-save failed after bulk upsert:',
+						saveError
+					);
+				}
+
+				dispatchDbState(
+					'bulk_upserted',
+					`Bulk upserted ${items.length} items`
+				);
+			} catch (error) {
+				console.error('Error in bulk upsert:', error);
+				dispatchEvent('db:state', {
+					action: 'error',
+					error: error.message,
+					message: `Error in bulk upsert: ${error.message}`,
 				});
 			}
 		},

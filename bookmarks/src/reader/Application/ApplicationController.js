@@ -39,6 +39,14 @@ export class ApplicationController {
 			'ui:testDeleteData',
 			this.databaseHandlers.handleTestDeleteData
 		);
+		addEventListener(
+			'ui:updateMetadata',
+			this.databaseHandlers.handleUpdateMetadata
+		);
+		addEventListener(
+			'ui:bulkUpsert',
+			this.databaseHandlers.handleBulkUpsert
+		);
 	}
 
 	onAppInit() {

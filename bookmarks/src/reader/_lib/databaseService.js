@@ -67,15 +67,18 @@ export class DatabaseService {
 		}
 
 		try {
-			const result = this.db.exec('SELECT * FROM metadata LIMIT 1');
+			const result = this.db.exec(
+				'SELECT * FROM metadata ORDER BY id LIMIT 1'
+			);
 			if (result.length === 0) {
 				throw new Error('No metadata table found');
 			}
 
 			const row = result[0].values[0];
+			const schema = JSON.parse(row[2]); // schema is the 3rd column (index 2)
 			return {
-				version: row[0],
-				schema: JSON.parse(row[1]),
+				version: row[1],
+				schema: schema,
 			};
 		} catch (error) {
 			console.error('Error reading metadata:', error);
@@ -310,7 +313,8 @@ export class DatabaseService {
 		// Create metadata table
 		db.exec(`
 			CREATE TABLE metadata (
-				version TEXT PRIMARY KEY,
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				version TEXT NOT NULL,
 				schema TEXT NOT NULL
 			)
 		`);
@@ -318,6 +322,7 @@ export class DatabaseService {
 		// Insert default metadata
 		const defaultSchema = {
 			version: '1.0',
+			title: 'My Database',
 			type: 'list',
 			tableName: 'items',
 			fields: [
@@ -382,17 +387,194 @@ export class DatabaseService {
 			END
 		`);
 
-		// Insert sample data
-		db.exec(`
-			INSERT INTO items (text, status) VALUES 
-			('Welcome to your new database', 'Done'),
-			('This is a sample item', 'Todo')
-		`);
+		// No sample data - start with empty table
 
 		// Export database as ArrayBuffer
 		const dbData = db.export();
 		db.close();
 
 		return dbData.buffer;
+	}
+
+	/**
+	 * Update schema metadata
+	 * @param {Object} metadata - Metadata to update
+	 * @returns {Promise<void>}
+	 */
+	async updateSchema(metadata) {
+		if (!this.db) {
+			throw new Error('Database not initialized');
+		}
+
+		try {
+			// Get current schema from database
+			const currentMetadata = this.getMetadata();
+			const currentSchema = currentMetadata.schema;
+			console.log('Current schema before update:', currentSchema);
+
+			// Update schema with new metadata
+			const updatedSchema = {
+				...currentSchema,
+				title: metadata.title,
+				description: metadata.description || '',
+			};
+			console.log('Updated schema:', updatedSchema);
+
+			// Ensure we have a valid schema object
+			const schemaJson = JSON.stringify(updatedSchema);
+			if (
+				!schemaJson ||
+				schemaJson === 'null' ||
+				schemaJson === 'undefined'
+			) {
+				throw new Error('Invalid schema object');
+			}
+
+			// Check if metadata record exists first
+			const countResult = this.db.exec(
+				'SELECT COUNT(*) as count FROM metadata'
+			);
+			const count = countResult[0].values[0][0];
+
+			if (count === 0) {
+				// Record doesn't exist, create it
+				const insertStmt = this.db.prepare(
+					'INSERT INTO metadata (version, schema) VALUES (?, ?)'
+				);
+				insertStmt.run('1.0', schemaJson);
+			} else {
+				// Record exists, update the first one
+				console.log('Updating existing metadata record');
+
+				// Escape single quotes in the JSON string for SQL
+				const escapedSchemaJson = schemaJson.replace(/'/g, "''");
+				const updateQuery = `UPDATE metadata SET schema = '${escapedSchemaJson}' WHERE id = 1`;
+				console.log(
+					'Update query:',
+					updateQuery.substring(0, 200) + '...'
+				);
+				const updateResult = this.db.exec(updateQuery);
+				console.log('Update result:', updateResult);
+			}
+
+			// Update the current schema in memory
+			this.schema = updatedSchema;
+
+			// Verify the update worked by reading back from database
+			const verifyStmt = this.db.prepare(
+				'SELECT schema FROM metadata WHERE id = 1'
+			);
+			const verifyResult = verifyStmt.get();
+			console.log('Verification - raw result:', verifyResult);
+			if (verifyResult && verifyResult.schema) {
+				const parsedSchema = JSON.parse(verifyResult.schema);
+				console.log('Verification - parsed schema:', parsedSchema);
+				console.log(
+					'Verification - title in database:',
+					parsedSchema.title
+				);
+			}
+		} catch (error) {
+			console.error('Error updating schema:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Bulk upsert items into the database
+	 * @param {Array} items - Array of items to upsert
+	 * @param {string} tableName - Name of the table to upsert into
+	 * @returns {Promise<void>}
+	 */
+	async bulkUpsert(items, tableName = 'items') {
+		if (!this.db) {
+			throw new Error('Database not initialized');
+		}
+
+		if (!Array.isArray(items) || items.length === 0) {
+			throw new Error('Items must be a non-empty array');
+		}
+
+		try {
+			// Get the current schema to understand the table structure
+			const metadata = this.getMetadata();
+			const schema = metadata.schema;
+
+			// Get fields from the schema (it's a flat structure)
+			const fields = schema.fields || [];
+
+			// Get the primary key field
+			const primaryKeyField = fields.find((field) => field.primaryKey);
+			if (!primaryKeyField) {
+				throw new Error(`No primary key found for table ${tableName}`);
+			}
+
+			// Prepare field names for the upsert statement
+			const fieldNames = fields.map((field) => field.name).join(', ');
+
+			// Process each item and build individual upsert queries
+			for (const item of items) {
+				const values = fields.map((field) => {
+					if (field.autoIncrement && !item[field.name]) {
+						return null; // Let auto-increment handle it
+					}
+
+					let value = item[field.name];
+
+					// Handle different field types
+					switch (field.type) {
+						case 'datetime':
+							if (field.name === 'created_at' && !value) {
+								return new Date().toISOString();
+							}
+							if (field.name === 'modified_at') {
+								return new Date().toISOString();
+							}
+							return value || null;
+						case 'integer':
+							return value ? parseInt(value) : null;
+						case 'text':
+						case 'enum':
+						default:
+							return value || null;
+					}
+				});
+
+				// Build the upsert query for this specific item
+				const valueStrings = values.map((value) => {
+					if (value === null) return 'NULL';
+					if (typeof value === 'string')
+						return `'${value.replace(/'/g, "''")}'`;
+					return value;
+				});
+
+				// Build update clause for non-primary key fields
+				const updateFields = fields.filter(
+					(field) => !field.primaryKey
+				);
+				const updateClause = updateFields
+					.map((field) => {
+						const fieldValue = valueStrings[fields.indexOf(field)];
+						return `${field.name} = ${fieldValue}`;
+					})
+					.join(', ');
+
+				const upsertQuery = `
+					INSERT INTO ${tableName} (${fieldNames})
+					VALUES (${valueStrings.join(', ')})
+					ON CONFLICT(${primaryKeyField.name}) DO UPDATE SET
+					${updateClause}
+				`;
+
+				this.db.exec(upsertQuery);
+			}
+
+			console.log(
+				`Bulk upserted ${items.length} items into ${tableName}`
+			);
+		} catch (error) {
+			console.error('Error in bulk upsert:', error);
+			throw error;
+		}
 	}
 }
