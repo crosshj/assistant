@@ -10,7 +10,7 @@
 }
 
 .reader-header {
-	padding: 1rem 2rem;
+	padding: 1rem 0.5rem;
 	border-bottom: 1px solid var(--card-border);
 	background: var(--card-bg);
 }
@@ -112,6 +112,7 @@
 	padding: 0.5rem;
 	border-radius: 4px;
 	transition: all 0.2s;
+	pointer-events: auto;
 }
 
 .close-btn:hover {
@@ -181,9 +182,11 @@
 	border-radius: 12px;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 	width: 90%;
-	max-width: 500px;
+	max-width: 600px;
 	max-height: 90vh;
-	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	overflow-y: hidden;
 	transform: scale(0.9);
 	transition: transform 0.3s ease;
 }
@@ -192,12 +195,132 @@
 	transform: scale(1);
 }
 
+/* Field Configuration Styles */
+.field-config {
+	border: 1px solid var(--card-border);
+	border-radius: 8px;
+	margin-bottom: 1rem;
+	background: var(--bg-secondary);
+}
+
+.field-config-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0.75rem 1rem;
+	background: var(--card-border);
+	border-bottom: 1px solid var(--card-border);
+}
+
+.field-name {
+	font-weight: 600;
+	color: var(--text-bright);
+}
+
+.remove-field-btn {
+	background: #dc2626;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	width: 24px;
+	height: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font-size: 16px;
+	line-height: 1;
+}
+
+.remove-field-btn:hover {
+	background: #b91c1c;
+}
+
+.field-config-body {
+	padding: 1rem;
+}
+
+.field-config-row {
+	display: flex;
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+
+.field-config-row:last-child {
+	margin-bottom: 0;
+}
+
+.field-config-col {
+	flex: 1;
+}
+
+.field-config-col.full-width {
+	flex: 1 1 100%;
+}
+
+.field-config-col label {
+	display: block;
+	margin-bottom: 0.25rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+.field-config-col input,
+.field-config-col select {
+	width: 100%;
+	padding: 0.5rem;
+	border: 1px solid var(--card-border);
+	border-radius: 4px;
+	background: var(--card-bg);
+	color: var(--text-bright);
+	font-size: 0.875rem;
+}
+
+.field-config-col input[type='checkbox'] {
+	width: auto;
+	margin-right: 0.5rem;
+}
+
+.field-config-col label input[type='checkbox'] {
+	display: inline;
+	width: auto;
+	margin-right: 0.5rem;
+}
+
+/* Controls Configuration Styles */
+.controls-config {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	padding: 1rem;
+	background: var(--bg-secondary);
+	border: 1px solid var(--card-border);
+	border-radius: 8px;
+}
+
+.control-option {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.875rem;
+	color: var(--text-bright);
+	cursor: pointer;
+}
+
+.control-option input[type='checkbox'] {
+	width: auto;
+	margin: 0;
+}
+
 .modal-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	padding: 1.5rem;
 	border-bottom: 1px solid var(--card-border);
+	overflow-y: hidden;
+	flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -209,6 +332,9 @@
 
 .modal-content {
 	padding: 1.5rem;
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 
 .modal-content .form-field {
@@ -256,6 +382,7 @@
 	padding: 1.5rem;
 	border-top: 1px solid var(--card-border);
 	background: var(--bg);
+	flex-shrink: 0;
 }
 
 .modal-actions .action-btn {
@@ -320,14 +447,14 @@
 	border-radius: var(--card-radius);
 	overflow: hidden;
 	height: 100%;
-	min-width: 800px;
-	max-width: 1200px;
+	min-width: min(800px, 100%);
+	max-width: min(1200px, 100%);
 	margin: 0 auto;
 }
 
 .dynamic-ui-content {
 	flex: 1;
-	padding: 2rem;
+	padding: 2rem 1rem;
 	overflow-y: auto;
 }
 
@@ -522,8 +649,9 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 2rem;
-	overflow: auto;
+	padding: 2rem 1rem;
+	overflow-x: hidden;
+	overflow-y: auto;
 }
 
 .reader-loading {
@@ -648,6 +776,7 @@
 
 .list-table-container {
 	overflow-x: auto;
+	width: 100%;
 }
 
 .list-table {
@@ -657,6 +786,7 @@
 	border: 1px solid var(--card-border);
 	border-radius: 8px;
 	overflow: hidden;
+	table-layout: auto;
 }
 
 .list-table thead {
@@ -669,12 +799,30 @@
 	font-weight: 600;
 	color: var(--text-bright);
 	border-bottom: 1px solid var(--card-border);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 200px;
+}
+
+.list-table th.text-column {
+	max-width: none;
+	flex: 1;
 }
 
 .list-table td {
 	padding: 0.75rem 1rem;
 	border-bottom: 1px solid var(--card-border);
 	color: var(--text-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 200px;
+}
+
+.list-table .text-column {
+	max-width: none;
+	flex: 1;
 }
 
 .list-table tr:last-child td {

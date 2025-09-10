@@ -88,7 +88,7 @@ export class DatabaseService {
 				schema: {
 					type: 'list',
 					fields: ['text'],
-					controls: ['add', 'edit', 'delete'],
+					controls: ['add', 'edit', 'delete', 'bulk-upsert'],
 				},
 			};
 		}
@@ -359,7 +359,7 @@ export class DatabaseService {
 					readOnly: true,
 				},
 			],
-			controls: ['add', 'edit', 'delete'],
+			controls: ['add', 'edit', 'delete', 'bulk-upsert'],
 		};
 
 		const stmt = db.prepare(
@@ -417,6 +417,14 @@ export class DatabaseService {
 				...currentSchema,
 				title: metadata.title,
 				description: metadata.description || '',
+				fields: metadata.fields || currentSchema.fields || [],
+				controls: metadata.controls ||
+					currentSchema.controls || [
+						'add',
+						'edit',
+						'delete',
+						'bulk-upsert',
+					],
 			};
 			console.log('Updated schema:', updatedSchema);
 
@@ -460,6 +468,9 @@ export class DatabaseService {
 			// Update the current schema in memory
 			this.schema = updatedSchema;
 
+			// Update the database table structure to match the new schema
+			await this.updateTableStructure(updatedSchema);
+
 			// Verify the update worked by reading back from database
 			const verifyStmt = this.db.prepare(
 				'SELECT schema FROM metadata WHERE id = 1'
@@ -476,6 +487,76 @@ export class DatabaseService {
 			}
 		} catch (error) {
 			console.error('Error updating schema:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Update table structure to match the new schema
+	 * @param {Object} schema - Updated schema
+	 * @returns {Promise<void>}
+	 */
+	async updateTableStructure(schema) {
+		if (!this.db) {
+			throw new Error('Database not initialized');
+		}
+
+		try {
+			const tableName = schema.tableName || 'items';
+			const fields = schema.fields || [];
+
+			// Get current table columns
+			const tableInfo = this.db.exec(`PRAGMA table_info(${tableName})`);
+			const currentColumns = tableInfo[0]?.values || [];
+			const currentColumnNames = currentColumns.map((col) => col[1]); // Column name is at index 1
+
+			// Get new column names from schema
+			const newColumnNames = fields.map((field) => field.name);
+
+			// Find columns to add and remove
+			const columnsToAdd = newColumnNames.filter(
+				(name) => !currentColumnNames.includes(name)
+			);
+			const columnsToRemove = currentColumnNames.filter(
+				(name) => !newColumnNames.includes(name) && name !== 'id'
+			);
+
+			console.log('Columns to add:', columnsToAdd);
+			console.log('Columns to remove:', columnsToRemove);
+
+			// Add new columns
+			for (const columnName of columnsToAdd) {
+				const field = fields.find((f) => f.name === columnName);
+				if (field) {
+					let columnType = 'TEXT';
+					if (field.type === 'integer') columnType = 'INTEGER';
+					if (field.type === 'datetime') columnType = 'TEXT';
+
+					const nullable = field.required ? 'NOT NULL' : '';
+					const defaultValue = field.defaultValue
+						? `DEFAULT '${field.defaultValue}'`
+						: '';
+
+					const alterQuery =
+						`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType} ${nullable} ${defaultValue}`.trim();
+					console.log('Adding column:', alterQuery);
+
+					this.db.exec(alterQuery);
+				}
+			}
+
+			// Note: SQLite doesn't support DROP COLUMN directly, so we'll leave removed columns
+			// They'll just be ignored in the UI but remain in the database
+			if (columnsToRemove.length > 0) {
+				console.log(
+					"Note: SQLite doesn't support dropping columns. These columns will remain in the database:",
+					columnsToRemove
+				);
+			}
+
+			console.log('Table structure updated successfully');
+		} catch (error) {
+			console.error('Error updating table structure:', error);
 			throw error;
 		}
 	}

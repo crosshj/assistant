@@ -72,8 +72,27 @@ export class Reader {
 					</p>
 					<div class="splash-actions">
 						<button
-							id="test-create-file"
+							id="test-file-picker"
 							class="splash-btn primary"
+						>
+							<svg
+								width="20"
+								height="20"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path
+									d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+								></path>
+								<polyline points="14,2 14,8 20,8"></polyline>
+							</svg>
+							Open Existing File
+						</button>
+						<button
+							id="test-create-file"
+							class="splash-btn secondary"
 						>
 							<svg
 								width="20"
@@ -97,25 +116,6 @@ export class Reader {
 								></line>
 							</svg>
 							Create New File
-						</button>
-						<button
-							id="test-file-picker"
-							class="splash-btn secondary"
-						>
-							<svg
-								width="20"
-								height="20"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-							>
-								<path
-									d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-								></path>
-								<polyline points="14,2 14,8 20,8"></polyline>
-							</svg>
-							Open Existing File
 						</button>
 					</div>
 					<div class="splash-features">
@@ -570,6 +570,75 @@ export class Reader {
 ${this.currentSchema?.description || ''}</textarea
 						>
 					</div>
+
+					<div class="form-field">
+						<label>Fields Configuration</label>
+						<div id="fields-container">
+							${this.generateFieldsConfig()}
+						</div>
+						<button
+							type="button"
+							id="add-field-btn"
+							class="action-btn secondary"
+							style="margin-top: 0.5rem;"
+						>
+							+ Add Field
+						</button>
+					</div>
+
+					<div class="form-field">
+						<label>Actions Configuration</label>
+						<div class="controls-config">
+							<label class="control-option">
+								<input
+									type="checkbox"
+									name="control-add"
+									${this.currentSchema?.controls?.includes(
+										'add'
+									)
+										? 'checked'
+										: ''}
+								/>
+								Add Items
+							</label>
+							<label class="control-option">
+								<input
+									type="checkbox"
+									name="control-edit"
+									${this.currentSchema?.controls?.includes(
+										'edit'
+									)
+										? 'checked'
+										: ''}
+								/>
+								Edit Items
+							</label>
+							<label class="control-option">
+								<input
+									type="checkbox"
+									name="control-delete"
+									${this.currentSchema?.controls?.includes(
+										'delete'
+									)
+										? 'checked'
+										: ''}
+								/>
+								Delete Items
+							</label>
+							<label class="control-option">
+								<input
+									type="checkbox"
+									name="control-bulk-upsert"
+									${this.currentSchema?.controls?.includes(
+										'bulk-upsert'
+									)
+										? 'checked'
+										: ''}
+								/>
+								Bulk Upsert
+							</label>
+						</div>
+					</div>
 				</form>
 				<div class="modal-actions">
 					<button
@@ -602,6 +671,13 @@ ${this.currentSchema?.description || ''}</textarea
 			}
 			if (e.target.matches('#save-metadata')) {
 				this.handleMetadataFormSubmit();
+			}
+			if (e.target.matches('#add-field-btn')) {
+				this.addField();
+			}
+			if (e.target.matches('.remove-field-btn')) {
+				const index = e.target.dataset.index;
+				this.removeField(index);
 			}
 		});
 
@@ -731,15 +807,64 @@ ${this.currentSchema?.description || ''}</textarea
 		const form = document.getElementById('metadata-form');
 		const formData = new FormData(form);
 
+		// Process field configuration
+		const fields = [];
+		const fieldIndices = new Set();
+
+		// Collect all field indices from form data
+		for (const [key, value] of formData.entries()) {
+			if (key.startsWith('field-name-')) {
+				const index = key.split('-')[2];
+				fieldIndices.add(index);
+			}
+		}
+
+		// Build fields array from form data
+		for (const index of fieldIndices) {
+			const field = {
+				name: formData.get(`field-name-${index}`) || '',
+				displayName: formData.get(`field-displayName-${index}`) || '',
+				type: formData.get(`field-type-${index}`) || 'text',
+				required: formData.has(`field-required-${index}`),
+				readOnly: formData.has(`field-readOnly-${index}`),
+				primaryKey: formData.has(`field-primaryKey-${index}`),
+			};
+
+			// Handle enum options
+			if (field.type === 'enum') {
+				const optionsStr = formData.get(`field-options-${index}`) || '';
+				field.options = optionsStr
+					.split(',')
+					.map((opt) => opt.trim())
+					.filter((opt) => opt);
+			}
+
+			// Only add fields with names
+			if (field.name) {
+				fields.push(field);
+			}
+		}
+
+		// Process controls configuration
+		const controls = [];
+		if (formData.has('control-add')) controls.push('add');
+		if (formData.has('control-edit')) controls.push('edit');
+		if (formData.has('control-delete')) controls.push('delete');
+		if (formData.has('control-bulk-upsert')) controls.push('bulk-upsert');
+
 		const metadata = {
 			title: formData.get('title') || 'My Database',
 			description: formData.get('description') || '',
+			fields: fields,
+			controls: controls,
 		};
 
 		// Update the current schema
 		if (this.currentSchema) {
 			this.currentSchema.title = metadata.title;
 			this.currentSchema.description = metadata.description;
+			this.currentSchema.fields = metadata.fields;
+			this.currentSchema.controls = metadata.controls;
 		}
 
 		// Update the header title
@@ -749,6 +874,202 @@ ${this.currentSchema?.description || ''}</textarea
 		this.controller.dispatchUpdateMetadata(metadata);
 
 		this.hideMetadataEditForm();
+	}
+
+	addField() {
+		if (!this.currentSchema) {
+			this.currentSchema = { fields: [] };
+		}
+		if (!this.currentSchema.fields) {
+			this.currentSchema.fields = [];
+		}
+
+		// Add a new field
+		this.currentSchema.fields.push({
+			name: `field_${Date.now()}`,
+			displayName: 'New Field',
+			type: 'text',
+			required: false,
+			readOnly: false,
+			primaryKey: false,
+		});
+
+		// Refresh the fields container
+		const container = document.getElementById('fields-container');
+		if (container) {
+			container.innerHTML = this.generateFieldsConfig();
+		}
+	}
+
+	removeField(index) {
+		if (this.currentSchema && this.currentSchema.fields) {
+			this.currentSchema.fields.splice(index, 1);
+
+			// Refresh the fields container
+			const container = document.getElementById('fields-container');
+			if (container) {
+				container.innerHTML = this.generateFieldsConfig();
+			}
+		}
+	}
+
+	formatDate(dateString) {
+		if (!dateString) return '';
+
+		try {
+			const date = new Date(dateString);
+			if (isNaN(date.getTime())) return dateString;
+
+			return date.toLocaleDateString('en-US', {
+				year: 'numeric',
+				month: 'short',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+			});
+		} catch (error) {
+			return dateString;
+		}
+	}
+
+	generateFieldsConfig() {
+		const fields = this.currentSchema?.fields || [];
+
+		return fields
+			.map(
+				(field, index) => html`
+					<div
+						class="field-config"
+						data-index="${index}"
+					>
+						<div class="field-config-header">
+							<span class="field-name"
+								>${field.displayName || field.name}</span
+							>
+							<button
+								type="button"
+								class="remove-field-btn"
+								data-index="${index}"
+							>
+								×
+							</button>
+						</div>
+						<div class="field-config-body">
+							<div class="field-config-row">
+								<div class="field-config-col">
+									<label>Name</label>
+									<input
+										type="text"
+										name="field-name-${index}"
+										value="${field.name}"
+									/>
+								</div>
+								<div class="field-config-col">
+									<label>Display Name</label>
+									<input
+										type="text"
+										name="field-displayName-${index}"
+										value="${field.displayName ||
+										field.name}"
+									/>
+								</div>
+								<div class="field-config-col">
+									<label>Type</label>
+									<select name="field-type-${index}">
+										<option
+											value="text"
+											${field.type === 'text'
+												? 'selected'
+												: ''}
+										>
+											Text
+										</option>
+										<option
+											value="integer"
+											${field.type === 'integer'
+												? 'selected'
+												: ''}
+										>
+											Integer
+										</option>
+										<option
+											value="enum"
+											${field.type === 'enum'
+												? 'selected'
+												: ''}
+										>
+											Enum
+										</option>
+										<option
+											value="datetime"
+											${field.type === 'datetime'
+												? 'selected'
+												: ''}
+										>
+											DateTime
+										</option>
+									</select>
+								</div>
+							</div>
+							<div class="field-config-row">
+								<div class="field-config-col">
+									<label>
+										<input
+											type="checkbox"
+											name="field-required-${index}"
+											${field.required ? 'checked' : ''}
+										/>
+										Required
+									</label>
+								</div>
+								<div class="field-config-col">
+									<label>
+										<input
+											type="checkbox"
+											name="field-readOnly-${index}"
+											${field.readOnly ? 'checked' : ''}
+										/>
+										Read Only
+									</label>
+								</div>
+								<div class="field-config-col">
+									<label>
+										<input
+											type="checkbox"
+											name="field-primaryKey-${index}"
+											${field.primaryKey ? 'checked' : ''}
+										/>
+										Primary Key
+									</label>
+								</div>
+							</div>
+							${field.type === 'enum'
+								? html`
+										<div class="field-config-row">
+											<div
+												class="field-config-col full-width"
+											>
+												<label
+													>Options
+													(comma-separated)</label
+												>
+												<input
+													type="text"
+													name="field-options-${index}"
+													value="${field.options?.join(
+														', '
+													) || ''}"
+													placeholder="Option1, Option2, Option3"
+												/>
+											</div>
+										</div>
+								  `
+								: ''}
+						</div>
+					</div>
+				`
+			)
+			.join('');
 	}
 
 	generateListUI(schema, state) {
@@ -774,12 +1095,16 @@ ${this.currentSchema?.description || ''}</textarea
 								</button>
 						  `
 						: ''}
-					<button
-						id="bulk-upsert-btn"
-						class="action-btn secondary"
-					>
-						Bulk Upsert
-					</button>
+					${schema.controls?.includes('bulk-upsert')
+						? html`
+								<button
+									id="bulk-upsert-btn"
+									class="action-btn secondary"
+								>
+									Bulk Upsert
+								</button>
+						  `
+						: ''}
 				</div>
 
 				<div class="list-table-container">
@@ -792,7 +1117,12 @@ ${this.currentSchema?.description || ''}</textarea
 											${fields
 												.map(
 													(field) => html`
-														<th>
+														<th
+															class="${field.type ===
+															'text'
+																? 'text-column'
+																: ''}"
+														>
 															${field.displayName ||
 															field.name}
 														</th>
@@ -815,11 +1145,25 @@ ${this.currentSchema?.description || ''}</textarea
 														${fields
 															.map(
 																(field) => html`
-																	<td>
-																		${item[
-																			field
-																				.name
-																		] || ''}
+																	<td
+																		class="${field.type ===
+																		'text'
+																			? 'text-column'
+																			: ''}"
+																	>
+																		${field.type ===
+																		'datetime'
+																			? this.formatDate(
+																					item[
+																						field
+																							.name
+																					]
+																			  )
+																			: item[
+																					field
+																						.name
+																			  ] ||
+																			  ''}
 																	</td>
 																`
 															)
