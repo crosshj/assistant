@@ -425,6 +425,10 @@ export class DatabaseService {
 						'delete',
 						'bulk-upsert',
 					],
+				showHeaders:
+					metadata.showHeaders !== undefined
+						? metadata.showHeaders
+						: true,
 			};
 			console.log('Updated schema:', updatedSchema);
 

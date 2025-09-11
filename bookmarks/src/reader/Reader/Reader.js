@@ -637,6 +637,16 @@ ${this.currentSchema?.description || ''}</textarea
 								/>
 								Bulk Upsert
 							</label>
+							<label class="control-option">
+								<input
+									type="checkbox"
+									name="show-headers"
+									${this.currentSchema?.showHeaders !== false
+										? 'checked'
+										: ''}
+								/>
+								Show Headers
+							</label>
 						</div>
 					</div>
 				</form>
@@ -852,11 +862,15 @@ ${this.currentSchema?.description || ''}</textarea
 		if (formData.has('control-delete')) controls.push('delete');
 		if (formData.has('control-bulk-upsert')) controls.push('bulk-upsert');
 
+		// Process showHeaders setting
+		const showHeaders = formData.has('show-headers');
+
 		const metadata = {
 			title: formData.get('title') || 'My Database',
 			description: formData.get('description') || '',
 			fields: fields,
 			controls: controls,
+			showHeaders: showHeaders,
 		};
 
 		// Update the current schema
@@ -865,6 +879,7 @@ ${this.currentSchema?.description || ''}</textarea
 			this.currentSchema.description = metadata.description;
 			this.currentSchema.fields = metadata.fields;
 			this.currentSchema.controls = metadata.controls;
+			this.currentSchema.showHeaders = metadata.showHeaders;
 		}
 
 		// Update the header title
@@ -1082,135 +1097,174 @@ ${this.currentSchema?.description || ''}</textarea
 			(field) => !field.readOnly && !field.autoIncrement
 		);
 
+		// Calculate grid template columns
+		const hasActions =
+			schema.controls?.includes('edit') ||
+			schema.controls?.includes('delete');
+		const totalColumns = fields.length + (hasActions ? 1 : 0);
+		const textColumns = fields.filter(
+			(field) => field.type === 'text'
+		).length;
+		const nonTextColumns =
+			fields.length - textColumns + (hasActions ? 1 : 0);
+
+		// Check if headers should be shown (default to true for backward compatibility)
+		const showHeaders = schema.showHeaders !== false;
+
+		// Check if any controls will actually be rendered
+		const hasAddControl = schema.controls?.includes('add');
+		const hasBulkUpsertControl =
+			schema.controls?.includes('bulk-upsert') && items.length > 0;
+		const hasAnyControls = hasAddControl || hasBulkUpsertControl;
+
+		// Create grid template: text columns get more space, others get fixed width
+		const gridTemplate = fields
+			.map((field) => (field.type === 'text' ? '1fr' : 'auto'))
+			.concat(hasActions ? ['auto'] : [])
+			.join(' ');
+
 		return html`
 			<div class="list-ui">
-				<div class="list-controls">
-					${schema.controls?.includes('add')
-						? html`
-								<button
-									id="add-item-btn"
-									class="action-btn primary"
-								>
-									Add Item
-								</button>
-						  `
-						: ''}
-					${schema.controls?.includes('bulk-upsert')
-						? html`
-								<button
-									id="bulk-upsert-btn"
-									class="action-btn secondary"
-								>
-									Bulk Upsert
-								</button>
-						  `
-						: ''}
-				</div>
+				${hasAnyControls
+					? html`
+							<div class="list-controls">
+								${hasAddControl
+									? html`
+											<button
+												id="add-item-btn"
+												class="action-btn primary"
+											>
+												Add Item
+											</button>
+									  `
+									: ''}
+								${hasBulkUpsertControl
+									? html`
+											<button
+												id="bulk-upsert-btn"
+												class="action-btn secondary"
+											>
+												Bulk Upsert
+											</button>
+									  `
+									: ''}
+							</div>
+					  `
+					: ''}
 
-				<div class="list-table-container">
+				<div class="list-grid-container">
 					${items.length === 0
 						? html` <p class="empty-state">No items yet</p> `
 						: html`
-								<table class="list-table">
-									<thead>
-										<tr>
-											${fields
-												.map(
-													(field) => html`
-														<th
-															class="${field.type ===
-															'text'
-																? 'text-column'
-																: ''}"
-														>
-															${field.displayName ||
-															field.name}
-														</th>
-													`
+								<div
+									class="list-grid"
+									style="grid-template-columns: ${gridTemplate}"
+								>
+									${showHeaders
+										? html`
+												<!-- Header row -->
+												${fields
+													.map(
+														(field) => html`
+															<div
+																class="grid-header ${field.type ===
+																'text'
+																	? 'text-column'
+																	: ''}"
+															>
+																${field.displayName ||
+																field.name}
+															</div>
+														`
+													)
+													.join('')}
+												${schema.controls?.includes(
+													'edit'
+												) ||
+												schema.controls?.includes(
+													'delete'
 												)
-												.join('')}
-											${schema.controls?.includes(
-												'edit'
-											) ||
-											schema.controls?.includes('delete')
-												? html`<th>Actions</th>`
-												: ''}
-										</tr>
-									</thead>
-									<tbody>
-										${items
-											.map(
-												(item) => html`
-													<tr data-id="${item.id}">
-														${fields
-															.map(
-																(field) => html`
-																	<td
-																		class="${field.type ===
-																		'text'
-																			? 'text-column'
-																			: ''}"
-																	>
-																		${field.type ===
-																		'datetime'
-																			? this.formatDate(
-																					item[
-																						field
-																							.name
-																					]
-																			  )
-																			: item[
-																					field
-																						.name
-																			  ] ||
-																			  ''}
-																	</td>
-																`
-															)
-															.join('')}
-														${schema.controls?.includes(
-															'edit'
-														) ||
-														schema.controls?.includes(
-															'delete'
-														)
-															? html`
-																	<td
-																		class="actions-cell"
-																	>
-																		${schema.controls?.includes(
-																			'edit'
-																		)
-																			? html`
-																					<button
-																						class="action-btn secondary edit-btn"
-																						data-id="${item.id}"
-																					>
-																						Edit
-																					</button>
-																			  `
-																			: ''}
-																		${schema.controls?.includes(
-																			'delete'
-																		)
-																			? html`
-																					<button
-																						class="action-btn danger delete-btn"
-																						data-id="${item.id}"
-																					>
-																						Delete
-																					</button>
-																			  `
-																			: ''}
-																	</td>
-															  `
-															: ''}
-													</tr>
-												`
-											)
-											.join('')}
-									</tbody>
-								</table>
+													? html`<div
+															class="grid-header actions-header"
+													  >
+															Actions
+													  </div>`
+													: ''}
+										  `
+										: ''}
+
+									<!-- Data rows -->
+									${items
+										.map(
+											(item) => html`
+												${fields
+													.map(
+														(field) => html`
+															<div
+																class="grid-cell ${field.type ===
+																'text'
+																	? 'text-column'
+																	: ''}"
+																data-id="${item.id}"
+															>
+																${field.type ===
+																'datetime'
+																	? this.formatDate(
+																			item[
+																				field
+																					.name
+																			]
+																	  )
+																	: item[
+																			field
+																				.name
+																	  ] || ''}
+															</div>
+														`
+													)
+													.join('')}
+												${schema.controls?.includes(
+													'edit'
+												) ||
+												schema.controls?.includes(
+													'delete'
+												)
+													? html`
+															<div
+																class="grid-cell actions-cell"
+																data-id="${item.id}"
+															>
+																${schema.controls?.includes(
+																	'edit'
+																)
+																	? html`
+																			<button
+																				class="action-btn secondary edit-btn"
+																				data-id="${item.id}"
+																			>
+																				Edit
+																			</button>
+																	  `
+																	: ''}
+																${schema.controls?.includes(
+																	'delete'
+																)
+																	? html`
+																			<button
+																				class="action-btn danger delete-btn"
+																				data-id="${item.id}"
+																			>
+																				Delete
+																			</button>
+																	  `
+																	: ''}
+															</div>
+													  `
+													: ''}
+											`
+										)
+										.join('')}
+								</div>
 						  `}
 				</div>
 
