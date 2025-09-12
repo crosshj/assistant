@@ -1,83 +1,54 @@
-import { dispatchEvent, addEventListener } from '../_lib/utils.js';
+import {
+	dispatchEvent,
+	addEventListener,
+	setupEventUtilities,
+} from '../_lib/utils.js';
 import { Reader } from './Reader.js';
 
 export class ReaderController {
 	constructor() {
 		this.ui = new Reader(this);
+		this.selectedRowId = null;
+		setupEventUtilities(this.ui);
 		this.setupEventListeners();
 	}
 
 	setupEventListeners() {
 		addEventListener('reader:ready', () => this.ui.showContent());
 
-		// Event delegation for all UI interactions
-		this.ui.container.addEventListener('click', (e) => {
-			if (
-				e.target.matches('#hamburger-menu') ||
-				e.target.closest('#hamburger-menu')
-			) {
-				this.ui.toggleHamburgerMenu();
-			}
-			if (e.target.matches('#close-sidebar')) {
-				this.ui.hideHamburgerMenu();
-			}
-			if (e.target.matches('#menu-open-file')) {
-				this.ui.hideHamburgerMenu();
-				dispatchEvent('ui:testFilePicker');
-			}
-			if (e.target.matches('#menu-create-file')) {
-				this.ui.hideHamburgerMenu();
-				dispatchEvent('ui:testCreateFile');
-			}
-			// Splash page button handlers
-			if (e.target.matches('#test-file-picker')) {
-				dispatchEvent('ui:testFilePicker');
-			}
-			if (e.target.matches('#test-create-file')) {
-				dispatchEvent('ui:testCreateFile');
-			}
-			if (e.target.matches('#menu-edit-metadata')) {
-				this.ui.hideHamburgerMenu();
-				this.ui.showMetadataEditForm();
-			}
-			if (e.target.matches('#add-item-btn')) {
-				this.ui.showAddForm();
-			}
-			if (e.target.matches('.edit-btn')) {
-				this.ui.showEditForm(e.target.dataset.id);
-			}
-			if (e.target.matches('.delete-btn')) {
-				this.ui.handleDeleteClick(e.target.dataset.id);
-			}
-			if (e.target.matches('#cancel-form')) {
-				this.ui.hideForm();
-			}
-			if (
-				e.target.matches('#close-metadata-modal') ||
-				e.target.matches('#cancel-metadata')
-			) {
-				this.ui.hideMetadataEditForm();
-			}
-			if (e.target.matches('#save-metadata')) {
-				this.ui.handleMetadataFormSubmit();
-			}
-			if (e.target.matches('#bulk-upsert-btn')) {
-				this.handleBulkUpsert();
-			}
-		});
+		const uiClickHandlers = {
+			'#hamburger-menu': () => this.ui.toggleHamburgerMenu(),
+			'#close-sidebar': () => this.ui.hideHamburgerMenu(),
+			'#menu-open-file': this.handleMenuOpenFile,
+			'#menu-create-file': this.handleMenuCreateFile,
+			'#test-file-picker': () => dispatchEvent('ui:testFilePicker'),
+			'#test-create-file': () => dispatchEvent('ui:testCreateFile'),
+			'#menu-edit-metadata': () => this.ui.showMetadataEditForm(),
+			'#add-item-btn': () => this.ui.showAddForm(),
+			'.edit-btn': (e) => this.ui.showEditForm(e.target.dataset.id),
+			'.delete-btn': (e) =>
+				this.ui.handleDeleteClick(e.target.dataset.id),
+			'#cancel-form': () => this.ui.hideForm(),
+			'#close-metadata-modal, #cancel-metadata': () =>
+				this.ui.hideMetadataEditForm(),
+			'#save-metadata': () => this.ui.handleMetadataFormSubmit(),
+			'#bulk-upsert-btn': () => this.ui.showBulkUpsertModal(),
+			'.sidebar-overlay': () => this.ui.hideHamburgerMenu(),
+			'.grid-row': (e) => {
+				if (e.target.matches('.action-btn')) return;
+				const row = e.target.closest('.grid-row');
+				if (row) {
+					this.selectRow(row.dataset.rowId);
+				}
+			},
+		};
+		this.ui.bind('click', uiClickHandlers);
 
-		// Close sidebar when clicking overlay
-		this.ui.container.addEventListener('click', (e) => {
-			if (e.target.matches('.sidebar-overlay')) {
-				this.ui.hideHamburgerMenu();
-			}
-		});
-
-		this.ui.container.addEventListener('submit', (e) => {
-			if (e.target.matches('#item-form-element')) {
+		this.ui.bind('submit', {
+			'#item-form-element': (e) => {
 				e.preventDefault();
 				this.ui.handleFormSubmit(e.target);
-			}
+			},
 		});
 
 		addEventListener('db:state', (e) => {
@@ -122,7 +93,31 @@ export class ReaderController {
 		});
 	}
 
-	handleBulkUpsert() {
-		this.ui.showBulkUpsertModal();
+	selectRow(rowId) {
+		// Clear previous selection
+		if (this.selectedRowId) {
+			this.ui.clearRowSelection();
+		}
+
+		// Set new selection
+		this.selectedRowId = rowId;
+		this.ui.selectRow(rowId);
+
+		// Fire selection event
+		dispatchEvent('reader:itemSelected', {
+			itemId: rowId,
+			item: this.ui.getItemById(rowId),
+		});
 	}
+
+	// Menu handlers that coordinate UI + events
+	handleMenuOpenFile = () => {
+		this.ui.hideHamburgerMenu();
+		dispatchEvent('ui:testFilePicker');
+	};
+
+	handleMenuCreateFile = () => {
+		this.ui.hideHamburgerMenu();
+		dispatchEvent('ui:testCreateFile');
+	};
 }

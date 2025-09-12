@@ -15,7 +15,41 @@ export class Reader {
 	render() {
 		this.container.innerHTML = html`
 			<header class="reader-header">
-				<h1 id="app-title">Reader</h1>
+				<div class="header-left">
+					<button
+						id="hamburger-menu"
+						class="hamburger-btn"
+					>
+						<svg
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<line
+								x1="3"
+								y1="6"
+								x2="21"
+								y2="6"
+							></line>
+							<line
+								x1="3"
+								y1="12"
+								x2="21"
+								y2="12"
+							></line>
+							<line
+								x1="3"
+								y1="18"
+								x2="21"
+								y2="18"
+							></line>
+						</svg>
+					</button>
+					<h1 id="app-title">Reader</h1>
+				</div>
 			</header>
 			<div class="reader-content">
 				<div class="reader-loading">
@@ -508,6 +542,9 @@ export class Reader {
 	}
 
 	showMetadataEditForm() {
+		// Hide hamburger menu first
+		this.hideHamburgerMenu();
+
 		// Create modal overlay
 		const modal = document.createElement('div');
 		modal.className = 'metadata-modal-overlay';
@@ -1197,70 +1234,71 @@ ${this.currentSchema?.description || ''}</textarea
 									${items
 										.map(
 											(item) => html`
-												${fields
-													.map(
-														(field) => html`
-															<div
-																class="grid-cell ${field.type ===
-																'text'
-																	? 'text-column'
-																	: ''}"
-																data-id="${item.id}"
-															>
-																${field.type ===
-																'datetime'
-																	? this.formatDate(
-																			item[
+												<div
+													class="grid-row"
+													data-row-id="${item.id}"
+												>
+													${fields
+														.map(
+															(field) => html`
+																<div
+																	class="grid-cell ${field.name}-column"
+																>
+																	${field.type ===
+																	'datetime'
+																		? this.formatDate(
+																				item[
+																					field
+																						.name
+																				]
+																		  )
+																		: item[
 																				field
 																					.name
-																			]
-																	  )
-																	: item[
-																			field
-																				.name
-																	  ] || ''}
-															</div>
-														`
+																		  ] ||
+																		  ''}
+																</div>
+															`
+														)
+														.join('')}
+													${schema.controls?.includes(
+														'edit'
+													) ||
+													schema.controls?.includes(
+														'delete'
 													)
-													.join('')}
-												${schema.controls?.includes(
-													'edit'
-												) ||
-												schema.controls?.includes(
-													'delete'
-												)
-													? html`
-															<div
-																class="grid-cell actions-cell"
-																data-id="${item.id}"
-															>
-																${schema.controls?.includes(
-																	'edit'
-																)
-																	? html`
-																			<button
-																				class="action-btn secondary edit-btn"
-																				data-id="${item.id}"
-																			>
-																				Edit
-																			</button>
-																	  `
-																	: ''}
-																${schema.controls?.includes(
-																	'delete'
-																)
-																	? html`
-																			<button
-																				class="action-btn danger delete-btn"
-																				data-id="${item.id}"
-																			>
-																				Delete
-																			</button>
-																	  `
-																	: ''}
-															</div>
-													  `
-													: ''}
+														? html`
+																<div
+																	class="grid-cell actions-cell"
+																>
+																	${schema.controls?.includes(
+																		'edit'
+																	)
+																		? html`
+																				<button
+																					class="action-btn secondary edit-btn"
+																					data-id="${item.id}"
+																				>
+																					Edit
+																				</button>
+																		  `
+																		: ''}
+																	${schema.controls?.includes(
+																		'delete'
+																	)
+																		? html`
+																				<button
+																					class="action-btn danger delete-btn"
+																					data-id="${item.id}"
+																				>
+																					Delete
+																				</button>
+																		  `
+																		: ''}
+																</div>
+														  `
+														: ''}
+												</div>
 											`
 										)
 										.join('')}
@@ -1380,6 +1418,23 @@ ${this.currentSchema?.description || ''}</textarea
 		const tableName = this.currentSchema.tableName || 'items';
 		const items = this.currentState[tableName] || [];
 		return items.find((item) => item.id == itemId);
+	}
+
+	selectRow(rowId) {
+		const row = this.container.querySelector(
+			`.grid-row[data-row-id="${rowId}"]`
+		);
+		if (row) {
+			row.querySelectorAll('.grid-cell').forEach((cell) =>
+				cell.classList.add('row-selected')
+			);
+		}
+	}
+
+	clearRowSelection() {
+		this.container
+			.querySelectorAll('.row-selected')
+			.forEach((cell) => cell.classList.remove('row-selected'));
 	}
 
 	showAddForm() {

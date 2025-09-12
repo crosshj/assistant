@@ -24,3 +24,31 @@ export const html = (strings, ...values) => {
 	}
 	return result;
 };
+
+/**
+ * Sets up event binding utilities on a UI component
+ * @param {Object} ui - UI component instance
+ */
+export function setupEventUtilities(ui) {
+	// Core binding method
+	ui.bind = (eventType, handlers) => {
+		ui.container.addEventListener(eventType, (e) => {
+			const is = (selector) =>
+				e.target.matches(selector) || e.target.closest(selector);
+			for (const [selector, handlerOrHandlers] of Object.entries(
+				handlers
+			)) {
+				if (is(selector)) {
+					// Support both single handler and array of handlers
+					const handlersToCall = Array.isArray(handlerOrHandlers)
+						? handlerOrHandlers
+						: [handlerOrHandlers];
+
+					// Call all handlers in order
+					handlersToCall.forEach((handler) => handler(e));
+					break;
+				}
+			}
+		});
+	};
+}
