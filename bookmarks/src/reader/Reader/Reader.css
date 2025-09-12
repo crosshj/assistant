@@ -28,6 +28,142 @@
 	gap: 0.5rem;
 }
 
+.header-right {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.selected-edit-btn {
+	background: none;
+	border: none;
+	color: var(--text-bright);
+	cursor: pointer;
+	padding: 0.5rem;
+	border-radius: 4px;
+	transition: background-color 0.2s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 2.5rem;
+	width: 2.5rem;
+}
+
+.selected-edit-btn:hover {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.selected-edit-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Selected Edit Modal Styles */
+.selected-edit-modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 1000;
+	opacity: 0;
+	visibility: hidden;
+	transition: all 0.3s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.selected-edit-modal-overlay.show {
+	opacity: 1;
+	visibility: visible;
+}
+
+.selected-edit-modal {
+	background: var(--card-bg);
+	border: 1px solid var(--card-border);
+	border-radius: 8px;
+	width: 90%;
+	max-width: 500px;
+	max-height: 80vh;
+	overflow: hidden;
+	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.selected-edit-modal .modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 1.5rem;
+	border-bottom: 1px solid var(--card-border);
+}
+
+.selected-edit-modal .modal-header h3 {
+	margin: 0;
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: var(--text-bright);
+}
+
+.selected-edit-modal .modal-content {
+	padding: 1.5rem;
+	max-height: 60vh;
+	overflow-y: auto;
+}
+
+.selected-edit-modal .form-field {
+	margin-bottom: 1rem;
+}
+
+.selected-edit-modal .form-field label {
+	display: block;
+	margin-bottom: 0.5rem;
+	font-weight: 500;
+	color: var(--text-bright);
+}
+
+.selected-edit-modal .form-field input {
+	width: 100%;
+	padding: 0.75rem;
+	border: 1px solid var(--card-border);
+	border-radius: 4px;
+	background: var(--bg);
+	color: var(--text);
+	font-size: 0.875rem;
+}
+
+.selected-edit-modal .form-field input:focus {
+	outline: none;
+	border-color: var(--accent);
+	box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+}
+
+.selected-edit-modal .form-field select {
+	width: 100%;
+	padding: 0.75rem;
+	border: 1px solid var(--card-border);
+	border-radius: 4px;
+	background: var(--bg);
+	color: var(--text);
+	font-size: 0.875rem;
+}
+
+.selected-edit-modal .form-field select:focus {
+	outline: none;
+	border-color: var(--accent);
+	box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+}
+
+.selected-edit-modal .modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.75rem;
+	margin-top: 1.5rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid var(--card-border);
+}
+
 .reader-header h1 {
 	margin: 0;
 	font-size: 1.125rem;
@@ -720,8 +856,8 @@
 	padding: 1.25rem;
 	flex: 1;
 	overflow-y: auto;
-	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
-		'Courier New', monospace;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+		'Helvetica Neue', Arial, sans-serif;
 	font-size: 0.8rem;
 	line-height: 1.5;
 	color: var(--text-muted);
@@ -829,8 +965,8 @@
 	align-items: center;
 	line-height: 0.925;
 	font-size: 0.875rem;
-	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
-		'Courier New', monospace;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+		'Helvetica Neue', Arial, sans-serif;
 }
 
 .grid-cell.text-column {

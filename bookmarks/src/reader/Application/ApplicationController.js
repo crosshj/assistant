@@ -50,7 +50,6 @@ export class ApplicationController {
 	}
 
 	onAppInit() {
-		console.log('Application initialized');
 		// Application-level initialization will go here
 
 		// Simulate some initialization work

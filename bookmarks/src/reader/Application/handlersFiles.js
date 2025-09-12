@@ -7,13 +7,8 @@ export function getHandlers(appController) {
 	return {
 		async handleTestFilePicker() {
 			try {
-				console.log('Testing file picker...');
 				const file = await appController.fileService.openFile();
 				if (file) {
-					console.log(
-						`File opened: ${file.name} (${file.size} bytes)`
-					);
-
 					// Call database handler to load the file
 					await appController.databaseHandlers.handleLoadFromFile(
 						file

@@ -36,11 +36,9 @@ export class FileService {
 			const file = await fileHandle.getFile();
 			this.fileData = file;
 
-			console.log('File opened:', file.name, file.size, 'bytes');
 			return file;
 		} catch (error) {
 			if (error.name === 'AbortError') {
-				console.log('File picker cancelled');
 				return null;
 			}
 			console.error('Error opening file:', error);

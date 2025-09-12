@@ -54,7 +54,6 @@ export function getHandlers(appController) {
 				const dbInfo = await appController.databaseService.loadFromFile(
 					arrayBuffer
 				);
-				console.log('Database loaded:', dbInfo);
 
 				dispatchDbState(
 					'file_opened',
@@ -89,8 +88,6 @@ export function getHandlers(appController) {
 				const dbInfo = await appController.databaseService.loadFromFile(
 					arrayBuffer
 				);
-
-				console.log('Database loaded successfully:', dbInfo);
 
 				// Get only items table data
 				const allResults = {};
@@ -309,18 +306,67 @@ export function getHandlers(appController) {
 			const { metadata } = e.detail;
 
 			try {
+				console.log('=== METADATA UPDATE STARTED ===');
+
 				// Update the schema in the database
 				await appController.databaseService.updateSchema(metadata);
+				console.log('Schema updated, migration completed');
 
 				// Save the file to persist changes
+				console.log('Exporting database data...');
 				const dbData = appController.databaseService.exportDatabase();
+
+				// Verify the exported data contains migrated values
+				try {
+					// Convert ArrayBuffer to string first
+					const decoder = new TextDecoder();
+					const dbDataString = decoder.decode(dbData);
+					console.log(
+						'Exported data type:',
+						typeof dbData,
+						'Length:',
+						dbData.byteLength
+					);
+					console.log(
+						'First 200 chars of exported data:',
+						dbDataString.substring(0, 200)
+					);
+
+					const exportedDb = JSON.parse(dbDataString);
+					if (exportedDb.tables && exportedDb.tables.items) {
+						const items = exportedDb.tables.items;
+						console.log(
+							'Exported items sample (first 3):',
+							items.slice(0, 3)
+						);
+						const statusCounts = {};
+						items.forEach((item) => {
+							statusCounts[item.status] =
+								(statusCounts[item.status] || 0) + 1;
+						});
+						console.log(
+							'Status counts in exported data:',
+							statusCounts
+						);
+					}
+				} catch (e) {
+					console.log(
+						'Could not parse exported data for verification:',
+						e
+					);
+				}
+
+				console.log('Database exported, saving file...');
 				await appController.fileHandlers.saveFile(dbData);
+				console.log('File saved successfully');
 
 				// Use the existing dispatchDbState function
+				console.log('Dispatching db:state event...');
 				dispatchDbState(
 					'metadata_updated',
 					'Database metadata updated successfully'
 				);
+				console.log('=== METADATA UPDATE COMPLETED ===');
 			} catch (error) {
 				console.error('Error updating metadata:', error);
 				dispatchEvent('db:state', {

@@ -28,11 +28,17 @@ export class ReaderController {
 			'.edit-btn': (e) => this.ui.showEditForm(e.target.dataset.id),
 			'.delete-btn': (e) =>
 				this.ui.handleDeleteClick(e.target.dataset.id),
-			'#cancel-form': () => this.ui.hideForm(),
+			'#bulk-upsert-btn': () => this.ui.showBulkUpsertModal(),
+			// '#bulk-status-edit-btn': () => this.ui.showBulkStatusEditModal(),
+			'#selected-edit-btn': () => this.ui.showSelectedEditModal(),
+			'#close-selected-edit-modal, #cancel-selected-edit': () =>
+				this.ui.hideSelectedEditModal(),
 			'#close-metadata-modal, #cancel-metadata': () =>
 				this.ui.hideMetadataEditForm(),
-			'#save-metadata': () => this.ui.handleMetadataFormSubmit(),
-			'#bulk-upsert-btn': () => this.ui.showBulkUpsertModal(),
+			'#close-bulk-upsert-modal, #cancel-bulk-upsert': () =>
+				this.ui.hideBulkUpsertModal(),
+			// '#close-bulk-status-edit-modal, #cancel-bulk-status-edit': () =>
+			// 	this.ui.hideBulkStatusEditModal(),
 			'.sidebar-overlay': () => this.ui.hideHamburgerMenu(),
 			'.grid-row': (e) => {
 				if (e.target.matches('.action-btn')) return;
@@ -45,9 +51,13 @@ export class ReaderController {
 		this.ui.bind('click', uiClickHandlers);
 
 		this.ui.bind('submit', {
-			'#item-form-element': (e) => {
+			'#selected-edit-form': (e) => {
 				e.preventDefault();
-				this.ui.handleFormSubmit(e.target);
+				this.ui.handleSelectedEditFormSubmit(e.target);
+			},
+			'#metadata-form': (e) => {
+				e.preventDefault();
+				this.ui.handleMetadataFormSubmit();
 			},
 		});
 
@@ -57,7 +67,6 @@ export class ReaderController {
 			if (error) {
 				this.ui.showDatabaseError(error);
 			} else {
-				console.log({ metadata });
 				this.ui.showDatabaseState({ action, state, metadata, message });
 			}
 		});

@@ -258,17 +258,9 @@ export class Reader {
 	}
 
 	updateHeaderTitle(title) {
-		console.log('updateHeaderTitle called with:', title);
 		const titleElement = this.container.querySelector('#app-title');
-		console.log('Found title element:', titleElement);
 		if (titleElement) {
 			titleElement.textContent = title;
-			console.log(
-				'Updated title element text to:',
-				titleElement.textContent
-			);
-		} else {
-			console.log('No title element found with id="app-title"');
 		}
 	}
 
@@ -340,6 +332,30 @@ export class Reader {
 					</button>
 					<h1 id="app-title">Reader</h1>
 				</div>
+				<div class="header-right">
+					<button
+						id="selected-edit-btn"
+						class="selected-edit-btn"
+						style="display: none;"
+						title="Edit Selected Item"
+					>
+						<svg
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<path
+								d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+							></path>
+							<path
+								d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+							></path>
+						</svg>
+					</button>
+				</div>
 			`;
 		}
 	}
@@ -385,6 +401,174 @@ export class Reader {
 				</div>
 			`;
 		}
+	}
+
+	showSelectedEditButton() {
+		const editBtn = this.container.querySelector('#selected-edit-btn');
+		if (
+			editBtn &&
+			this.currentSchema?.controls?.includes('selected-edit')
+		) {
+			editBtn.style.display = 'flex';
+		}
+	}
+
+	hideSelectedEditButton() {
+		const editBtn = this.container.querySelector('#selected-edit-btn');
+		if (editBtn) {
+			editBtn.style.display = 'none';
+		}
+	}
+
+	showSelectedEditModal(itemId = null) {
+		// Hide hamburger menu first
+		this.hideHamburgerMenu();
+
+		// Get the item to edit (either passed itemId or selected item)
+		const selectedItem = itemId
+			? this.getItemById(itemId)
+			: this.controller.selectedRowId
+			? this.getItemById(this.controller.selectedRowId)
+			: null;
+
+		// For add mode, we don't need an existing item
+		const isAddMode = !itemId && !this.controller.selectedRowId;
+
+		// Create modal overlay
+		const modal = document.createElement('div');
+		modal.className = 'selected-edit-modal-overlay';
+		modal.innerHTML = html`
+			<div class="selected-edit-modal">
+				<div class="modal-header">
+					<h3>${isAddMode ? 'Add Item' : 'Edit Item'}</h3>
+					<button
+						id="close-selected-edit-modal"
+						class="close-btn"
+					>
+						<svg
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<line
+								x1="18"
+								y1="6"
+								x2="6"
+								y2="18"
+							></line>
+							<line
+								x1="6"
+								y1="6"
+								x2="18"
+								y2="18"
+							></line>
+						</svg>
+					</button>
+				</div>
+				<form
+					id="selected-edit-form"
+					class="modal-content"
+				>
+					${!isAddMode
+						? html`
+								<input
+									type="hidden"
+									name="id"
+									value="${selectedItem?.id || ''}"
+								/>
+						  `
+						: ''}
+					${this.currentSchema?.fields
+						?.filter((field) => field.name !== 'id') // Exclude ID field from form
+						?.map(
+							(field) => html`
+								<div class="form-field">
+									<label for="selected-edit-${field.name}"
+										>${field.displayName ||
+										field.name}</label
+									>
+									${this.generateFieldInputForModal(
+										field,
+										selectedItem || {}
+									)}
+								</div>
+							`
+						)
+						.join('') || ''}
+					<div class="modal-actions">
+						<button
+							type="button"
+							id="cancel-selected-edit"
+							class="btn btn-secondary"
+						>
+							Cancel
+						</button>
+						<button
+							type="submit"
+							id="save-selected-edit"
+							class="btn btn-primary"
+						>
+							Save Changes
+						</button>
+					</div>
+				</form>
+			</div>
+		`;
+
+		// Add modal to DOM
+		this.container.appendChild(modal);
+
+		// Show modal with animation
+		requestAnimationFrame(() => {
+			modal.style.opacity = '1';
+			modal.style.visibility = 'visible';
+		});
+	}
+
+	hideSelectedEditModal() {
+		const modal = this.container.querySelector(
+			'.selected-edit-modal-overlay'
+		);
+		if (modal) {
+			modal.style.opacity = '0';
+			modal.style.visibility = 'hidden';
+			setTimeout(() => {
+				modal.remove();
+			}, 300);
+		}
+	}
+
+	handleSelectedEditFormSubmit(form) {
+		const formData = new FormData(form);
+		const data = {};
+
+		// Extract form data
+		for (const [key, value] of formData.entries()) {
+			data[key] = value;
+		}
+
+		// Get the item ID (if present)
+		const itemId = data.id;
+
+		if (itemId) {
+			// Edit mode: Remove ID from data object before sending to controller
+			delete data.id;
+			// Dispatch update event
+			this.controller.dispatchUpdateData(data, itemId);
+		} else {
+			// Add mode: Insert new item
+			this.controller.dispatchInsertData(data);
+		}
+
+		// Hide modal
+		this.hideSelectedEditModal();
+
+		// Clear selection
+		this.controller.selectedRowId = null;
+		this.hideSelectedEditButton();
 	}
 
 	toggleHamburgerMenu() {
@@ -677,6 +861,18 @@ ${this.currentSchema?.description || ''}</textarea
 							<label class="control-option">
 								<input
 									type="checkbox"
+									name="control-selected-edit"
+									${this.currentSchema?.controls?.includes(
+										'selected-edit'
+									)
+										? 'checked'
+										: ''}
+								/>
+								Selected Edit (Header Icon)
+							</label>
+							<label class="control-option">
+								<input
+									type="checkbox"
 									name="show-headers"
 									${this.currentSchema?.showHeaders !== false
 										? 'checked'
@@ -686,39 +882,30 @@ ${this.currentSchema?.description || ''}</textarea
 							</label>
 						</div>
 					</div>
+					<div class="modal-actions">
+						<button
+							type="button"
+							id="cancel-metadata"
+							class="action-btn secondary"
+						>
+							Cancel
+						</button>
+						<button
+							type="submit"
+							id="save-metadata"
+							class="action-btn primary"
+						>
+							Save Changes
+						</button>
+					</div>
 				</form>
-				<div class="modal-actions">
-					<button
-						type="button"
-						id="cancel-metadata"
-						class="action-btn secondary"
-					>
-						Cancel
-					</button>
-					<button
-						type="button"
-						id="save-metadata"
-						class="action-btn primary"
-					>
-						Save Changes
-					</button>
-				</div>
 			</div>
 		`;
 
-		document.body.appendChild(modal);
+		this.container.appendChild(modal);
 
 		// Add event listeners to the modal
 		modal.addEventListener('click', (e) => {
-			if (
-				e.target.matches('#close-metadata-modal') ||
-				e.target.matches('#cancel-metadata')
-			) {
-				this.hideMetadataEditForm();
-			}
-			if (e.target.matches('#save-metadata')) {
-				this.handleMetadataFormSubmit();
-			}
 			if (e.target.matches('#add-field-btn')) {
 				this.addField();
 			}
@@ -735,7 +922,7 @@ ${this.currentSchema?.description || ''}</textarea
 	}
 
 	hideMetadataEditForm() {
-		const modal = document.querySelector('.metadata-modal-overlay');
+		const modal = this.container.querySelector('.metadata-modal-overlay');
 		if (modal) {
 			modal.classList.remove('show');
 			setTimeout(() => {
@@ -784,7 +971,7 @@ ${this.currentSchema?.description || ''}</textarea
 			</div>
 		`;
 
-		document.body.appendChild(modal);
+		this.container.appendChild(modal);
 
 		// Add event listeners
 		modal
@@ -807,7 +994,9 @@ ${this.currentSchema?.description || ''}</textarea
 	}
 
 	hideBulkUpsertModal() {
-		const modal = document.querySelector('.bulk-upsert-modal-overlay');
+		const modal = this.container.querySelector(
+			'.bulk-upsert-modal-overlay'
+		);
 		if (modal) {
 			modal.remove();
 		}
@@ -850,9 +1039,119 @@ ${this.currentSchema?.description || ''}</textarea
 		this.hideBulkUpsertModal();
 	}
 
+	// TEMPORARY: Bulk Status Edit Modal
+	/*
+	showBulkStatusEditModal() {
+		const statusField = this.currentSchema?.fields?.find(
+			(f) => f.name === 'status' && f.type === 'enum'
+		);
+		if (!statusField) {
+			alert('No status enum field found');
+			return;
+		}
+
+		const modal = document.createElement('div');
+		modal.className = 'bulk-status-edit-modal-overlay';
+		modal.innerHTML = html`
+			<div class="bulk-status-edit-modal">
+				<div class="modal-header">
+					<h3>Bulk Status Edit</h3>
+					<button
+						id="close-bulk-status-edit-modal"
+						class="close-btn"
+					>
+						×
+					</button>
+				</div>
+				<div class="modal-content">
+					<p>Set status for all items to:</p>
+					<select id="bulk-status-select">
+						<option value="">Select status...</option>
+						${statusField.options
+							?.map(
+								(option) => html`
+									<option value="${option}">${option}</option>
+								`
+							)
+							.join('') || ''}
+					</select>
+				</div>
+				<div class="modal-actions">
+					<button
+						id="cancel-bulk-status-edit"
+						class="action-btn secondary"
+					>
+						Cancel
+					</button>
+					<button
+						id="apply-bulk-status-edit"
+						class="action-btn primary"
+					>
+						Apply to All
+					</button>
+				</div>
+			</div>
+		`;
+
+		this.container.appendChild(modal);
+
+		modal
+			.querySelector('#close-bulk-status-edit-modal')
+			.addEventListener('click', () => {
+				this.hideBulkStatusEditModal();
+			});
+		modal
+			.querySelector('#cancel-bulk-status-edit')
+			.addEventListener('click', () => {
+				this.hideBulkStatusEditModal();
+			});
+		modal
+			.querySelector('#apply-bulk-status-edit')
+			.addEventListener('click', () => {
+				this.handleBulkStatusEdit();
+			});
+	}
+
+	hideBulkStatusEditModal() {
+		const modal = this.container.querySelector(
+			'.bulk-status-edit-modal-overlay'
+		);
+		if (modal) {
+			modal.remove();
+		}
+	}
+
+	handleBulkStatusEdit() {
+		const select = document.getElementById('bulk-status-select');
+		const newStatus = select.value;
+		if (!newStatus) {
+			alert('Please select a status');
+			return;
+		}
+
+		if (confirm(`Set all items to status "${newStatus}"?`)) {
+			// Get all items and update their status
+			const items = this.currentState?.items || [];
+			const updates = items.map((item) => ({
+				...item,
+				status: newStatus,
+			}));
+
+			// Dispatch bulk update
+			this.controller.dispatchBulkUpsert(updates);
+			this.hideBulkStatusEditModal();
+		}
+	}
+	*/
+
 	handleMetadataFormSubmit() {
 		const form = document.getElementById('metadata-form');
 		const formData = new FormData(form);
+
+		// Store old schema for migration comparison
+		const oldSchema = this.currentSchema
+			? JSON.parse(JSON.stringify(this.currentSchema))
+			: null;
 
 		// Process field configuration
 		const fields = [];
@@ -898,6 +1197,8 @@ ${this.currentSchema?.description || ''}</textarea
 		if (formData.has('control-edit')) controls.push('edit');
 		if (formData.has('control-delete')) controls.push('delete');
 		if (formData.has('control-bulk-upsert')) controls.push('bulk-upsert');
+		if (formData.has('control-selected-edit'))
+			controls.push('selected-edit');
 
 		// Process showHeaders setting
 		const showHeaders = formData.has('show-headers');
@@ -1162,32 +1463,35 @@ ${this.currentSchema?.description || ''}</textarea
 
 		return html`
 			<div class="list-ui">
-				${hasAnyControls
-					? html`
-							<div class="list-controls">
-								${hasAddControl
-									? html`
-											<button
-												id="add-item-btn"
-												class="action-btn primary"
-											>
-												Add Item
-											</button>
-									  `
-									: ''}
-								${hasBulkUpsertControl
-									? html`
-											<button
-												id="bulk-upsert-btn"
-												class="action-btn secondary"
-											>
-												Bulk Upsert
-											</button>
-									  `
-									: ''}
-							</div>
-					  `
-					: ''}
+				<div class="list-controls">
+					${hasAddControl
+						? html`
+								<button
+									id="add-item-btn"
+									class="action-btn primary"
+								>
+									Add Item
+								</button>
+						  `
+						: ''}
+					${hasBulkUpsertControl
+						? html`
+								<button
+									id="bulk-upsert-btn"
+									class="action-btn secondary"
+								>
+									Bulk Upsert
+								</button>
+						  `
+						: ''}
+					<!-- TEMPORARY: Bulk Status Edit -->
+					<!-- <button
+						id="bulk-status-edit-btn"
+						class="action-btn secondary"
+					>
+						Bulk Status Edit
+					</button> -->
+				</div>
 
 				<div class="list-grid-container">
 					${items.length === 0
@@ -1305,44 +1609,6 @@ ${this.currentSchema?.description || ''}</textarea
 								</div>
 						  `}
 				</div>
-
-				<div
-					class="item-form"
-					id="item-form"
-					style="display: none;"
-				>
-					<h4>Add/Edit Item</h4>
-					<form id="item-form-element">
-						${editableFields
-							.map(
-								(field) => html`
-									<div class="form-field">
-										<label for="${field.name}"
-											>${field.displayName ||
-											field.name}:</label
-										>
-										${this.generateFieldInput(field)}
-									</div>
-								`
-							)
-							.join('')}
-						<div class="form-actions">
-							<button
-								type="submit"
-								class="action-btn primary"
-							>
-								Save
-							</button>
-							<button
-								type="button"
-								class="action-btn secondary"
-								id="cancel-form"
-							>
-								Cancel
-							</button>
-						</div>
-					</form>
-				</div>
 			</div>
 		`;
 	}
@@ -1412,6 +1678,84 @@ ${this.currentSchema?.description || ''}</textarea
 		}
 	}
 
+	generateFieldInputForModal(field, selectedItem) {
+		const requiredAttr = field.required ? 'required' : '';
+		const currentValue = selectedItem[field.name] || '';
+
+		switch (field.type) {
+			case 'enum':
+				return html`
+					<select
+						id="selected-edit-${field.name}"
+						name="${field.name}"
+						${requiredAttr}
+					>
+						<option value="">
+							Select ${field.displayName || field.name}
+						</option>
+						${field.options
+							?.map(
+								(option) => html`
+									<option
+										value="${option}"
+										${currentValue === option
+											? 'selected'
+											: ''}
+									>
+										${option}
+									</option>
+								`
+							)
+							.join('')}
+					</select>
+				`;
+			case 'text':
+				return html`
+					<input
+						type="text"
+						id="selected-edit-${field.name}"
+						name="${field.name}"
+						value="${currentValue}"
+						${requiredAttr}
+						placeholder="Enter ${field.displayName || field.name}"
+					/>
+				`;
+			case 'integer':
+				return html`
+					<input
+						type="number"
+						id="selected-edit-${field.name}"
+						name="${field.name}"
+						value="${currentValue}"
+						${requiredAttr}
+						placeholder="Enter ${field.displayName || field.name}"
+					/>
+				`;
+			case 'datetime':
+				return html`
+					<input
+						type="datetime-local"
+						id="selected-edit-${field.name}"
+						name="${field.name}"
+						value="${currentValue}"
+						${requiredAttr}
+						placeholder="Enter ${field.displayName || field.name}"
+					/>
+				`;
+			default:
+				return html`
+					<input
+						type="text"
+						id="selected-edit-${field.name}"
+						name="${field.name}"
+						value="${currentValue}"
+						${requiredAttr}
+						placeholder="Enter ${field.displayName || field.name}"
+					/>
+				`;
+		}
+	}
+
 	getItemById(itemId) {
 		if (!this.currentState || !this.currentSchema) return null;
 
@@ -1428,6 +1772,8 @@ ${this.currentSchema?.description || ''}</textarea
 			row.querySelectorAll('.grid-cell').forEach((cell) =>
 				cell.classList.add('row-selected')
 			);
+			// Show edit button if selectedEdit control is enabled
+			this.showSelectedEditButton();
 		}
 	}
 
@@ -1435,92 +1781,18 @@ ${this.currentSchema?.description || ''}</textarea
 		this.container
 			.querySelectorAll('.row-selected')
 			.forEach((cell) => cell.classList.remove('row-selected'));
+		// Hide edit button when selection is cleared
+		this.hideSelectedEditButton();
 	}
 
 	showAddForm() {
-		const form = this.container.querySelector('#item-form');
-		if (form) {
-			form.style.display = 'block';
-			form.querySelector('h4').textContent = 'Add Item';
-			form.removeAttribute('data-editing-id');
-
-			// Remove any existing ID input for add mode
-			const existingIdInput = form.querySelector('input[name="id"]');
-			if (existingIdInput) {
-				existingIdInput.remove();
-			}
-
-			form.querySelector('#item-form-element').reset();
-		}
+		// Open the modal for adding a new item (no selected item)
+		this.showSelectedEditModal(null);
 	}
 
 	showEditForm(itemId) {
-		const form = this.container.querySelector('#item-form');
-		if (form) {
-			form.style.display = 'block';
-			form.querySelector('h4').textContent = 'Edit Item';
-			form.setAttribute('data-editing-id', itemId);
-
-			// Get item data from stored state
-			const item = this.getItemById(itemId);
-			if (item) {
-				// Add a hidden input for the ID so it gets included in form data
-				const existingIdInput = form.querySelector('input[name="id"]');
-				if (!existingIdInput) {
-					const idInput = document.createElement('input');
-					idInput.type = 'hidden';
-					idInput.name = 'id';
-					idInput.value = itemId;
-					form.querySelector('#item-form-element').appendChild(
-						idInput
-					);
-				} else {
-					existingIdInput.value = itemId;
-				}
-
-				// Populate form fields with item data
-				Object.entries(item).forEach(([fieldName, value]) => {
-					const input = form.querySelector(`[name="${fieldName}"]`);
-					if (input) {
-						input.value = value;
-					}
-				});
-			}
-		}
-	}
-
-	hideForm() {
-		const form = this.container.querySelector('#item-form');
-		if (form) {
-			form.style.display = 'none';
-			form.removeAttribute('data-editing-id');
-		}
-	}
-
-	handleFormSubmit(form) {
-		const formData = new FormData(form);
-		const data = {};
-
-		// Extract form data
-		for (const [key, value] of formData.entries()) {
-			data[key] = value;
-		}
-
-		// Check if we're editing by looking for the ID in the form data
-		const editingId = data.id;
-
-		if (editingId) {
-			// Remove ID from data before updating (we don't want to update the ID field)
-			delete data.id;
-			// Update existing item
-			this.controller.dispatchUpdateData(data, editingId);
-		} else {
-			// Insert new item
-			this.controller.dispatchInsertData(data);
-		}
-
-		// Hide form
-		this.hideForm();
+		// Open the modal for editing an existing item
+		this.showSelectedEditModal(itemId);
 	}
 
 	handleDeleteClick(itemId) {
