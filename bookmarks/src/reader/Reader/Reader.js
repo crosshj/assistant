@@ -254,13 +254,20 @@ export class Reader {
 			if (metadata?.schema?.title) {
 				this.updateHeaderTitle(metadata.schema.title);
 			}
+			// Update filter icons
+			this.updateFilterIcons();
 		}
 	}
 
 	updateHeaderTitle(title) {
 		const titleElement = this.container.querySelector('#app-title');
 		if (titleElement) {
-			titleElement.textContent = title;
+			// Get active filter information
+			const activeFilter = this.getActiveFilterDisplay();
+			const displayTitle = activeFilter
+				? `${title} | ${activeFilter}`
+				: title;
+			titleElement.textContent = displayTitle;
 		}
 	}
 
@@ -296,6 +303,10 @@ export class Reader {
 	showHeaderActions() {
 		const header = this.container.querySelector('.reader-header');
 		if (header && !header.querySelector('.header-actions')) {
+			// Preserve current title if it exists
+			const currentTitle =
+				header.querySelector('#app-title')?.textContent || 'Reader';
+
 			header.innerHTML = html`
 				<div class="header-left">
 					<button
@@ -330,7 +341,7 @@ export class Reader {
 							></line>
 						</svg>
 					</button>
-					<h1 id="app-title">Reader</h1>
+					<h1 id="app-title">${currentTitle}</h1>
 				</div>
 				<div class="header-right">
 					<button
@@ -355,8 +366,305 @@ export class Reader {
 							></path>
 						</svg>
 					</button>
+					<div
+						id="filter-icons-container"
+						class="filter-icons-container"
+					>
+						<!-- Filter icons will be dynamically added here -->
+					</div>
 				</div>
 			`;
+		}
+	}
+
+	updateFilterIcons() {
+		const filterContainer = this.container.querySelector(
+			'#filter-icons-container'
+		);
+		if (!filterContainer || !this.currentSchema) return;
+
+		// Get filterable enum fields
+		const filterableFields =
+			this.currentSchema.fields?.filter(
+				(field) => field.type === 'enum' && field.filterable
+			) || [];
+
+		if (filterableFields.length === 0) {
+			filterContainer.innerHTML = '';
+			return;
+		}
+
+		// Generate filter icons
+		filterContainer.innerHTML = filterableFields
+			.map((field) => {
+				const currentFilter = this.getCurrentFilter(field.name);
+				const isFiltered = currentFilter && currentFilter !== 'all';
+
+				return html`
+					<button
+						class="filter-icon-btn ${isFiltered ? 'active' : ''}"
+						data-field="${field.name}"
+						title="Filter by ${field.displayName} (${currentFilter ||
+						field.options[0]})"
+					>
+						<svg
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="currentColor"
+							stroke="none"
+						>
+							<path
+								d="M23,2v0.5l-8,10v8l-5,2v-10l-8-10V2H23z"
+							></path>
+							${isFiltered
+								? html`<circle
+										cx="20"
+										cy="20"
+										r="3"
+										fill="white"
+								  ></circle>`
+								: ''}
+						</svg>
+					</button>
+				`;
+			})
+			.join('');
+	}
+
+	getCurrentFilter(fieldName) {
+		// Get from localStorage or return default (first option)
+		const stored = localStorage.getItem(`filter_${fieldName}`);
+		if (stored) {
+			// Validate that the stored value is still valid
+			const field = this.currentSchema.fields?.find(
+				(f) => f.name === fieldName
+			);
+			if (
+				field &&
+				(stored === 'all' || field.options?.includes(stored))
+			) {
+				return stored;
+			}
+		}
+
+		// Return default (first option)
+		const field = this.currentSchema.fields?.find(
+			(f) => f.name === fieldName
+		);
+		return field?.options?.[0] || 'all';
+	}
+
+	setFilter(fieldName, value) {
+		// Store in localStorage
+		localStorage.setItem(`filter_${fieldName}`, value);
+
+		// Update the UI
+		this.updateFilterIcons();
+		this.refreshDataDisplay();
+
+		// Update the title to show active filters
+		if (this.currentSchema?.title) {
+			this.updateHeaderTitle(this.currentSchema.title);
+		}
+	}
+
+	toggleFilterDropdown(fieldName) {
+		// Close any existing dropdowns
+		this.hideAllFilterDropdowns();
+
+		// Show dropdown for this field
+		this.showFilterDropdown(fieldName);
+	}
+
+	showFilterDropdown(fieldName) {
+		const field = this.currentSchema.fields?.find(
+			(f) => f.name === fieldName
+		);
+		if (!field || field.type !== 'enum' || !field.filterable) return;
+
+		const currentFilter = this.getCurrentFilter(fieldName);
+
+		// Create backdrop overlay
+		const backdrop = document.createElement('div');
+		backdrop.className = 'filter-dropdown-backdrop';
+
+		// Create dropdown
+		const dropdown = document.createElement('div');
+		dropdown.className = 'filter-dropdown';
+		dropdown.dataset.field = fieldName;
+
+		// Generate dropdown options
+		const options = [];
+
+		// Add "All" option if enabled
+		if (field.showAllOption !== false) {
+			options.push(html`
+				<div
+					class="filter-option ${currentFilter === 'all'
+						? 'active'
+						: ''}"
+					data-value="all"
+				>
+					<span>All ${field.displayName}</span>
+				</div>
+			`);
+		}
+
+		// Add enum options
+		field.options?.forEach((option) => {
+			options.push(html`
+				<div
+					class="filter-option ${currentFilter === option
+						? 'active'
+						: ''}"
+					data-value="${option}"
+				>
+					<span>${option}</span>
+				</div>
+			`);
+		});
+
+		dropdown.innerHTML = options.join('');
+
+		// Add backdrop and dropdown to container
+		this.container.appendChild(backdrop);
+		backdrop.appendChild(dropdown);
+
+		// Style the dropdown
+		dropdown.style.minWidth = '200px';
+		dropdown.style.maxWidth = '300px';
+		dropdown.style.width = 'auto';
+
+		// Add click handlers for options
+		dropdown.addEventListener('click', (e) => {
+			const option = e.target.closest('.filter-option');
+			if (option) {
+				const value = option.dataset.value;
+				this.setFilter(fieldName, value);
+				this.hideAllFilterDropdowns();
+			}
+		});
+
+		// Add click handler for backdrop
+		backdrop.addEventListener('click', () => {
+			this.hideAllFilterDropdowns();
+		});
+
+		// Show the backdrop with animation
+		setTimeout(() => {
+			backdrop.classList.add('show');
+		}, 10);
+	}
+
+	hideAllFilterDropdowns() {
+		const backdrops = this.container.querySelectorAll(
+			'.filter-dropdown-backdrop'
+		);
+		backdrops.forEach((backdrop) => {
+			backdrop.classList.remove('show');
+			setTimeout(() => {
+				backdrop.remove();
+			}, 300); // Match the CSS transition duration
+		});
+		document.removeEventListener('click', this.handleOutsideClick);
+	}
+
+	handleOutsideClick = (e) => {
+		if (
+			!e.target.closest('.filter-dropdown') &&
+			!e.target.closest('.filter-icon-btn')
+		) {
+			this.hideAllFilterDropdowns();
+		}
+	};
+
+	calculateFilterCounts(fieldName, items) {
+		const counts = { all: items.length };
+		const field = this.currentSchema.fields?.find(
+			(f) => f.name === fieldName
+		);
+
+		if (field?.options) {
+			field.options.forEach((option) => {
+				counts[option] = items.filter(
+					(item) => item[fieldName] === option
+				).length;
+			});
+		}
+
+		return counts;
+	}
+
+	getFilteredItems() {
+		if (!this.currentState || !this.currentSchema) return [];
+
+		const tableName = this.currentSchema.tableName || 'items';
+		let items = this.currentState[tableName] || [];
+
+		// Apply filters
+		const filterableFields =
+			this.currentSchema.fields?.filter(
+				(field) => field.type === 'enum' && field.filterable
+			) || [];
+
+		filterableFields.forEach((field) => {
+			const currentFilter = this.getCurrentFilter(field.name);
+			if (currentFilter && currentFilter !== 'all') {
+				items = items.filter(
+					(item) => item[field.name] === currentFilter
+				);
+			}
+		});
+
+		return items;
+	}
+
+	getHiddenFieldsForFiltering(schema) {
+		const hiddenFields = new Set();
+
+		if (!schema?.fields) return hiddenFields;
+
+		const filterableFields = schema.fields.filter(
+			(field) => field.type === 'enum' && field.filterable
+		);
+
+		filterableFields.forEach((field) => {
+			const currentFilter = this.getCurrentFilter(field.name);
+			// Hide the column if it's filtered to a specific value (not "All")
+			if (currentFilter && currentFilter !== 'all') {
+				hiddenFields.add(field.name);
+			}
+		});
+
+		return hiddenFields;
+	}
+
+	getActiveFilterDisplay() {
+		if (!this.currentSchema?.fields) return null;
+
+		const filterableFields = this.currentSchema.fields.filter(
+			(field) => field.type === 'enum' && field.filterable
+		);
+
+		const activeFilters = [];
+		filterableFields.forEach((field) => {
+			const currentFilter = this.getCurrentFilter(field.name);
+			if (currentFilter && currentFilter !== 'all') {
+				activeFilters.push(currentFilter);
+			}
+		});
+
+		return activeFilters.length > 0 ? activeFilters.join(', ') : null;
+	}
+
+	refreshDataDisplay() {
+		// This will be called to refresh the data display with current filters
+		// For now, we'll trigger a re-render of the current UI
+		if (this.currentSchema && this.currentState) {
+			this.showDynamicUI(this.currentSchema, this.currentState);
+			// Update filter icons after refreshing data
+			this.updateFilterIcons();
 		}
 	}
 
@@ -1183,6 +1491,12 @@ ${this.currentSchema?.description || ''}</textarea
 					.split(',')
 					.map((opt) => opt.trim())
 					.filter((opt) => opt);
+
+				// Add filter properties
+				field.filterable = formData.has(`field-filterable-${index}`);
+				field.showAllOption = formData.has(
+					`field-showAllOption-${index}`
+				);
 			}
 
 			// Only add fields with names
@@ -1414,8 +1728,51 @@ ${this.currentSchema?.description || ''}</textarea
 													) || ''}"
 													placeholder="Option1, Option2, Option3"
 												/>
+												<small class="field-help">
+													First option will be the
+													default filter value
+												</small>
 											</div>
 										</div>
+										<div class="field-config-row">
+											<div class="field-config-col">
+												<label>
+													<input
+														type="checkbox"
+														name="field-filterable-${index}"
+														${field.filterable
+															? 'checked'
+															: ''}
+													/>
+													Enable Filter Icon
+												</label>
+											</div>
+										</div>
+										${field.filterable
+											? html`
+													<div
+														class="field-config-row"
+													>
+														<div
+															class="field-config-col"
+														>
+															<label>
+																<input
+																	type="checkbox"
+																	name="field-showAllOption-${index}"
+																	${field.showAllOption !==
+																	false
+																		? 'checked'
+																		: ''}
+																/>
+																Show "All"
+																option in filter
+																dropdown
+															</label>
+														</div>
+													</div>
+											  `
+											: ''}
 								  `
 								: ''}
 						</div>
@@ -1427,7 +1784,8 @@ ${this.currentSchema?.description || ''}</textarea
 
 	generateListUI(schema, state) {
 		const tableName = schema.tableName || 'items';
-		const items = state?.[tableName] || [];
+		const allItems = state?.[tableName] || [];
+		const items = this.getFilteredItems(); // Use filtered items instead of all items
 		const fields = schema.fields || [];
 
 		// Filter out read-only and auto-increment fields for the form
@@ -1455,43 +1813,54 @@ ${this.currentSchema?.description || ''}</textarea
 			schema.controls?.includes('bulk-upsert') && items.length > 0;
 		const hasAnyControls = hasAddControl || hasBulkUpsertControl;
 
+		// Get fields that should be hidden because they're filtered to a specific value
+		const hiddenFields = this.getHiddenFieldsForFiltering(schema);
+
 		// Create grid template: text columns get more space, others get fixed width
-		const gridTemplate = fields
+		// Only include visible fields in the grid template
+		const visibleFields = fields.filter(
+			(field) => !hiddenFields.has(field.name)
+		);
+		const gridTemplate = visibleFields
 			.map((field) => (field.type === 'text' ? '1fr' : 'auto'))
 			.concat(hasActions ? ['auto'] : [])
 			.join(' ');
 
 		return html`
 			<div class="list-ui">
-				<div class="list-controls">
-					${hasAddControl
-						? html`
-								<button
-									id="add-item-btn"
-									class="action-btn primary"
-								>
-									Add Item
-								</button>
-						  `
-						: ''}
-					${hasBulkUpsertControl
-						? html`
-								<button
-									id="bulk-upsert-btn"
+				${hasAnyControls
+					? html`
+							<div class="list-controls">
+								${hasAddControl
+									? html`
+											<button
+												id="add-item-btn"
+												class="action-btn primary"
+											>
+												Add Item
+											</button>
+									  `
+									: ''}
+								${hasBulkUpsertControl
+									? html`
+											<button
+												id="bulk-upsert-btn"
+												class="action-btn secondary"
+											>
+												Bulk Upsert
+											</button>
+									  `
+									: ''}
+								<!-- TEMPORARY: Bulk Status Edit -->
+								<!-- <button
+									id="bulk-status-edit-btn"
 									class="action-btn secondary"
 								>
-									Bulk Upsert
-								</button>
-						  `
-						: ''}
-					<!-- TEMPORARY: Bulk Status Edit -->
-					<!-- <button
-						id="bulk-status-edit-btn"
-						class="action-btn secondary"
-					>
-						Bulk Status Edit
-					</button> -->
-				</div>
+									Bulk Status Edit
+								</button> -->
+							</div>
+					  `
+					: ''}
 
 				<div class="list-grid-container">
 					${items.length === 0
@@ -1504,7 +1873,7 @@ ${this.currentSchema?.description || ''}</textarea
 									${showHeaders
 										? html`
 												<!-- Header row -->
-												${fields
+												${visibleFields
 													.map(
 														(field) => html`
 															<div
@@ -1542,7 +1911,7 @@ ${this.currentSchema?.description || ''}</textarea
 													class="grid-row"
 													data-row-id="${item.id}"
 												>
-													${fields
+													${visibleFields
 														.map(
 															(field) => html`
 																<div

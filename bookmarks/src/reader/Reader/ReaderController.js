@@ -31,6 +31,8 @@ export class ReaderController {
 			'#bulk-upsert-btn': () => this.ui.showBulkUpsertModal(),
 			// '#bulk-status-edit-btn': () => this.ui.showBulkStatusEditModal(),
 			'#selected-edit-btn': () => this.ui.showSelectedEditModal(),
+			'.filter-icon-btn': (e) =>
+				this.ui.toggleFilterDropdown(e.target.dataset.field),
 			'#close-selected-edit-modal, #cancel-selected-edit': () =>
 				this.ui.hideSelectedEditModal(),
 			'#close-metadata-modal, #cancel-metadata': () =>
