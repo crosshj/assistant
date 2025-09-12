@@ -1977,6 +1977,16 @@ ${this.currentSchema?.description || ''}</textarea
 										.join('')}
 								</div>
 						  `}
+					${items.length > 0
+						? html`
+								<div class="list-count">
+									<span class="count-text">
+										${items.length}
+										${items.length === 1 ? 'item' : 'items'}
+									</span>
+								</div>
+						  `
+						: ''}
 				</div>
 			</div>
 		`;

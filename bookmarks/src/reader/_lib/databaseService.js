@@ -270,6 +270,151 @@ export class DatabaseService {
 	}
 
 	/**
+	 * Clean up database to reduce file size
+	 * @returns {Object} Cleanup results with before/after sizes
+	 */
+	cleanupDatabase() {
+		if (!this.db) {
+			throw new Error('Database not loaded');
+		}
+
+		try {
+			// Get size before cleanup
+			const beforeSize = this.db.export().buffer.byteLength;
+			console.log(`📊 Database size before cleanup: ${beforeSize} bytes`);
+
+			// Run VACUUM to reclaim space and optimize database
+			this.db.exec('VACUUM');
+			console.log('✅ VACUUM completed');
+
+			// Run ANALYZE to update statistics
+			this.db.exec('ANALYZE');
+			console.log('✅ ANALYZE completed');
+
+			// Get size after cleanup
+			const afterSize = this.db.export().buffer.byteLength;
+			const savedBytes = beforeSize - afterSize;
+			const savedPercent = ((savedBytes / beforeSize) * 100).toFixed(2);
+
+			console.log(`📊 Database size after cleanup: ${afterSize} bytes`);
+			console.log(
+				`💾 Space saved: ${savedBytes} bytes (${savedPercent}%)`
+			);
+
+			return {
+				beforeSize,
+				afterSize,
+				savedBytes,
+				savedPercent: parseFloat(savedPercent),
+			};
+		} catch (error) {
+			console.error('Error cleaning up database:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Get database statistics and size information
+	 * @returns {Object} Database statistics
+	 */
+	getDatabaseStats() {
+		if (!this.db) {
+			throw new Error('Database not loaded');
+		}
+
+		try {
+			const tables = this.getTableNames();
+			const stats = {
+				tables: tables.length,
+				tableNames: tables,
+				fileSize: this.db.export().buffer.byteLength,
+				pageCount: 0,
+				pageSize: 0,
+				freePages: 0,
+			};
+
+			// Get page information
+			const pageInfo = this.db.exec('PRAGMA page_count');
+			if (pageInfo.length > 0) {
+				stats.pageCount = pageInfo[0].values[0][0];
+			}
+
+			const pageSize = this.db.exec('PRAGMA page_size');
+			if (pageSize.length > 0) {
+				stats.pageSize = pageSize[0].values[0][0];
+			}
+
+			const freePages = this.db.exec('PRAGMA freelist_count');
+			if (freePages.length > 0) {
+				stats.freePages = freePages[0].values[0][0];
+			}
+
+			// Get row counts for each table
+			stats.tableRowCounts = {};
+			tables.forEach((tableName) => {
+				try {
+					const result = this.db.exec(
+						`SELECT COUNT(*) as count FROM ${tableName}`
+					);
+					if (result.length > 0) {
+						stats.tableRowCounts[tableName] =
+							result[0].values[0][0];
+					}
+				} catch (error) {
+					stats.tableRowCounts[tableName] = 'Error';
+				}
+			});
+
+			return stats;
+		} catch (error) {
+			console.error('Error getting database stats:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Remove unused tables (tables not in the expected schema)
+	 * @param {Array<string>} expectedTables - Array of expected table names
+	 * @returns {Object} Cleanup results
+	 */
+	removeUnusedTables(expectedTables = ['metadata', 'items']) {
+		if (!this.db) {
+			throw new Error('Database not loaded');
+		}
+
+		try {
+			const allTables = this.getTableNames();
+			const tablesToRemove = allTables.filter(
+				(table) => !expectedTables.includes(table)
+			);
+
+			if (tablesToRemove.length === 0) {
+				console.log('✅ No unused tables found');
+				return { removedTables: [], message: 'No unused tables found' };
+			}
+
+			console.log(
+				`🗑️ Found ${tablesToRemove.length} unused tables:`,
+				tablesToRemove
+			);
+
+			// Remove each unused table
+			tablesToRemove.forEach((tableName) => {
+				this.db.exec(`DROP TABLE IF EXISTS ${tableName}`);
+				console.log(`✅ Removed table: ${tableName}`);
+			});
+
+			return {
+				removedTables: tablesToRemove,
+				message: `Removed ${tablesToRemove.length} unused tables`,
+			};
+		} catch (error) {
+			console.error('Error removing unused tables:', error);
+			throw error;
+		}
+	}
+
+	/**
 	 * Check if database is loaded
 	 * @returns {boolean}
 	 */

@@ -52,6 +52,41 @@ export class ApplicationController {
 	onAppInit() {
 		// Application-level initialization will go here
 
+		// Attach database cleanup functions to window object for easy access
+		window.dbCleanup = {
+			stats: async () => {
+				await this.databaseHandlers.handleGetDatabaseStats();
+			},
+			cleanup: async () => {
+				await this.databaseHandlers.handleCleanupDatabase();
+			},
+			removeTables: async () => {
+				await this.databaseHandlers.handleRemoveUnusedTables();
+			},
+			tables: () => {
+				if (this.databaseService.isLoaded()) {
+					const tables = this.databaseService.getTableNames();
+					console.log('📊 Database Tables:', tables);
+					return tables;
+				} else {
+					console.log('❌ No database loaded');
+					return [];
+				}
+			},
+		};
+
+		console.log(
+			'🔧 Database cleanup functions available on window.dbCleanup:'
+		);
+		console.log('  - window.dbCleanup.tables() - List all tables');
+		console.log('  - window.dbCleanup.stats() - Get database statistics');
+		console.log(
+			'  - window.dbCleanup.cleanup() - Clean up database (VACUUM + ANALYZE)'
+		);
+		console.log(
+			'  - window.dbCleanup.removeTables() - Remove unused tables'
+		);
+
 		// Simulate some initialization work
 		setTimeout(() => {
 			dispatchEvent('reader:ready');

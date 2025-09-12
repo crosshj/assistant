@@ -55,6 +55,11 @@ export function getHandlers(appController) {
 					arrayBuffer
 				);
 
+				// Log all tables in the database
+				const tableNames =
+					appController.databaseService.getTableNames();
+				console.log('📊 Database Tables:', tableNames);
+
 				dispatchDbState(
 					'file_opened',
 					'Database loaded successfully',
@@ -408,6 +413,101 @@ export function getHandlers(appController) {
 					action: 'error',
 					error: error.message,
 					message: `Error in bulk upsert: ${error.message}`,
+				});
+			}
+		},
+
+		async handleCleanupDatabase() {
+			try {
+				console.log('🧹 Starting database cleanup...');
+
+				// Get stats before cleanup
+				const beforeStats =
+					appController.databaseService.getDatabaseStats();
+				console.log('📊 Database stats before cleanup:', beforeStats);
+
+				// Run cleanup
+				const cleanupResults =
+					appController.databaseService.cleanupDatabase();
+
+				// Auto-save after cleanup
+				try {
+					const dbData =
+						appController.databaseService.exportDatabase();
+					await appController.fileHandlers.saveFile(dbData);
+					console.log('💾 Database saved after cleanup');
+				} catch (saveError) {
+					console.warn('Auto-save failed after cleanup:', saveError);
+				}
+
+				dispatchDbState(
+					'cleanup',
+					`Database cleaned up! Saved ${cleanupResults.savedBytes} bytes (${cleanupResults.savedPercent}%)`
+				);
+			} catch (error) {
+				console.error('Error cleaning up database:', error);
+				dispatchEvent('db:state', {
+					action: 'error',
+					error: error.message,
+					message: `Cleanup error: ${error.message}`,
+				});
+			}
+		},
+
+		async handleRemoveUnusedTables() {
+			try {
+				console.log('🗑️ Removing unused tables...');
+
+				// Remove unused tables (keeping only metadata and items)
+				const cleanupResults =
+					appController.databaseService.removeUnusedTables([
+						'metadata',
+						'items',
+					]);
+
+				// Auto-save after cleanup
+				try {
+					const dbData =
+						appController.databaseService.exportDatabase();
+					await appController.fileHandlers.saveFile(dbData);
+					console.log(
+						'💾 Database saved after removing unused tables'
+					);
+				} catch (saveError) {
+					console.warn(
+						'Auto-save failed after removing tables:',
+						saveError
+					);
+				}
+
+				dispatchDbState('cleanup_tables', cleanupResults.message);
+			} catch (error) {
+				console.error('Error removing unused tables:', error);
+				dispatchEvent('db:state', {
+					action: 'error',
+					error: error.message,
+					message: `Table cleanup error: ${error.message}`,
+				});
+			}
+		},
+
+		async handleGetDatabaseStats() {
+			try {
+				console.log('📊 Getting database statistics...');
+
+				const stats = appController.databaseService.getDatabaseStats();
+				console.log('📊 Database Statistics:', stats);
+
+				dispatchDbState(
+					'stats',
+					`Database has ${stats.tables} tables, ${stats.fileSize} bytes, ${stats.pageCount} pages`
+				);
+			} catch (error) {
+				console.error('Error getting database stats:', error);
+				dispatchEvent('db:state', {
+					action: 'error',
+					error: error.message,
+					message: `Stats error: ${error.message}`,
 				});
 			}
 		},

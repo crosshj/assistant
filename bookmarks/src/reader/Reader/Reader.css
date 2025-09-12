@@ -1021,6 +1021,32 @@
 	padding: 2rem;
 }
 
+.list-count {
+	display: flex;
+	justify-content: center;
+	padding: 1.5rem 1rem 1rem 1rem;
+}
+
+.count-text {
+	color: var(--text-muted);
+	font-size: 1rem;
+	font-weight: 400;
+	opacity: 0.7;
+}
+
+.grid-cell.id-column {
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro',
+		monospace;
+	font-size: 0.8rem;
+}
+
+.grid-cell.id-column.row-selected {
+	color: #e0e0e0;
+	font-weight: 600;
+	text-shadow: none;
+	vertical-align: baseline;
+}
+
 .item-form {
 	background: var(--card-bg);
 	border: 1px solid var(--card-border);
