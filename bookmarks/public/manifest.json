@@ -6,6 +6,8 @@
     "background_color": "#181A1B",
     "theme_color": "#181A1B",
     "description": "A minimal, Pocket-inspired bookmarks app.",
+    "scope": "/",
+    "id": "bookmarks-app",
     "icons": [
         {
             "src": "favicon.svg",

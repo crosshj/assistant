@@ -31,6 +31,6 @@
     "categories": ["productivity", "utilities"],
     "lang": "en",
     "orientation": "portrait-primary",
-    "scope": "/",
+    "scope": "/reader",
     "id": "reader-smarttext-manager"
 }
