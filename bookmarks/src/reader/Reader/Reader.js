@@ -77,26 +77,45 @@ export class Reader {
 							height="64"
 							viewBox="0 0 24 24"
 							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
+							xmlns="http://www.w3.org/2000/svg"
 						>
+							<!-- White-filled document for visibility on dark backgrounds -->
 							<path
 								d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-							></path>
-							<polyline points="14,2 14,8 20,8"></polyline>
+								fill="white"
+								stroke="#666666"
+								stroke-width="1.5"
+							/>
+							<!-- Folded corner -->
+							<polyline
+								points="14,2 14,8 20,8"
+								stroke="#666666"
+								stroke-width="1.5"
+								fill="none"
+							/>
+							<!-- Document content lines -->
 							<line
 								x1="16"
 								y1="13"
 								x2="8"
 								y2="13"
-							></line>
+								stroke="#666666"
+								stroke-width="1.5"
+							/>
 							<line
 								x1="16"
 								y1="17"
 								x2="8"
 								y2="17"
-							></line>
-							<polyline points="10,9 9,9 8,9"></polyline>
+								stroke="#666666"
+								stroke-width="1.5"
+							/>
+							<polyline
+								points="10,9 9,9 8,9"
+								stroke="#666666"
+								stroke-width="1.5"
+								fill="none"
+							/>
 						</svg>
 					</div>
 					<h2 class="splash-title">Welcome to Reader</h2>

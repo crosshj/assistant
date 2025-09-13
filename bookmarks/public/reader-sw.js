@@ -1,21 +1,12 @@
 // Reader App Service Worker
 const CACHE_NAME = 'reader-app-v1';
 const STATIC_CACHE_URLS = [
-	'./',
-	'./reader.html',
-	'./reader.css',
-	'./reader.js',
-	'./_lib/utils.js',
-	'./_lib/fileService.js',
-	'./_lib/databaseService.js',
-	'./_lib/sql-wasm.wasm',
-	'./Application/ApplicationController.js',
-	'./Application/handlersFiles.js',
-	'./Application/handlersDatabase.js',
-	'./Reader/Reader.js',
-	'./Reader/ReaderController.js',
-	'./Reader/Reader.css',
-	'./manifest.json',
+	'/reader',
+	'/reader-manifest.json',
+	'/reader-sw.js',
+	'/reader-favicon.svg',
+	// Note: Vite will bundle all JS/CSS into assets/ directory with hashed names
+	// The service worker will cache these dynamically as they're requested
 ];
 
 // Install event - cache static assets
@@ -118,7 +109,7 @@ self.addEventListener('fetch', (event) => {
 
 					// Return offline page for navigation requests
 					if (event.request.mode === 'navigate') {
-						return caches.match('./reader.html');
+						return caches.match('/reader');
 					}
 
 					throw error;

@@ -12,6 +12,7 @@ export default defineConfig({
 				reader: 'reader.html',
 			},
 		},
+		publicDir: 'public',
 	},
 	define: {
 		__BUILD_DATE__: JSON.stringify(new Date().toISOString()),
