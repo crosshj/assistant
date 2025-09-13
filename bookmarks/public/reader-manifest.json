@@ -3,8 +3,8 @@
     "short_name": "Reader",
     "start_url": "/reader",
     "display": "standalone",
-    "background_color": "#181A1B",
-    "theme_color": "#181A1B",
+    "background_color": "#202020",
+    "theme_color": "#202020",
     "description": "A PWA for managing .smartText database files with dynamic UI generation",
     "icons": [
         {
