@@ -106,7 +106,7 @@ export class Reader {
 					</p>
 					<div class="splash-actions">
 						<button
-							id="test-file-picker"
+							id="open-file-btn"
 							class="splash-btn primary"
 						>
 							<svg
@@ -125,7 +125,7 @@ export class Reader {
 							Open Existing File
 						</button>
 						<button
-							id="test-create-file"
+							id="create-file-btn"
 							class="splash-btn secondary"
 						>
 							<svg
@@ -235,6 +235,18 @@ export class Reader {
 				</div>
 			</div>
 		`;
+	}
+
+	showLoadingState(message = 'Loading...') {
+		const content = this.container.querySelector('.reader-content');
+		if (content) {
+			content.innerHTML = html`
+				<div class="loading-state">
+					<div class="loading-spinner"></div>
+					<p>${message}</p>
+				</div>
+			`;
+		}
 	}
 
 	showDatabaseState({ action, state, metadata, message }) {
@@ -2182,12 +2194,108 @@ ${this.currentSchema?.description || ''}</textarea
 	}
 
 	showDatabaseError(error) {
-		const display = this.container.querySelector('#file-content-display');
-		if (display) {
-			display.innerHTML = html`
-				<div class="database-error">
-					<h4>Database Error</h4>
-					<p style="color: red;">${error}</p>
+		const content = this.container.querySelector('.reader-content');
+		if (content) {
+			content.innerHTML = html`
+				<div class="error-container">
+					<div class="error-icon">
+						<svg
+							width="48"
+							height="48"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<circle
+								cx="12"
+								cy="12"
+								r="10"
+							/>
+							<line
+								x1="15"
+								y1="9"
+								x2="9"
+								y2="15"
+							/>
+							<line
+								x1="9"
+								y1="9"
+								x2="15"
+								y2="15"
+							/>
+						</svg>
+					</div>
+					<h3 class="error-title">Database Error</h3>
+					<p class="error-message">${error}</p>
+					<button
+						id="retry-btn"
+						class="action-btn primary"
+					>
+						Try Again
+					</button>
+				</div>
+			`;
+		}
+	}
+
+	showFileError(error, action) {
+		const content = this.container.querySelector('.reader-content');
+		if (content) {
+			const actionText =
+				action === 'open'
+					? 'opening'
+					: action === 'create'
+					? 'creating'
+					: 'saving';
+			content.innerHTML = html`
+				<div class="error-container">
+					<div class="error-icon">
+						<svg
+							width="48"
+							height="48"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<circle
+								cx="12"
+								cy="12"
+								r="10"
+							/>
+							<line
+								x1="15"
+								y1="9"
+								x2="9"
+								y2="15"
+							/>
+							<line
+								x1="9"
+								y1="9"
+								x2="15"
+								y2="15"
+							/>
+						</svg>
+					</div>
+					<h3 class="error-title">File Error</h3>
+					<p class="error-message">
+						Error ${actionText} file: ${error}
+					</p>
+					<div class="error-actions">
+						<button
+							id="retry-file-btn"
+							class="action-btn primary"
+						>
+							Try Again
+						</button>
+						<button
+							id="back-to-splash-btn"
+							class="action-btn secondary"
+						>
+							Back to Home
+						</button>
+					</div>
 				</div>
 			`;
 		}

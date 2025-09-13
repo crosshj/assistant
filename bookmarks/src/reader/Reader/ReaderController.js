@@ -21,8 +21,8 @@ export class ReaderController {
 			'#close-sidebar': () => this.ui.hideHamburgerMenu(),
 			'#menu-open-file': this.handleMenuOpenFile,
 			'#menu-create-file': this.handleMenuCreateFile,
-			'#test-file-picker': () => dispatchEvent('ui:testFilePicker'),
-			'#test-create-file': () => dispatchEvent('ui:testCreateFile'),
+			'#open-file-btn': () => dispatchEvent('ui:openFile'),
+			'#create-file-btn': () => dispatchEvent('ui:createFile'),
 			'#menu-edit-metadata': () => this.ui.showMetadataEditForm(),
 			'#add-item-btn': () => this.ui.showAddForm(),
 			'.edit-btn': (e) => this.ui.showEditForm(e.target.dataset.id),
@@ -41,6 +41,9 @@ export class ReaderController {
 				this.ui.hideBulkUpsertModal(),
 			// '#close-bulk-status-edit-modal, #cancel-bulk-status-edit': () =>
 			// 	this.ui.hideBulkStatusEditModal(),
+			'#retry-btn': () => this.ui.showContent(),
+			'#retry-file-btn': () => this.ui.showContent(),
+			'#back-to-splash-btn': () => this.ui.showContent(),
 			'.sidebar-overlay': () => this.ui.hideHamburgerMenu(),
 			'.grid-row': (e) => {
 				if (e.target.matches('.action-btn')) return;
@@ -72,22 +75,39 @@ export class ReaderController {
 				this.ui.showDatabaseState({ action, state, metadata, message });
 			}
 		});
+
+		// File error handling
+		addEventListener('file:error', (e) => {
+			const { error, action } = e.detail;
+			this.ui.showFileError(error, action);
+		});
+
+		// Loading state handling
+		addEventListener('ui:loading', (e) => {
+			const { message } = e.detail;
+			this.ui.showLoadingState(message);
+		});
+
+		// Show splash screen
+		addEventListener('ui:showSplash', () => {
+			this.ui.showContent();
+		});
 	}
 
 	// Controller methods for UI to call
 	dispatchInsertData(data) {
-		dispatchEvent('ui:testInsertData', { data });
+		dispatchEvent('ui:insertData', { data });
 	}
 
 	dispatchUpdateData(data, itemId) {
-		dispatchEvent('ui:testUpdateData', {
+		dispatchEvent('ui:updateData', {
 			data,
 			whereClause: `id = ${itemId}`,
 		});
 	}
 
 	dispatchDeleteData(itemId) {
-		dispatchEvent('ui:testDeleteData', {
+		dispatchEvent('ui:deleteData', {
 			tableName: 'items',
 			whereClause: `id = ${itemId}`,
 		});
@@ -124,11 +144,11 @@ export class ReaderController {
 	// Menu handlers that coordinate UI + events
 	handleMenuOpenFile = () => {
 		this.ui.hideHamburgerMenu();
-		dispatchEvent('ui:testFilePicker');
+		dispatchEvent('ui:openFile');
 	};
 
 	handleMenuCreateFile = () => {
 		this.ui.hideHamburgerMenu();
-		dispatchEvent('ui:testCreateFile');
+		dispatchEvent('ui:createFile');
 	};
 }

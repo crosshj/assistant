@@ -13,6 +13,16 @@ async function startReader() {
 	// Show content once styles are loaded
 	document.body.classList.add('styles-loaded');
 
+	// Handle file opening from system
+	window.handleFileOpen = async (file) => {
+		try {
+			// Dispatch file open event
+			dispatchEvent('ui:openFile', { file });
+		} catch (error) {
+			console.error('Error handling file open:', error);
+		}
+	};
+
 	dispatchEvent('app:init');
 }
 

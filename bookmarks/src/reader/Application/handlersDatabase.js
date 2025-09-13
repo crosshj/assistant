@@ -79,9 +79,9 @@ export function getHandlers(appController) {
 			}
 		},
 
-		async handleTestLoadDatabase() {
+		async handleLoadDatabase() {
 			try {
-				console.log('Testing database loading...');
+				console.log('Loading database...');
 				const fileData = appController.fileService.getFileData();
 				if (!fileData) {
 					throw new Error(
@@ -123,7 +123,7 @@ export function getHandlers(appController) {
 			}
 		},
 
-		async handleTestInsertData(event) {
+		async handleInsertData(event) {
 			try {
 				// Extract parameters from event detail or use defaults
 				const tableName = event?.detail?.tableName || 'items';
@@ -165,7 +165,7 @@ export function getHandlers(appController) {
 			}
 		},
 
-		async handleTestUpdateData(event) {
+		async handleUpdateData(event) {
 			try {
 				// Extract parameters from event detail or use defaults
 				const tableName = event?.detail?.tableName || 'items';
@@ -226,7 +226,7 @@ export function getHandlers(appController) {
 			}
 		},
 
-		async handleTestDeleteData(event) {
+		async handleDeleteData(event) {
 			try {
 				// Extract parameters from event detail or use defaults
 				const tableName = event?.detail?.tableName || 'items';
@@ -279,9 +279,9 @@ export function getHandlers(appController) {
 			}
 		},
 
-		async handleTestExportDatabase() {
+		async handleExportDatabase() {
 			try {
-				console.log('Testing database export...');
+				console.log('Exporting database...');
 
 				if (!appController.databaseService.isLoaded()) {
 					throw new Error('No database loaded');

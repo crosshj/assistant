@@ -17,27 +17,21 @@ export class ApplicationController {
 		addEventListener('app:init', this.onAppInit.bind(this));
 
 		// File operation event handlers
-		addEventListener(
-			'ui:testFilePicker',
-			this.fileHandlers.handleTestFilePicker
-		);
-		addEventListener(
-			'ui:testCreateFile',
-			this.fileHandlers.handleTestCreateFile
-		);
+		addEventListener('ui:openFile', this.fileHandlers.handleOpenFile);
+		addEventListener('ui:createFile', this.fileHandlers.handleCreateFile);
 
 		// Database operation event handlers
 		addEventListener(
-			'ui:testInsertData',
-			this.databaseHandlers.handleTestInsertData
+			'ui:insertData',
+			this.databaseHandlers.handleInsertData
 		);
 		addEventListener(
-			'ui:testUpdateData',
-			this.databaseHandlers.handleTestUpdateData
+			'ui:updateData',
+			this.databaseHandlers.handleUpdateData
 		);
 		addEventListener(
-			'ui:testDeleteData',
-			this.databaseHandlers.handleTestDeleteData
+			'ui:deleteData',
+			this.databaseHandlers.handleDeleteData
 		);
 		addEventListener(
 			'ui:updateMetadata',
