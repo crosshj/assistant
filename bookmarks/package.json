@@ -8,7 +8,8 @@
         "watch": "cross-env VERCEL_TELEMETRY_CONSENT=0 PORT=5173 vercel dev --listen 4433",
         "build": "vite build",
         "deploy": "cross-env VERCEL_TELEMETRY_CONSENT=0 vercel --prod",
-        "test": "node --experimental-vm-modules node_modules/.bin/jest"
+        "test": "node --experimental-vm-modules node_modules/.bin/jest",
+        "migrate:images": "node --env-file=.env scripts/migrate-images-to-storage.js"
     },
     "author": "",
     "license": "ISC",
@@ -24,7 +25,7 @@
         "open-graph-scraper": "^6.10.0",
         "probe-image-size": "^7.2.3",
         "sanitize-html": "^2.17.0",
-        "sharp": "^0.32.6",
+        "sharp": "^0.34.5",
         "sql.js": "^1.13.0",
         "uuid": "^9.0.1"
     },

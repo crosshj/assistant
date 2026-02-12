@@ -9,7 +9,7 @@ async function handleGetImage(req, res) {
 
 	try {
 		const { data: bookmark, error } = await supabase
-			.from('bookmarks')
+			.from('bookmarks_rows')
 			.select('image_storage_url')
 			.eq('id', req.query.id)
 			.single();
@@ -53,7 +53,7 @@ async function handleGetDetail(req, res) {
 	console.log('[GET] Individual bookmark request for ID:', req.query.id);
 
 	const { data: bookmark, error } = await supabase
-		.from('bookmarks')
+		.from('bookmarks_rows')
 		.select('*')
 		.eq('id', req.query.id)
 		.single();
@@ -96,7 +96,7 @@ async function handleGetList(req, res) {
 		offset,
 	});
 
-	let query = supabase.from('bookmarks').select('*');
+	let query = supabase.from('bookmarks_rows').select('*');
 
 	// Apply filters
 	if (search) {
@@ -192,11 +192,11 @@ async function handlePost(req, res) {
 
 			// Handle different image formats
 			const fileExtension = imageResult.format === 'svg' ? 'svg' : 'webp';
-			const filePath = `bookmark-thumbnails/${uuidv4()}.${fileExtension}`;
+			const filePath = `thumbs/${uuidv4()}.${fileExtension}`;
 
 			const { data: uploadData, error: uploadError } =
 				await supabase.storage
-					.from('thumbnails')
+					.from('bookmarks_storage')
 					.upload(filePath, imageResult.buffer, {
 						contentType: imageResult.contentType,
 						upsert: true,
@@ -206,7 +206,7 @@ async function handlePost(req, res) {
 				console.error('Supabase Storage upload error:', uploadError);
 			} else {
 				const urlRes = supabase.storage
-					.from('thumbnails')
+					.from('bookmarks_storage')
 					.getPublicUrl(filePath);
 				const { publicUrl } = urlRes?.data || {};
 				console.log({ urlRes });
@@ -238,7 +238,7 @@ async function handlePost(req, res) {
 	};
 
 	const { data, error } = await supabase
-		.from('bookmarks')
+		.from('bookmarks_rows')
 		.insert([newBookmark])
 		.select()
 		.single();
@@ -283,7 +283,7 @@ async function handlePut(req, res) {
 	console.log('[PUT] Updating bookmark in Supabase:', id);
 
 	const { data: bookmark, error } = await supabase
-		.from('bookmarks')
+		.from('bookmarks_rows')
 		.update(updates)
 		.eq('id', id)
 		.select()
@@ -321,7 +321,7 @@ async function handleDelete(req, res) {
 	}
 
 	console.log('[DELETE] Deleting bookmark from Supabase:', id);
-	const { error } = await supabase.from('bookmarks').delete().eq('id', id);
+	const { error } = await supabase.from('bookmarks_rows').delete().eq('id', id);
 
 	if (error) {
 		console.error('[DELETE] Supabase delete error:', error);
