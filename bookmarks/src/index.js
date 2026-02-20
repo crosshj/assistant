@@ -464,7 +464,7 @@ function getColorForLetter(letter) {
 
 const formatBookmarkCard = (bookmark) => {
 	let imageSrc = null;
-	let imageAlt = bookmark.title || '';
+	const imageAlt = escapeHtml(bookmark.title || '');
 	if (bookmark.image_storage_url) {
 		imageSrc = bookmark.image_storage_url;
 	} else if (bookmark.image_storage_url_present) {
@@ -474,11 +474,11 @@ const formatBookmarkCard = (bookmark) => {
 	}
 	let imageHTML;
 	if (imageSrc) {
-		imageHTML = `<div class="card-image"><img src="${imageSrc}" alt="${imageAlt}" onerror="this.style.display='none'" /></div>`;
+		imageHTML = `<div class="card-image"><img src="${escapeHtml(imageSrc)}" alt="${imageAlt}" onerror="this.style.display='none'" /></div>`;
 	} else {
 		const firstLetter = (bookmark.title || '?').trim()[0] || '?';
 		const color = getColorForLetter(firstLetter);
-		imageHTML = `<div class="card-image placeholder" style="background:${color}"><span>${firstLetter.toUpperCase()}</span></div>`;
+		imageHTML = `<div class="card-image placeholder" style="background:${color}"><span>${escapeHtml(firstLetter.toUpperCase())}</span></div>`;
 	}
 	return `
     <div class="card" data-url="${escapeHtml(bookmark.url)}" data-id="${
@@ -489,13 +489,13 @@ const formatBookmarkCard = (bookmark) => {
         <div class="card-main">
           <div class="card-main-top">
             <div class="card-title-row">
-              <h3 class="card-title">${bookmark.title || 'Untitled'}</h3>
+              <h3 class="card-title">${escapeHtml(bookmark.title || 'Untitled')}</h3>
             </div>
-            <div class="card-desc">${bookmark.description || ''}</div>
+            <div class="card-desc">${escapeHtml(bookmark.description || '')}</div>
           </div>
           <div class="card-footer">
             <div>
-              <span class="card-domain">${getDomain(bookmark.url)}</span>
+              <span class="card-domain">${escapeHtml(getDomain(bookmark.url))}</span>
               <div class="card-meta-row">
                 ${
 					bookmark.tags
@@ -737,6 +737,7 @@ function showError(message) {
 }
 
 function escapeHtml(text) {
+	if (text == null) return '';
 	const div = document.createElement('div');
 	div.textContent = text;
 	return div.innerHTML;
